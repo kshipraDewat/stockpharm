@@ -1,0 +1,377 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Lexend", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand */
+  --color-brand-50:  #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+
+  /* Semantic */
+  --color-success:   #16a34a;
+  --color-warning:   #d97706;
+  --color-danger:    #dc2626;
+  --color-info:      #2563eb;
+
+  /* Surface */
+  --color-surface:   #ffffff;
+  --color-bg:        #f8fafc;
+
+  /* Border */
+  --color-border:    #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+
+  /* Radius */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Shadow */
+  --shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm:  0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-xl:  0 20px 25px -5px rgb(0 0 0 / 0.10), 0 8px 10px -6px rgb(0 0 0 / 0.10);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  font-family: var(--font-sans);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: #0f172a;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+  font-family: var(--font-sans);
+}
+
+/* Typography scale — page > section > body > caption */
+.text-page-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.text-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1e293b;
+}
+
+.text-body {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.text-overline {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: #94a3b8;
+}
+
+/* Rounded lucide icons — consistent stroke throughout */
+.lucide {
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Icon button — header, sidebar, pagination, modals */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  color: #64748b;
+  transition: color 150ms, background-color 150ms;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-border-subtle);
+  color: #334155;
+}
+
+.icon-btn-sm {
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+}
+
+.icon-btn-round {
+  border-radius: 9999px;
+}
+
+/* Nav icon container — sidebar & bottom nav */
+.nav-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Focus ring */
+:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* Selection */
+::selection { background: #dbeafe; color: #1e40af; }
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  /* Base reset */
+  body { 
+    background-color: white !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    color: black !important; 
+  }
+  
+  /* Hide UI chrome */
+  nav, header, aside, footer, .sidebar, .bottom-nav, .no-print { 
+    display: none !important; 
+  }
+  
+  /* Main layout */
+  main { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    width: 100% !important; 
+  }
+  
+  /* Page setup */
+  @page { 
+    margin: 1cm; 
+    size: A4 portrait;
+  }
+  
+  /* Remove shadows and backgrounds */
+  * {
+    box-shadow: none !important;
+    background: white !important;
+    color: inherit !important;
+  }
+  
+  /* Links */
+  a { 
+    text-decoration: none;
+    color: black;
+  }
+  a[href]::after { 
+    content: none !important; 
+  }
+  
+  /* PageHeader - hide action buttons */
+  .page-header { 
+    display: none !important; 
+  }
+  
+  /* Bills & Invoices */
+  #invoice-content {
+    page-break-after: avoid;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  /* GRN / Purchase Documents */
+  #grn-content, #purchase-content {
+    page-break-after: avoid;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  /* Credit Notes */
+  #credit-note-content {
+    page-break-after: avoid;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  /* Tables - print-friendly */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+  }
+  
+  thead {
+    display: table-header-group;
+    background-color: #f3f4f6 !important;
+    border: 1px solid #d1d5db !important;
+  }
+  
+  tbody {
+    display: table-row-group;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    border: 1px solid #d1d5db !important;
+  }
+  
+  td, th {
+    border: 1px solid #d1d5db !important;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  th {
+    font-weight: bold;
+    background-color: #f3f4f6 !important;
+    color: black !important;
+  }
+  
+  /* Cards - style for print */
+  .rounded-xl, .rounded-lg, .rounded {
+    border-radius: 0 !important;
+    border: 1px solid #d1d5db !important;
+    page-break-inside: avoid;
+  }
+  
+  .shadow-sm, .shadow, .shadow-md, .shadow-lg {
+    box-shadow: none !important;
+    border: 1px solid #d1d5db !important;
+  }
+  
+  /* Grid layouts */
+  .grid {
+    display: block !important;
+  }
+  
+  .grid > * {
+    page-break-inside: avoid;
+    margin-bottom: 12px;
+  }
+  
+  /* Hide non-printable elements */
+  .print-hide, button, [role="button"], .btn-primary, .btn-secondary { 
+    display: none !important; 
+  }
+  
+  /* Show print-only elements */
+  .print-only, .print-only * { 
+    display: block !important; 
+    visibility: visible !important; 
+  }
+  
+  /* Tabs - hide in print, show content */
+  nav[role="tablist"], .tab-navigation {
+    display: none !important;
+  }
+  
+  /* Content visibility */
+  .hide-on-print { 
+    display: none !important; 
+  }
+  
+  /* Fonts for documents */
+  body {
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+  
+  h1 {
+    font-size: 18pt;
+    margin: 8pt 0;
+    page-break-after: avoid;
+  }
+  
+  h2 {
+    font-size: 14pt;
+    margin: 6pt 0;
+    page-break-after: avoid;
+  }
+  
+  h3 {
+    font-size: 12pt;
+    margin: 4pt 0;
+    page-break-after: avoid;
+  }
+  
+  p {
+    margin: 4pt 0;
+  }
+  
+  /* Keep content together */
+  .invoice-section, .grn-section, .credit-note-section {
+    page-break-inside: avoid;
+    margin-bottom: 12pt;
+  }
+  
+  /* Currency formatting */
+  .currency::before {
+    content: "₹";
+  }
+}
+
+@media screen {
+  .print-only { display: none !important; }
+  #credit-note-content { display: none !important; }
+  .no-print { display: block; }
+}
+
+@media print {
+  #credit-note-content { display: block !important; }
+  .no-print { display: none !important; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 220ms ease-out;
+}
+
+@media (max-width: 640px) {
+  .notification-popover {
+    width: calc(100vw - 1rem) !important;
+    max-width: 22rem;
+  }
+}

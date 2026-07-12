@@ -1,0 +1,12 @@
+{
+  "name": "stockpharma-unified",
+  "private": true,
+  "version": "1.0.0",
+  "description": "All 8 pharma sibling apps merged — one localhost, full-stack",
+  "scripts": {
+    "dev": "npm run dev --prefix app",
+    "build": "npm run build --prefix app",
+    "install:app": "npm install --prefix app",
+    "postinstall": "npm run install:app"
+  }
+}

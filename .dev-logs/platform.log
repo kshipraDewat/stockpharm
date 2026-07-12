@@ -1,0 +1,34 @@
+
+> @stockist/server@1.0.0 dev
+> tsx watch src/index.ts
+
+Database connected.
+
+  VITE v6.4.3  ready in 795 ms
+
+  ➜  Local:   http://localhost:3010/
+  ➜  Network: http://10.76.140.20:3010/
+Schema ready.
+Demo users ready (see http://localhost:3000):
+  stockist: stockist@demo.com / Demo1234 → /login
+  pharmacy: pharmacy@demo.com / Demo1234 → /login?panel=pharmacy
+  platform: admin@demo.com / Demo1234 → /platform/login
+  consumer: customer@demo.com / Demo1234 → /shop/login
+  doctor: doctor@demo.com / Demo1234 → /doctor/login
+  mr: mr@demo.com / Demo1234 → /mr/login
+Unified platform running on http://localhost:4010 (API)
+bash: line 0: cd: digiswasthya-platform/app/client: No such file or directory
+
+> @stockist/server@1.0.0 dev
+> tsx watch src/index.ts
+
+Database connected.
+Schema ready.
+Demo users ready (see http://localhost:3000):
+  stockist: stockist@demo.com / Demo1234 → /login
+  pharmacy: pharmacy@demo.com / Demo1234 → /login?panel=pharmacy
+  platform: admin@demo.com / Demo1234 → /platform/login
+  consumer: customer@demo.com / Demo1234 → /shop/login
+  doctor: doctor@demo.com / Demo1234 → /doctor/login
+  mr: mr@demo.com / Demo1234 → /mr/login
+Unified platform running on http://localhost:4010 (API)

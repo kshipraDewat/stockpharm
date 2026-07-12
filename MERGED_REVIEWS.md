@@ -1,0 +1,4334 @@
+# Merged Reviews — All 8 Pharmaceutical Platform Applications
+
+> **Single file merging every per-app review** in [`_reviews/`](./_reviews/) into one navigable specification.
+>
+> - **Part I** — De-duplicated **unified feature map** (same flows merged once; per-app deltas tagged ERP HUB MED MR MVP DSW DMVP SP).
+> - **Part II** — **Full verbatim** exhaustive reviews (one appendix per app; nothing omitted).
+> - **Part III** — Cross-app **API surface** index (SP full-stack routes ↔ services).
+>
+> Individual review files remain in [`_reviews/`](./_reviews/) for per-app editing. Flow index: [`MASTER_FLOW_INDEX.md`](./MASTER_FLOW_INDEX.md).
+
+---
+
+# PART I — UNIFIED FEATURE MAP (merged from all reviews)
+
+> **Scope:** Union of all 8 apps after merging the reviews in `_reviews/`. Identical flows stated once with multi-app tags; divergent logic lists all variants.
+>
+
+
+
+> This is a de-duplicated superset merged from 8 exhaustive per-app functional reviews. Where a page/flow/field/logic appears in several apps identically it is stated once with a multi-app tag; where apps differ, the superset is described first and per-app deltas are bulleted. Source tags use short-codes; `partial` = missing steps/fields vs superset, `extra` = additional beyond superset, `variant` = different logic/UI. Nothing found in any app is dropped.
+
+## App roster
+
+| Code | In-product name(s) | Stack one-liner | Backend type |
+|---|---|---|---|
+| **ERP** | "Digi Swasthya Store" (AI: "Digi Swasthya AI") | Vite+React18+TS · shadcn/Tailwind · RR v6 · TanStack Query · Zustand · Supabase | Supabase (Auth/PG/Storage/Realtime/Edge) + Lovable AI Gateway (Gemini + GPT fallback) |
+| **HUB** | "Digi Swasthya" / "Digi Swasthya Hub" / "Digital Swasthya" (branding drift) | Vite5+React18+TS · shadcn · TanStack Query v5 · Supabase · recharts · jsPDF/qrcode | Supabase (Deno edge fns) + Lovable AI Gateway (`gemini-3-flash-preview`/`2.5-flash`) |
+| **MED** | "MedOrder"/"MediConnect"/"Medicine Ordering Marketplace" (3 names) | Vite+React18+TS · shadcn · RR v6 · TanStack Query (light) · Zod · papaparse/xlsx · Recharts · vite-plugin-pwa | Supabase (Auth/PG/Storage/Edge) + Lovable AI Gateway (`gemini-2.5-flash`, no fallback) |
+| **MR** | "PharmaMR" / "Chameleon MR/Stockist/Distributor/Pharmacy/Admin" (drift, "P" glyph) | Vite5+React18+TS · shadcn · RR v6 · TanStack Query · Supabase · PapaParse/SheetJS · Recharts · Zod · Sonner | Supabase (Auth/PG/Storage/Edge) + Lovable AI Gateway (`gemini-2.5-flash`) |
+| **MVP** | "Digi Swasthya" (clickable prototype) | Vite+React18+TS · shadcn · RR v6 · TanStack Query (unused) · RHF+Zod (present) · Recharts | **None** — client-only; 2 localStorage keys (`digi-swasthya-auth`, `digi-swasthya-state`) |
+| **DSW** | "Digi Swasthya" (Lexend font) | Vite5+React18+TS · shadcn · RR v6 · TanStack Query (mounted, unused) · Recharts · RHF+Zod (unused) · vite-plugin-pwa | **None** — front-end-only prototype; 1 localStorage flag (tour) |
+| **DMVP** | "Digi Swasthya" (B2B MVP; brand of Chameleon OPC Pvt Ltd) | Vite+React18+TS · shadcn · RR v6 · TanStack Query · **hand-rolled mock `supabase`** · Recharts · jsPDF/html2canvas/xlsx/qrcode | **Mock Supabase client** over static seed (21 tables); all writes no-op; edge fns unreachable |
+| **SP** | wordmark "Stockist"/"Pharmacy" (blue/teal shells) | client(React19·Vite·TanStack Query5·Zustand5·RR7·axios·Recharts·jsPDF) + server(Express4·Drizzle·**PGlite**·jose·bcrypt·zod·`@google/genai`) + shared | **Real full-stack** — Express + Drizzle over embedded PGlite Postgres; httpOnly JWT cookies; double-entry ledger; cross-tenant event bus |
+
+Legend for backend "realness": ERP/HUB/MED/MR/SP = real backends; **MVP/DSW = pure front-end prototypes (no backend, all writes local/toast)**; **DMVP = mock-Supabase (writes silently no-op, AI returns null)**.
+
+## Module × app coverage matrix (✓ full · ~ partial · — absent)
+
+| # | Module | ERP | HUB | MED | MR | MVP | DSW | DMVP | SP |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Platform Overview & Roles | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 2 | Auth / Sessions / Onboarding | ✓ | ✓ | ~ | ✓ | ~ | ~ | ~ | ✓ |
+| 3 | Stockist | ✓ | ✓ | ✓ | ✓(seller) | ✓ | ✓ | ✓ | ✓ |
+| 4 | Pharmacy — B2B purchase | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 5 | Pharmacy — B2C sale | — | ✓ | — | ✓(OTC) | — | ✓ | — | ✓(POS) |
+| 6 | Pharmacy — Public Catalogue | ✓ | ~(public discover) | — | — | — | — | — | ~(public discover) |
+| 7 | Seller variants (MR/Distributor) | ✓(MR) | — | — | ✓ | — | — | — | — |
+| 8 | Patient / Customer | ✓ | ✓ | — | — | — | ✓ | — | ✓(POS customers) |
+| 9 | Doctor | ✓(partial) | ✓ | — | — | — | ✓ | — | — |
+| 10 | Brand | ✓ | — | — | — | — | — | — | — |
+| 11 | Delivery Staff | ~(route exec) | ✓ | — | — | — | — | — | — |
+| 12 | Admin | ✓ | ✓ | —(dormant enum) | ✓ | ✓ | ✓ | ✓ | ~(tenant admin only) |
+| 13 | AI & Edge/Backend Functions | ✓ | ✓ | ✓ | ✓ | — | — | ~(defined, null) | ✓ |
+| 14 | Smart Order engine | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 15 | Payments / Credit / Money | ✓ | ✓ | ~(mock) | ✓ | ✓ | ~(toast) | ✓ | ✓ |
+| 16 | Delivery config & fee engine | ✓ | ✓ | ✓(dormant) | ~ | ✓ | ✓ | ~ | ~ |
+| 17 | Realtime/Offline/PWA/Infra | ✓ | ✓ | ~ | ~ | ~ | ~ | ~ | ~ |
+| 18 | Data model | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 19 | Cross-cutting conventions | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+---
+
+## Module 1 — Platform Overview & Roles
+
+**Domain (all apps):** B2B pharmaceutical distribution & commerce between **Stockist** (seller/wholesaler) and **Pharmacy** (buyer/retailer), with variable extensions (patient B2C, doctor consults, MR sellers, brand portals, admin governance). Currency `₹` throughout.
+
+**Role sets per app** ‹superset across all›:
+- **ERP:** stockist, pharmacy, patient, brand, **mr**, admin. Most-privileged resolution `admin > stockist > pharmacy > mr > brand > patient` (`useUserRole`). Self-signup for 5 (not admin).
+- **HUB:** stockist, pharmacy (dual purchase/sale mode), **customer** (label "Patient"), **doctor**, admin (hidden, 5-tap logo reveal). Plus separate **delivery staff** credential system (stockist-side & pharmacy-side). RootRedirect priority `admin > stockist > pharmacy > customer > doctor`.
+- **MED:** stockist, pharmacy, **admin (enum + RLS only, zero routes/screens — fully dormant)**. One role per user (`.single()`).
+- **MR:** **mr, stockist, distributor, pharmacy, admin** (`app_role` enum). Admin self-signup gated by hardcoded password `jit@ADMIN1`. `handle_new_user` trigger default role = `pharmacy`.
+- **MVP:** admin, stockist, pharmacist. `rolePermissions` capability matrix exists but **no route enforces any flag**; role is a nav choice only.
+- **DSW:** stockist, pharmacy (purchase + **sale** views), patient, doctor, admin — **all publicly reachable by URL, role is purely a nav choice, no guards**.
+- **DMVP:** admin, stockist, pharmacy (`app_role` enum also lists customer/doctor, unused). No route guards; identities hardcoded (stockist=sp-001/Rajesh, pharmacy=pp-001/Anita, admin=Platform Admin).
+- **SP:** **two tenant types** (`stockist`, `pharmacy`) never cross-reading; per-tenant **staff roles** `admin | biller | pharmacist | cashier`. **No platform super-admin** (only tenant-scoped admin). Cross-tenant state flows through a connection record + append-only event queue.
+
+**Route-guard posture** ‹variant per app›:
+- ERP: `ProtectedRoute` (role + onboarding), `AdminRoute` (re-queries server-side each mount), `DashboardLayout` extra checks. Public catalogue routes unauthenticated.
+- HUB: `ProtectedRoute` (role only); approval gating only in Login; staff have separate `/staff` session.
+- MED: `ProtectedRoute allowedRoles` + 15s timeout screen; role-less → "setup incomplete".
+- MR: single `ProtectedRoute` checks **only logged-in** (no role); per-page `useRoleGuard` on *some* pages; `/admin/*` guarded by login only (real protection is RLS + edge-fn checks).
+- MVP/DSW/DMVP: **no role guards** (MVP checks only `isAuthenticated`; DSW/DMVP none).
+- SP: `ProtectedRoute` (calls `GET /auth/me`), `requiredTenantType`, `requiredRole`/`allowedRoles` panels; router tenant-pinning of API namespaces; middleware `requireRole`/`requireRoleForTenant`/`requireTenantType`.
+
+**Layouts/nav** ‹all apps have role-specific top+bottom nav›. Notable: HUB pharmacy has purchase/sale mode toggle in avatar popover; SP has two shells (MainLayout blue "Stockist", PharmacyMainLayout teal "Pharmacy") both polling `POST /events/process` every 10s; MR header brand text is role-specific "Chameleon *"; DSW/MVP mobile avatar button logs out on click; MVP notification bell shows a **static red dot always**.
+
+**Orphaned/dead pages** (kept for completeness) ‹per app›: ERP — PatientSignup, BrandSignup, Index, RoleSelection, duplicate BottomNav. MED — Index.tsx (marketing hero, not routed), ProductTable, LocationInput. MR — Upgrade.tsx (unrouted ₹999 page), admin Subscriptions.tsx (unrouted but linked→404), MobileNav (unmounted). DSW — Index, PharmacyPortal, PharmacyProfile, many orphaned dialogs (CheckoutDialog, SmartOrderDialog, ApplyCouponDialog, WritePrescriptionDialog, OCRScanDialog, MapRouteDialog, BillPreviewDialog, CreateReturnDialog). DMVP — Login/Register/ForgotPassword/ResetPassword/PendingApproval/Index (all unrouted; `/login`&`/register`→`/`), ProductForm/ProductCard parallel components unused. MVP — PaymentsPage (built, unrouted), Onboarding (not linked), Signup/Login (redirected away), NavLink wrapper.
+
+---
+
+## Module 2 — Authentication / Sessions / Onboarding
+
+### 2.1 Login
+**Superset:** Email + Password form; role choice; "Remember me" (present but **unwired in ERP, HUB, MED implicit, MR n/a, MVP, DSW inert**); "Forgot password" link; redirect-by-role after sign-in.
+- **ERP** ‹ERP›: Card "Digi Swasthya Store", tabs Login/Sign Up. `signInWithPassword`; redirect via `roleConfig[role].dashboard` unless `onboardingComplete[role]===false`. Sign-Up: role grid (5 roles, not admin), Email/Password(min6)/Confirm → `auth.signUp` + upsert `user_roles`+`profiles` → onboarding.
+- **HUB** ‹HUB›: role picker (Customer/Pharmacy/Stockist/Doctor; admin hidden). Dev-only credential prefill (`import.meta.env.DEV`). **5-tap logo admin reveal** (5 taps <1500ms). Flow: `rpc check_login_rate_limit` → `signInWithPassword` → `record_login_attempt(success)` → fetch `user_roles` (mismatch → signOut) → **approval gate** for stockist/pharmacy/doctor (`pending`→/pending-approval, `rejected`→signOut). Customers never gated. Footer "A brand of Chameleon - The Agency (OPC) Pvt Ltd." PWA install banner via `beforeinstallprompt`.
+- **MED** ‹MED›: "Welcome Back"; on success re-fetch role (`.single()`); role-less → signOut+/auth/register. Forgot-password is an inline AlertDialog.
+- **MR** ‹MR›: single card 4 modes **Login / Forgot Password / OTP Login / Signup**. OTP via `signInWithOtp`. Logo="P".
+- **MVP** ‹MVP›: AuthPage `/auth` (default). Role selector Stockist/Pharmacy only; "prefill demo" link. **`login()` always succeeds** (fallback seed user; "Invalid credentials" is dead code); 1200ms fake latency. Separate `/admin-login`. `Login.tsx` (unrouted): email→role auto-detect; **5× logo tap → /admin-login**.
+- **DSW** ‹DSW›: AuthPage `/auth`; 4-role selector prefills `demoCredentials`; **inputs ignored → navigate(homeRoutes[role])**; ghost "Admin Login" button → /admin/dashboard.
+- **DMVP** ‹DMVP›: no login screen used; `DemoHome /` writes `demo_role` and navigates; `/login`&`/register` redirect to `/`. Mock auth always succeeds.
+- **SP** ‹SP›: panel detected from path/`?panel=` (blue/teal). Email(autofocus)+Password(eye). `POST /auth/login` (+`tenantType` only if pharmacy panel). Error map: no-response/429/401/≥502/generic. Login looks up **all** active users with that email across tenants, bcrypt-compares each; wrong panel → 403 "registered on the {Pharmacy|Stockist} panel".
+
+### 2.2 Sign-up / Registration
+- **ERP:** on Login page Sign-Up tab (see above).
+- **HUB** ‹HUB›: type picker (Customer/Pharmacy/Stockist/Doctor) → 4 registration components, each `auth.signUp` + insert user_roles + profile; docs → single `documents` bucket. **CustomerRegistration** (3 steps, auto-active, no docs). **PharmacyRegistration** (5 steps; pharmacyType Retail/Hospital/Chain/Clinic/Online; docs drugLicense/gstCertificate/pharmacyCertificate public URLs; bank optional; notifies admins; approval pending; "Skip" link). **StockistRegistration** (5 steps; businessType incl. "Medical Representative" reveals brand picker + MR agreement; PIN gate against `admin_serviceable_areas`; serviceable-area PIN chips; bank required; notifies admins). **DoctorRegistration** (5 steps; 20 specializations; default fees audio 300/video 500/clinic 200).
+- **MED** ‹MED, partial›: `/` = Register. Two tabs Pharmacy/Stockist, **byte-identical Zod schemas**. Fields: Name(2–100), Drug License(min1), City(opt), State(opt), Email(≤255), Password(Zod min8 / input minLength6). Flow: signUp → insert user_roles → insert profile; **compensating cleanup** (delete user_roles) on profile-insert failure. Edge: RLS-guarded inserts fail if email confirmation on.
+- **MR** ‹MR›: Signup mode fields — User Type radio (MR/Stockist/Distributor/Pharmacy/Admin, default mr), **Username** (6–16, live availability `ilike` check), Full Name, Email(Zod), Password(min6), Phone(Zod 10–15), role-specific (Business/Company Name, businessType/Brand, UPI, distributor Service Areas; pharmacy owner+address; **admin password==`jit@ADMIN1`**), **mandatory document upload** (≤5MB) to private `licenses` bucket. Submit → `auth.signUp` (trigger `handle_new_user`) → upload doc → update profile → `assign-role` edge fn.
+- **MVP** ‹MVP›: Sign-Up tab validates match+min6 → `/register/{role}`. **StockistRegistration 7-step wizard** (Business·Documents·Contact·Delivery·Rules·Financial·Review); **PharmacyRegistration 5-step** (Business·Documents·Contact·Config·Review, dynamic required-fields by pharmacy type, live credit-risk evaluation). **CRITICAL STUB: neither calls `registerStockist`/`registerPharmacist`** — success modal just logs into a demo session; data discarded. FileUpload 5MB cap silently drops oversized.
+- **DSW** ‹DSW›: Sign Up tab → `/{role}/onboarding`; no password-match validation. Onboarding wizards per role (Stockist 5 / Pharmacy 5 / Patient 3 / Doctor 5), prefilled, **no validation, DocumentUpload only local preview**, Skip/Complete both navigate.
+- **DMVP** ‹DMVP›: Login/Register + Stockist/Pharmacy 5-step wizards exist but **unrouted**.
+- **SP** ‹SP›: `/register` **single form** (multi-step wizard missing). Stockist/Pharmacy toggle. Fields: Business/Pharmacy Name, Your Name, Email, Phone, State Code(2), **DL (pharmacy required)**, Password(strength meter), Confirm. Client validation via `lib/validation`. `POST /auth/register` (Zod `RegisterSchema` superRefine pharmacy DL≥3). Server `registerTenant`: rejects dup email(409), bcrypt(10), creates tenant + one `users` admin row, seeds **16 ledger accounts**, generates `inviteCode` (**stockists only**), rolls back tenant on user-insert failure. NOT collected: business type, PAN, WhatsApp, city, PIN, serviceable pincodes, docs, bank.
+
+### 2.3 Forgot / Reset password
+- ERP ‹ERP›: `/forgot-password` (`resetPasswordForEmail`), `/reset-password` (verify session, updateUser min6).
+- HUB ‹HUB›: same; ResetPassword listens `PASSWORD_RECOVERY`/`#type=recovery`.
+- MED ‹MED›: inline dialog only.
+- MR ‹MR›: Forgot + OTP modes in Auth card.
+- MVP ‹MVP, stub›: ForgotPassword/ResetPassword = 1200ms timer + toast, no persistence, not linked.
+- DMVP ‹DMVP›: unrouted.
+- SP ‹SP›: `/forgot-password` creates `password_reset_tokens` (jti, 15-min) + jose reset JWT, generic message always, dev returns `devToken`. `/reset-password` verifies purpose+jti+sub, unused/unexpired, bcrypt-set, marks used, **revokes refresh tokens**.
+
+### 2.4 Sessions / timeout
+- **ERP** ‹ERP›: AuthContext (30-min `SESSION_TIMEOUT`, activity events, 60s check → toast+signOut; `SessionTimeoutWarning` AlertDialog last 5 min with mm:ss countdown; refreshSession on 401). PharmacySessionContext (20-min inactivity for public catalogue). Zustand store cleared on signOut.
+- **HUB** ‹HUB›: `useSessionTimeout(30min)` (resets on activity, 5-min heartbeat updates `profiles.updated_at`). `useToSAcceptance`.
+- **MED** ‹MED, partial›: 15s auth-guard timeout screen; role-fetch 5s timeout. No inactivity timeout.
+- **MR** ‹MR, partial›: no role/timeout state; sessions in localStorage w/ autoRefresh.
+- **SP** ‹SP›: JWT jose HS256 (secret ≥32 chars else boot fails), httpOnly cookie `accessToken` (sameSite lax, 24h). `authenticate` re-queries user+tenant every request; 401 `Session expired` if `floor(updatedAt/1000) > token.iat` (password/profile change invalidates). Refresh tokens table exists but **no `/auth/refresh` endpoint**. `SessionExpiredRedirect` component.
+- MVP/DSW/DMVP ‹—›: no real sessions (localStorage flag / demo_role).
+
+### 2.5 Onboarding wizards
+- **ERP** ‹ERP›: per-role onboarding pages with `OnboardingCarousel` (3 slides gated by `localStorage.onboarding_completed_{role}`). Insert role-detail row → dashboard. Fields per role listed in Module 3/8/9/10.
+- **HUB** ‹HUB, partial›: Stockist/Pharmacy static 3-slide carousels; no data written, nothing auto-navigates. Doctor/Customer registration doubles as onboarding.
+- **MR** ‹MR›: `/onboarding` OnboardingSelectRole (4 roles, no admin) → `assign-role`.
+- **SP** ‹SP›: stockist `OnboardingFlow` (SlideOver, 4 steps: Business Profile / First Pharmacy / Import Products / Add Staff, gated by `hasPharmacy`/`hasProducts`/`hasStaff`; `PATCH /settings/onboarding` enforces min-setup gates). Pharmacy `PharmacyOnboardingFlow` (5 steps: Business/Connect Stockist/Import Products/Opening Stock[skippable]/Add Staff; requires ≥1 active connection to complete).
+- MVP ‹MVP›: `/onboarding` 3-slide carousel (role from localStorage), sets `onboarding_seen`, → /login. Not linked from main flow.
+- DSW ‹DSW›: onboarding pages per role, prefilled, no validation.
+
+### 2.6 Delivery-staff auth ‹HUB only›
+`/staff/login` — username+password → `rpc verify_staff_credentials` called **twice** (stockist then pharmacy). Session in `localStorage.staff_session` (24h TTL). `StaffDashboard` re-validates server-side against `delivery_staff`/`pharmacy_delivery_staff`. (Full staff flows in Module 11.)
+
+---
+
+## Module 3 — Stockist (seller)
+
+> This is the richest module across apps. Superset of pages: **Dashboard/Home · Products/Inventory (list, add, edit, detail, batches, bulk upload, purchase-bill OCR, bulk price, expiry, stock transfer) · Orders (list, detail, create, order-creation from paste) · Pharmacies/Circle (list, detail, ledger, find, approvals) · Payments (received, approvals, record) · Bills (create, history, bulk, preview) · Returns/Credit Notes · Suppliers/Purchases (SP/MR) · Delivery settings (dates/areas/fees/routes/holidays) · Reports · Analytics · Staff · Profile/Business/Settings · Route execution**.
+
+### 3.1 Dashboard / Home
+**KPI cards** ‹superset›: Total Revenue, Pending Orders/Payments, Outstanding, Total Credits, Active/Total Pharmacies, Total Products, Total Orders, Today's Orders/Revenue, Stock Value, Low Stock count, Overdue Bills, Pending Bills.
+- **ERP** ‹ERP›: 5 clickable KPI cards (`KPICards`→`KPIDetailDialog`) with **hardcoded fake trend badges** (+12.5% etc): Total Revenue (`Σ orders.total_amount`), Pending Payments (`Σ pharmacy.outstanding_balance`), Total Credits (`Σ credit_balance`), Active Pharmacies (count is_active w/ orders), Total Orders. `useDashboardStats`. `DateRangeFilter` (display-only, not applied). Export→`ExportDataDialog` (RadioGroup Orders/Payment Confirmations/Activity Log → naive CSV). QuickActions 8 tiles (Quick Order, Quick Bill, Edit Order[soft stub], OCR Scan, Bulk Upload, Map Route, Upload Bill Photo, Delivery Settings). Payment Approvals card (inline Reject/Hold/Approve via `useProcessPayment`). Recent Platform Orders. LowStockAlert (`stock ≤ min_stock_threshold`, top5). TopProducts (order_items aggregation top5). NoticesPanel (`user_notice_recipients`→`admin_notices`, dismiss/read, realtime). RecentOrders, ActivityFeed (`activity_log` last50, filter Select). Realtime `dashboard-orders-updates`.
+- **HUB** ‹HUB›: **8 clickable KPI cards** (`["stockistKPI"]` refetch 30s): Pending Orders, Total Products, **Pharmacies = unique pharmacy_id over ALL orders**, Revenue (`Σ where status∈{completed,delivered}`), Outstanding (`Σ circle.outstanding`), Today's Orders, Stock Value (`Σ stock×price`), **Pending Bills (`bills.status='draft'` — nothing writes draft → always 0`). "New Pharmacies This Month" banner. Alert cards: Expiring Soon (≤30d), Low Stock, Safety Alerts (counterfeit fuzzy-match). Charts (recharts): Monthly Order Trend, Revenue vs Outstanding, Top Pharmacies, Top Products. Widgets: DeliveryPerformance (avg hours), ReturnRate (red>5%), PaymentCollection (≥80% accent). 4 Quick Actions (Create Order, Collect Payment→/pharmacies only, Bulk Upload, Upload Bill).
+- **MED** ‹MED›: KPI Total Products (+active sub), Total Orders, Revenue (This Month `Σ where created_at≥startOfMonth`), Delivery Dates nav card. Low Stock (`min_stock_alert>0 && stock≤min`, top5), Expiring Soon (≤30d asc top5). QuickActions Manage Products / Set Delivery Dates + duplicate Sign Out.
+- **MR** ‹MR, seller dashboard›: SellerDashboard role-titled. 4 KPI: Total Revenue (MR `Σ bills.received_amount`; stockist/dist `Σ orders.total_amount where delivered`), Pending Payments/Orders, Active Pharmacies/Customers, Products Listed (MR filters brand). Quick Actions (several **dead links** `/customers`,`/products`,`/suppliers`). Recent Orders. ActivityFeed. Header buttons: MR QuickBill+QuickOrder+OCR; stockist/dist OCR+BulkUpload.
+- **MVP** ‹MVP›: StockistDashboard — banner, 6 QuickActions (navigate-only), circle banner, 6 KPI (all **real**: Pending Orders, Total Products, Pharmacies, Revenue `Σ delivered/1000 K`, Outstanding `max(0, Σ ALL order value − Σ paid)`, Stock Value incl expired), Monthly BarChart, Top Pharmacies, Top Products, Recent Orders(5).
+- **DSW** ‹DSW›: StockistHome — GuidedTour (5 steps, localStorage `stockist_tour_completed` — **only real persistence**). New Orders banner. Incoming Orders (first 2). **2 KPI cards**: Financial (Outstanding real, Credits real, **Today's Collection = 45000 hardcoded**), Operations (Active Orders, Out-for-delivery, Pending Approvals badge). 4 Quick Actions. Payment Approvals (toast-only). Today's Deliveries, Low Stock (first 3). All writes toast/local.
+- **DMVP** ‹DMVP›: StockistHome — 8 KPI cards (filtered to literal sp-001): Pending Orders, Total Products(8), Pharmacies(4), Revenue(₹17,010), Outstanding(₹18,079), Today's Orders (hardcoded date match), Stock Value, **Pending Bills="1" literal**. Expiring Soon (60d window). Low Stock. Monthly chart. **Hardcoded Top Pharmacies & Top Products lists**. Styling bug `bg-${color}/10` (JIT). All writes no-op.
+- **SP** ‹SP›: Dashboard KPI period date-from/to (default MTD). StatCards: Today's Sales, Period Sales, **Total Outstanding (admin only)**, Awaiting Pack (`packBacklogOrders`), Incoming Portal (`incomingPortalOrders`), Active Connections, Low Stock Items (Σ non-expired on-hand < minStockLevel), Overdue Bills (`buildOverdueBillFilter`). Widgets: IncomingOrdersWidget(5), Recent Orders(5), Low Stock(5). Quick actions: New Order, Review Incoming, Record Payment (`?record=1`), Add Purchase, View Reports. Opens OnboardingFlow if `!onboardingCompleted && admin`.
+
+### 3.2 Products / Inventory
+**Superset:** grid/list of product cards; search (name/brand/generic/composition); filters (brand, category, expiry window, stock status, sort); add/edit product; product detail with batches + sales history; add stock; bulk upload (catalogue + purchase-bill OCR); bulk price update; expiry management; stock transfer; scan (OCR).
+
+**Product-card content** ‹superset›: image (fallback placeholder), name, brand/manufacturer, category badge, MRP strikethrough + sale/selling price, stock count, MOQ, expiry badge (Expired/Nd/mo tiers), margin, Rx/Narcotic/Hidden/Out-of-stock/Flagged badges, row menu (View/Edit/Delete/Add Stock/toggle active/visibility).
+
+- **ERP** ‹ERP›: 20 hardcoded `MEDICAL_CATEGORIES`. Filters Brand/Category/**Expiry (30/60/90/120d)**/Sort. Sections Top Products This Month, Items to Watch. `getExpiryBadge` tiers. **AddProductDialog** fields: Product Name*+**Auto Fetch** (`fetch-product-info`), Generic/Salt, Brand, Manufacturer, Form/Type (14 opts), Category (~24), Pack Size, Strength, MRP, Purchase Price, Sale Price, Stock(0), Min Stock Alert(10), MOQ(1), GST%(5), Image (product-images), Description, batch_code (unsaved). **EditProductDialog**: +HSN Code+Batch Code+Fetch-with-AI but **update omits hsn_code/batch_code** (known gap); Type dropdown only 6 opts. **QuickUpdateStockDialog** (Add vs Set mode, live preview). **ProductScanDialog (OCR)** → `extract-product-label`, staged progress, match existing, "Correct—Enable Editing" unlocks. **BulkUploadDialog** 3 tabs (Purchase/Sale/Full Catalogue), CSV/XLSX/image/PDF ≤10MB, margin input (20%), preview table, `extract-bill-items`. **Enhance All** (loops `fetch-product-info`). Realtime `products-realtime`.
+- **HUB** ‹HUB›: `SharedProductCard` role stockist; batch-loads `product_batches`. Filters search/brand(`PHARMA_BRANDS`)/category(16)/expiryFrom-To/sort/cols toggle. **Bulk Price** dialog (field sale_price|mrp, direction, type %|flat, value; batches of 10). **ProductForm** fields: image, name*, brand*(searchable+custom), manufacturer, category*, mrp*, sale_price*, purchase_rate, stock, min_stock_level, min_order_quantity(1), batch_number, expiry_date*, hsn_code, gst_rate*, drug_schedule*(NONE/H/H1/X/NDPS), drug_type, composition*, pack_type, pack_size, fssai_license, requires_prescription, is_narcotic. `price=sale_price??price`; `in_stock=stock>0`. **AI Autofill** (`autofill-product-details`, empty fields only). Edit-with-price-change inserts `price_change` notifications but **does NOT write price_history**. **StockistPriceHistory** page = DEAD (no writer). **BatchManager** (inserts product_batches, re-aggregates stock, **LIFO headline price from latest batch**). **StockAlerts** (self-notify). **StockistExpiryManagement** (Expired/30/90/Safe buckets; Dispose sets batch stock 0, no re-aggregate). **StockistStockTransfer** (between batches, no re-aggregate/log). **BulkUploadCatalogue** (client XLSX, flexible expiry parse, no batches). **BulkUploadPurchaseBill** (`parse-purchase-bill` vision, upsert by name, doesn't set purchase_rate/batches). **StockistBatchManagement / BatchExpiryCalendar**.
+- **MED** ‹MED›: ProductCard grid (inline stock edit), Saved Drafts (`bulk_upload_drafts`). Filters search(name/brand)/Brand/Category (from current page only). **AddProduct** 7 sections (Name+Fetch-with-AI[**broken no-op**], Generic, Brand, Manufacturer, Type[Capitalized 6], Category, Pack Size, Strength, MRP, Purchase Price, Sale Price*, Stock, Min Alert, MOQ(1), GST%(18), Description). **EditProduct** same (Type lowercase+other — **value mismatch bug**; gst defaults 0). Toggle Active, Delete (hard). **BulkUpload** 3 tabs (Purchase/Sale/Catalogue), spreadsheet + image/PDF (`extract-bill-items`), MarginSettingsModal (default 20%), preview, Save-as-Draft, `bulk-upload-commit`. **CustomPricing** page (two-way Sale↔Margin; **edits lost bug** — BulkUpload never reads location.state).
+- **MR** ‹MR›: **MyProducts** (role-guarded) "My Catalogue" — LocationSelector (**mock**), Catalogue Status Switch (`is_catalogue_live`), MR brand restriction banner. Filters search/Expiry(OK/soon/expired)/Stock. Cards with availability toggle, Edit(**404 bug** `/edit/`), Delete. `canGoLive` computed but unused. **Catalogue** (browse-all, all sellers). **ProductForm** fields: Name*+AI Auto-fill (`autocomplete-product`), Image (product-images), Brand (Select ~50, **locked for MR**), Category* (10 enum), Salt, Type, Uses, Description, MRP, Purchase Rate, **Sale Price Calculator** (margin percent/amount, clamps to purchase), sale_rate, Batch, Expiry, Sale Price(Displayed)*=price, Unit, Stock. `seller_type = distributor?"distributor":"stockist"` (**MR→stockist bug**). **OCRUploadModal** (`ocr-product-label`), **BulkUploadModal** (CSV/Excel).
+- **MVP** ‹MVP›: Inventory (scoped user.id, 600ms skeleton) — search, Filters dialog (categories/brand/expiry all·soon<30·1-3=30-90·3-6=90-180 / stock all·in·low(≤100)·out / price range), grid/list toggle, action buttons. Card: badges Out/Rx(Antibiotic heuristic)/Flagged, price+MRP+margin, stock, expiry. **AddItem** (real persist): Name*, Brand, Manufacturer*, Category, MRP*, Sale, Purchase, Stock*, Min(100), Batch*, Expiry*(future), Mfg, HSN, GST(text), Schedule, Type, Composition, Pack, FSSAI, Rx/Narcotic. **Stub: brand/gstRate/fssai/minStock NOT passed**. **EditProduct** (batches[0] only — multi-batch loses edits; many fields not persisted). **ProductDetail** (real 6-mo BarChart, per-batch pricing, Add Batch dialog real). **BatchManagement** (read-only, All/Expiring≤90/Counterfeit). **BulkUpload** (**file ignored**, mock rows, writes nothing). **PurchaseBills** (file ignored, mock items, local only). **BulkPriceUpdate** (inline REAL applies to ALL batches; upload FAKE `Math.random` prices).
+- **DSW** ‹DSW›: StockistProducts — 2×2 Quick Actions (Scan/Bulk/**AI Enhance stub**/Add). Collapsible Low Stock, Top Selling (first 4). Search + stock filter + sort (real). Card cycled Unsplash images. **ProductDetail** (`regulatoryInfo` derived from category, ignores real fields; **packSize hardcoded "10 tablets"**; 6 hardcoded sales points). Dialogs: AddProduct (18 fields → toast), EditProduct (different category list), AddStock, ScanProduct (setTimeout mock), BulkUpload (5-stage mock), Documents CRUD real-local.
+- **DMVP** ‹DMVP›: StockistProducts — SharedProductCard, ProductFilters (Brand 30, Category 16, merged Expiry popover, Sort, cols toggle). **Bulk Price** dialog (batches of 10, no-op write). **AddProduct** full page (Auto Fetch→null "No details found", ProductGalleryUploader→placeholder URLs; dead `counterfeitWarning`). **EditProduct** (price-change notification filters circle by non-existent `status='active'` → 0). **BulkUploadCatalogue** (client XLSX real parse, insert no-op). **BulkUploadPurchaseBill** (`parse-purchase-bill`→null). **ProductForm/ProductCard** components dead. ProductDetail 7-line wrapper → SharedProductDetail (sales chart always empty — join unsupported).
+- **SP** ‹SP, shared products route, panel-aware›: ProductListPage — search(name/generic/hsn), category filter, Add Purchase(admin/biller→UploadBillModal), Bulk Update, Add Product, Export(admin CSV ≤50k). `currentStock` = sum of **non-expired** batches only. Cashier hides MRP/GST cols. **AddProductModal** (SlideOver): Name*, Generic, Manufacturer(datalist), Category*, HSN, Schedule(NONE/H/H1/X/NDPS), Pack Size, Conv Factor, Base/Sale Unit, Scheme Base/Bonus, GST(0/5/12/18/28), Status; MRP*, Purchase*, Sale*; Min Stock. Client `validateHsn`(4-8) + `validateProductPrices`(purchase≤MRP, sale≤MRP, sale≥purchase). Server `ProductSchema`; **stockist create/update → `pushCatalogToActiveConnections` background**. **AdjustStockModal**: batch select, signed qty change, reason(damaged/expired/cycle_count/lost/other) must be chosen, notes; stockist requires `sourcePurchaseId`; **newOnHand ≤ qtyReceived (C25)**; writes `stock_movements` reason adjustment. **BulkPriceEditModal** (CSV export/re-upload, PATCH per row). Detail: KPI cards + Product Info + Batches tabs. `POST /from-catalog/:catalogItemId` (pharmacy resale saleRate defaults to MRP).
+
+### 3.3 Orders (seller side)
+**Superset:** order list (filters pharmacy/payment/source/status tabs), order detail (status stepper + items + payment + delivery + actions), create order (manual + paste/AI parse), status machine.
+
+**Order status vocab** ‹variant per app›:
+- ERP: `status` draft/confirmed/cancelled; `payment_status` paid/unpaid/partial; `delivery_status` pending/dispatched/out_for_delivery/delivered.
+- HUB (B2B): pending→packed→dispatched→out_for_delivery→delivered (+cancelled, +split); `order_source` manual/whatsapp/platform/quick_order/split.
+- MED: paid→accepted→packed→out_for_delivery→delivered (+cancelled forward-only stepper).
+- MR: pending→confirmed→packed→shipped→delivered (+cancelled); stock decrements at "packed".
+- MVP: draft→placed→confirmed→dispatched→delivered (+cancelled); type PLATFORM/CIRCLE.
+- DSW: pending/confirmed/processing/out-for-delivery/delivered/cancelled; incoming new/accepted/declined/modified.
+- DMVP: statusFlow pending→packed→dispatched→out_for_delivery→delivered; seed also has confirmed/processing (bucketed as pending).
+- SP: pending→packed→shipped→delivered (+cancelled); source stockist_created/pharmacy_submitted; synthetic filter `approved`.
+
+- **ERP** ‹ERP›: Orders list — filters Pharmacy/Payment Status/Order Source + status tabs (All/Pending/Out-for-Delivery/Delivered/Cancelled). Desktop table (Order#/Pharmacy/Status/Payment/Delivery/Amount/Date/Actions). **OrderActionsDropdown**: Mark Paid (inserts approved confirmation `manual_mark_paid`), Partial Payment (validate ≤ due, confirmation `manual_partial`), Mark Delivered, Cancel (if paid>0 "₹X added as credit"). **OrderDetail**: 3 status cards, Order/Payment info (Subtotal=total−tax, Send Reminder→PaymentLinkDialog), Pharmacy details, Order Items + Edit Items (OrderItemsDialog). **OrderCreation**: Quick Add paste→`parse-order-message`; manual add (over-stock warning); SGST=tax/2, CGST=tax/2; Create Order `ORD-{ts}` confirmed/unpaid/pending, decrement stock, PaymentLinkDialog, recalc outstanding. **QuickOrderDialog** (`parse-order-message`, matchConfidence, taxRate 5/12 default12, `order_source='whatsapp'`). **QuickBillDialog** (untaxed). **BillUploadDialog** (`extract-bill-items`→`process-bill-image`). Realtime `orders-realtime-updates`.
+- **HUB** ‹HUB, richest›: **StockistCreateOrder** (`parse-order-text`, credit-note select, credit-limit warning dialog, `ORD-`+base36, `rpc decrement_stock` per item **at creation**, mark credit note used, `rpc update_circle_outstanding`). **StockistOrders** (usePaginatedQuery 20, tabs All/Pending/Active/Done, **per-page counts**). **StockistOrderDetail** (richest): status flow, `updateStatus` on **packed → `rpc deduct_product_stock`** (⚠️ **double-deduct** with create-time decrement), on **delivered → autoPopulateInventory** (upsert into pharmacy_inventory). Cancel (restore stock if packed+). Edit items. Assign delivery staff (least-loaded). Partial Delivery (#30 `partial_delivery_items` JSON). Split Order (#31 child `-S`+base36). Return (#delivered → `order_returns` + credit_balance/outstanding + `credit_notes CN-`). Duplicate. Bill (generate). Print Packing Slip. Record Payment.
+- **MED** ‹MED›: Orders (paginated 20, search current page). OrderDetail — **stockist can advance status** (5-node stepper `statusFlow.slice(currentIndex)`, forward-only). Items + Subtotal/Total GST/Grand Total footer.
+- **MR** ‹MR›: Orders (`seller_id=user OR stockist_id=user`; **pharmacy buyers see nothing**). Tabs by role (MR Platform/Self-Added; others status). Order Detail dialog **status machine buttons**: Confirm→Mark Packed(**decrements stock**)→Generate Payment Link+Ship(tracking id)→Mark Delivered→Create Bill(MR). Payment Link dialog (requires upi_id, `generateUPILink`, WhatsApp). **OrderForm** (MR manual: Pharmacy select, Order Number, repeatable items; `get_next_order_number`→`ORD/0001`; no stock decrement).
+- **MVP** ‹MVP›: OrderList (roleFilter, tabs, create buttons). OrderDetail (role-aware actions; stockist placed:Confirm/Cancel, confirmed:Dispatch, dispatched:Deliver; **auto generateInvoice on confirmed**; 1000ms delay). **CreateOrder** (offline toggle → confirmed+deduct; FEFO batch; tax 12%; no credit check). **QuickBill** 5-step WhatsApp→bill (parse, review, select pharmacy, edit, confirm; **confirmed CIRCLE** order + invoice; step-4 total shows subtotal w/o tax).
+- **DSW** ‹DSW›: StockistOrders (tabs new/active/delivered/all, real counts). OrderDetail (`gstAmount=subtotal*0.18` hardcoded ≠ per-product; 6-option delivery RadioGroup, terminal disables; toast-only). CreateOrder ("AI Parsing" cosmetic, regex fuzzy match, gst 18%, toast). CreateBill (3-stage, real per-order totals, discount, GSTIN hardcoded `27AABCU9603R1ZM`, **wa.me wired**). Dialogs: QuickOrder, AcceptOrder (gst 12%), DeclineOrder, UpdateStatus, EditOrderItems, SharePaymentLink.
+- **DMVP** ‹DMVP›: StockistOrders (**usePaginatedQuery `.filter()` ignored → shows ALL stockists' orders**; confirmed/cancelled fall into pending tab). **StockistOrderDetail** (~659 lines, lifecycle engine; all writes no-op): statusFlow, updateStatus (packed→`deduct_product_stock` null RPC), item edit, cancel, Partial Delivery, Split, Return (**never inserts order_returns**), Duplicate, View/Create Bill, Print Packing Slip, Record Payment; `canAssignStaff` computed but no UI. **CreateOrder** (`parse-order-text`→null; credit warn-allow; `ORD-`base36). All AI returns null → visible failures.
+- **SP** ‹SP, orderService›: **CreateOrderPage** (admin, sessionStorage draft; line table [qty capped, rate editable, GST%], "Paste Order" WhatsApp parser regex+fuzzy, Select Pharmacy, **live credit widget**, Payment Mode credit/cash, client `computeGst` CGST/SGST or IGST, Draft Print / Save as Pending / Create & Pack). **`createOrder`**: prices at saleRate, `computeGst` per line, `ORD-YYYY-####` 3-attempt retry, credit mode requires active pharmacy + `exposure+total ≤ limit` (`CREDIT_LIMIT_EXCEEDED`). **finalizeOrder** (tx: reserve stock FEFO w/ rollback, status→packed, portal emit `order.packed`, credit → outstanding+=total, post sales ledger, generateBill). Ship (packed→shipped, carrier/awb, bill idempotent, emit). Deliver (portal requires bill else `BILL_REQUIRED`). Approve (pharmacy_submitted, credit check via connection limit, emit `order.accepted`, finalizeNow option). Reject (reason≥3). Cancel-approved. Cancel (blocked if bill exists `ORDER_HAS_BILL`; packed→release stock+outstanding−=). Generate bill. Initiate return (delivered only). Detail page stepper + Items&Stock + Manage Actions tabs. **AI order parse** `POST /orders/parse-text` (gated, no UI). `getPharmacyExposure` engine.
+
+### 3.4 Pharmacies / Circle (seller's customer book)
+- **ERP** ‹ERP›: Pharmacies list (`useCachedPharmacies`, realtime x3). Per-pharmacy financials (`calculateFinancials`: totalOutstanding, latestBillDue, pastDues, ordersPending). Card: Credit/Outstanding/Net Due(`max(0,outstanding−credit)`)/Latest Bill Due/Past Dues/Orders Pending. Row menu (View/Edit/Mark Active-Inactive/Delete[hard→soft fallback]). Payment actions: **Custom amount Submit** (credit-first FIFO), Create Order, Quick Bill, WhatsApp Reminder, **Mark Fully Paid**. Expandable orders (inline delivery_status Select, optimistic). **AddPharmacyDialog** fields: Pharmacy Name*, Full Name(Google Maps), Owner, Phone, Pin Code(6), GST*, License*("used as password for catalogue"), Credit Limit(0), Area, Address, Coordinates; inserts pharmacy_details(profile_id=stockist.id) + **placeholder order `INIT-{ts}`**. **PharmacyDetail** (recompute totals; tabs Orders/Bills/Reminders/Details; Send Reminder w/ hardcoded `pa=yourUPI@bank` stub). **StockistApprovals** (dual-approval: `stockist_approved`+`admin_approved`→insert pharmacy_details; only requests whose pin ∈ service_areas).
+- **HUB** ‹HUB›: StockistPharmacies (`stockist_pharmacy_circle ⋈ pharmacy_profiles`; chips All/Outstanding/Credit/No Dues; **Net Due=outstanding−credit_balance**; Collect Payment; dropdown View/Edit/Record Order/Generate Bill/Remove). **StockistPharmacyDetail** (credit usage Progress; tabs Orders/Payments/Bills/**Ledger**[orders+payments+returns running balance]). **StockistPharmacyLedger** (separate route). **EditPharmacyDialog** (credit_limit, notes, is_blocked → notifies pharmacy). **StockistFindPharmacy** (addToCircle seeds 0/0/0).
+- **MR** ‹MR›: Pharmacies (`mr_id=user`, rolled-up status critical>overdue>due_soon>pending). **PharmacyForm** (Name*/Phone*/License/Owner/Email/Address; no credit limit → falls to ₹100,000). **PharmacyDetail** (richest MR screen): Credit Limit(`max_credit_limit||100000`), utilizationPercent, Create Bill & Payment Request card (Bill#`MR/001`, Bill Date, Total, Upfront%, Terms; live `check_credit_limit` debounced; **display-only, not blocking**). Active Bills list (Update Payment/Send Reminder). **Only realtime channel** `pharmacy-bills-changes`. **MyCustomers** (stockist/dist; `seller_buyer_relationships`; **outstanding join bug** — bills by profile id vs pharmacies id). ⚠️ Money bug: due_amount=total−upfront AND received=upfront → remaining=total−2×upfront.
+- **MVP** ‹MVP›: CirclePharmacies (tabs All/Outstanding/**Credit hardcoded 0**/No Dues; `getCreditData` outstanding=max(0,Σ−Σpaid), credit=`creditLimit||175000`; Collect Payment FIFO modal, cheque cast; Send Reminder modal [message-type & priority unused]). **CirclePharmacyDetail** (credit usage bar; tabs Orders/Payments/Bills[static]/Ledger; FIFO Collect Payment [**cheque→cash** fidelity loss]; Edit Credit modal real; Remove real). **FindPharmacy** (Add-to-Circle modal real; **Create New Pharmacy** modal → registerPharmacist forces pending but circle entry auto-joins; hardcoded state Maharashtra).
+- **DSW** ‹DSW›: StockistPharmacies (tabs Circle(8)/All(20 — no list, only counts); chips; PharmacyCard dialogs; ConfirmDelete toast-only). **PharmacyDetail** (creditUsage Progress; Copy/Call/Map wired; tabs Orders/Payments/**Ledger hardcoded 5 rows**; Remove from Circle stub). SearchPharmacyDialog, AddToCircleDialog, EditPharmacyDialog.
+- **DMVP** ‹DMVP›: StockistPharmacies (circle sp-001; chips; Net Due; kebab View/Edit/Record Order/Generate Bill/Remove). **StockistPharmacyDetail** (~528 lines; credit block; tabs Orders/Payments/Bills/**Ledger** — only place with real running balance incl order_returns[empty]). **StockistPharmacyLedger** (simpler). **StockistFindPharmacy** (addToCircle, dup 23505). EditPharmacyDialog (is_blocked → circle_status notification).
+- **SP** ‹SP, `/pharmacies`›: List (search, Portal filter Connected/Manual, Status filter). **AddPharmacyModal** (SlideOver): Name*, Owner, GSTIN, State(08), **DL***, Credit Limit, Opening Balance, Payment Terms(COD/7/15/30), Phone*, Email, Address. Server `PharmacySchema` (creditLimit default `DEFAULT_CREDIT_LIMIT=50000`, terms 30). **Detail**: Edit/Deactivate/Record Payment; StatCards; Business Profile + Compliance; tabs Orders/Bills/**Ledger** (opening balance + Sundry Debtors + running balance; discrepancy banner; admin "Reconcile Outstanding" → recomputes from ledger)/Returns/Connection. Endpoints incl `:id/credit-info` (`getPharmacyExposure`), `:id/reconcile-outstanding`.
+
+### 3.5 Payments / Approvals / Record (seller)
+- **ERP** ‹ERP›: Payments (Total Outstanding dedup-by-pharmacy, Pending Invoices, Received This Month; tabs Pending Invoices [Send Reminder + Mark Paid] / Received). **PaymentApprovals** (realtime, animated "n Pending" badge; Review dialog Reject/Hold/Approve → `approve-reject-payment` edge fn).
+- **HUB** ‹HUB›: **CollectPaymentDialog** (methods cash/upi/bank_transfer/cheque; **FIFO auto** or manual select; insert `payments` confirmed; outstanding non-atomic). **StockistRecordPayment** (`record-payment`; `update_circle_outstanding` atomic; #51 marks all unpaid paid if outstanding≤0). **StockistPayments** (Collected month/Outstanding/Approvals tabs; **Approvals** = delivery-staff collections `delivery_payment_status='pending_approval'`, Approve inserts payment+marks paid, Reject; WhatsApp Reminder dialog inserts `payment_reminders`).
+- **MED** ‹MED›: Payments (paginated 20, table; whole row → PaymentDetail). PaymentDetail (Payment Info + Associated Order). All payments are **mock** (`mode:'mock'`).
+- **MR** ‹MR›: Payments "Payment Reminders" (Send Payment Reminder card [Full Due/This Bill/Custom]; `payment_requests`; simulated PaymentProcessModal; **no server-side WhatsApp**). Recent Requests (Mark Paid). Bill status machine RPCs (Module 15).
+- **MVP** ‹MVP›: StockistPayments (Collected/Outstanding/Bills StatCards; tabs payments/bills/approvals[**Approve toast-only**]; Bank Details Edit **unwired**; Send Reminder → `sendReminder` record + toast).
+- **DSW** ‹DSW›: StockistPayments (KPI Outstanding/Pending/Received; tabs Outstanding/Pending Approvals[Approve/Hold/Reject toast]/All). CollectPaymentDialog (quick 25/50/Full, method, reference → toast).
+- **DMVP** ‹DMVP›: StockistPayments (Record button → **unrouted /record-payment 404**; Collected month=₹0 (2025 seed); Approvals always empty [no join]; Send Reminder wa.me). CollectPaymentDialog (FIFO/manual, non-atomic direct outstanding write, never touches credit_balance).
+- **SP** ‹SP, payments received›: **RecordPaymentModal** (SlideOver): Pharmacy, Outstanding banner, Amount*, Mode(upi/cash/bank/cheque), Reference (onBlur dedup `GET /payments/check-reference`), Date, **Bill Allocation** (checkbox+amount per bill, **Auto FIFO** button). `recordPayment` (non-cash requires unique reference `DUPLICATE_REFERENCE`; tx FIFO allocate; refuse over-allocation; outstanding-=; ledger method Dr/Debtors Cr; `PAY-#####`). Void (reverses, `voidPayment`).
+
+### 3.6 Bills (seller)
+- ERP: bill via BillUploadDialog / order flows (no dedicated bill entity page; uses orders).
+- HUB ‹HUB›: **StockistBulkBill** (unbilled delivered orders → one `bills` per pharmacy `BILL-<ts>-<n>` status final, no GST). **BillPreviewDialog** ("TAX INVOICE" no CGST/SGST, QR to hardcoded lovable domain, insert status confirmed, outstanding+=total non-atomic, Print/PDF/WhatsApp). Payment status badge derived from orders.
+- MED: bills implicit in order/payment.
+- MR ‹MR›: **BillForm** (`/bills/new`, hard-blocks if `dueAmount > max_credit_limit`; **rolls previous_due into due_amount** double-count bug; terms 30). QuickBillModal/QuickOrderModal (create bills, **line items NOT persisted**).
+- MVP: bills via QuickBill + invoices on confirm.
+- DSW: CreateBill / QuickBillDialog (3-stage, GSTIN hardcoded, wa.me wired).
+- DMVP ‹DMVP›: BulkBill (delivered orders → status "final"), PurchaseBillHistory (badge checks "finalized" never matches), BillPreviewDialog (status "confirmed", QR lineage domain), QuickBillDialog. **Bill status chaos** across creators/readers (confirmed/final/finalized vs seed paid/draft/sent).
+- SP ‹SP, billService›: **generateBill** idempotent (unique index `bills.order_id`, GST per line, `INV-YYYY-####`, dueDate=billDate+paymentTermsDays; portal emits `bill.generated` w/ line items). **Overdue derived not stored** (`markOverdueBills` no-op). List (status All/Paid/Partial/Unpaid/Overdue; displayStatus). **Detail** printable `#invoice-content` ("IGST INVOICE" vs "GST INVOICE"; Payments Allocated table; **no QR**). Actions: Initiate Return, Record Payment, **Send WhatsApp** (rasterize PDF → `POST /communication/send-bill`), Print, **Override Status** (admin/biller Mark unpaid/paid). `PATCH /:id/status`.
+
+### 3.7 Returns / Credit Notes (seller)
+- ERP: via orders (cancel adds credit).
+- HUB ‹HUB›: **StockistReturns** (tabs Requests/Process/History/Credits; Approve restocks + credit_balance/outstanding + credit_note; Process return from delivered → FIFO restock to earliest-expiry batch). **StockistCreditNotes** list. **StockistManufacturerReturns** (`manufacturer_returns` via as-any; status pending/shipped/received/credited/rejected; Mark Credited via `window.prompt`).
+- MR: order returns via status; no dedicated seller-return page (buyer requests).
+- MVP ‹MVP›: return approval in OrderDetail (`approveReturn` mints CreditNote, **never consumed later**).
+- DSW: CreateReturnDialog (orphaned, toast).
+- SP ‹SP, returnService›: **Returns list** (source manual/portal). **InitiateReturnModal** (per returnable line, batch select, reason expired/damaged/wrong_item/cancelled/other; `RET-####` status requested). **processReturn** (restock only wrong_item/cancelled; GST-inclusive credit; reduces linked bill + `payment_allocations`; outstanding-=; ledger Sales-Returns Dr/GST-output Dr/Debtors Cr; portal emit `return.processed`). rejectReturn.
+
+### 3.8 Suppliers / Purchases (procurement) ‹SP, MR, MVP-stub›
+- **SP** ‹SP›: **Purchases/GRN** (`/purchase-bills`): List (search, supplier, status pending/received, `?procureProductId` deep-link). **UploadBillModal** (Upload PDF AI `POST /purchases/parse` Gemini / Manual Entry; per-line product/Batch*/Expiry/Qty*/Free/MRP*/Rate*/GST; invoice base64 → `invoiceFileUrl`; `productsNeedingSaleRate` → SetSaleRatesModal). `createPurchase` (findOrCreateProductFromLine; `GRN-YYYY-####` pending). `receivePurchase` (refuse if saleRate≤0; `receiveStock` per line upsert batch; Inventory Dr/GST-input Dr/Creditors Cr). **Suppliers** (`/suppliers`): AddSupplierModal (Name*/Contact*/GST/DL/Phone*/Email/State*/Terms/Address*); Detail (Info/Purchases/Ledger; Record Payment `SPAY-#####` Creditors Dr/method Cr). **Required Stock** (Σ on-hand < minStockLevel; Procure deep-link).
+- MR ‹MR›: seller side has no purchase module (buyers create POs).
+- MVP ‹MVP›: PurchaseBills page = **stub** (file ignored, mock items, local list only).
+
+### 3.9 Delivery config / Reports / Analytics / Staff / Profile (seller) — see Modules 16 (delivery), 12/reports below
+- **ERP** ‹ERP›: **DeliverySettings** (tabs Delivery Dates / Service Areas / Delivery Fees — see Module 16). **Analytics** (KPI Revenue/Orders/**Active Pharmacies counts ALL not scoped bug**/Products; Recharts Revenue Trends/Order Analysis/Top Pharmacies). **Route Execution** + MapRouteDialog (Module 11). **Batch Ordering** (`order_batch_cycles`, `create-batch-cycle`). **StockistProfile** (tabs Personal/Bank/Business/Catalogue[shareable slug]/Areas).
+- **HUB** ‹HUB›: **StockistReports** (13 report defs H1/Schedule H/HNX/NDPS/Narcotic/Tramadol/GST/etc; client XLSX; **GST report reads unpopulated bills.gst_amount → 0`). **StockistExportData** (CSV/Excel/**PDF stub emits xlsx**). **StockistExportCatalogue**. **StockistAnalytics** (real recharts; Stock Value by category `Σ stock×purchase_rate`). **StockistStaffManagement/Form** (`delivery_staff`; password via `rpc hash_password` **plaintext fallback**). **StockistServiceableAreas**, **StockistDeliveryRoutes** (Google Maps URL), **StockistHolidays** (`stockist_holidays` allow_preorder, notifies circle). **StockistProfileSettings/BusinessDetails**.
+- MED ‹MED›: DeliveryAndDates (tabs Dates[**never loads on mount bug**]/Serviceable Areas/Delivery Fees). Profile (no validation).
+- MR ‹MR›: Analytics (seller, real charts + mock AdvancedReports + hardcoded InventoryAlerts). Reports (Sales/Payments/Inventory functional; Customer/Route stubs; CSV real, **PDF stub**). DeliveryPlanner (**simulated** distance random 10-59, no maps API). Settings (only General save works).
+- MVP ‹MVP›: DeliverySetup (real areas+slots), HolidayManagement (real), Reports (7 hardcoded, Download toast), Analytics (**100% mock**), StockistProfile (edits toast), SubscriptionPage (upgrade toast).
+- DSW ‹DSW›: Analytics (mixed real/hardcoded), operational pages (Credit Notes/Routes/Purchase Orders/Staff/Reports/Documents/Messages/Notifications — page-local arrays, mostly toast, some local-real), Settings (Profile/Business/Security/App — **theme toggle inert**, OTP accepts any 6-digit).
+- DMVP ‹DMVP›: ExportCatalogue (real XLSX), Notifications, Profile/Business/Settings/Privacy/Help (mock backend, deletes toast-only). **More menu ~15 unrouted links → 404**.
+- SP ‹SP›: **Reports** hub (Sales/Outstanding/GST/Profit/Stock Ageing/Compliance/Portal Orders/Purchase Analysis — real, role-gated; Recharts; master CSV digest). **Audit Logs** (admin). **Settings** (Business info, Connections[invite code, requests, active], Public Profile, Staff/Users[roles admin,biller], Order Defaults[auto-approve toggle], Catalog Sync, Security, Notifications, System). **Required Stock**. Staff via Settings users (no separate delivery-staff role).
+
+---
+
+## Module 4 — Pharmacy: B2B purchase (buyer)
+
+> Superset of pages: **Dashboard · Browse/Discover stockists · Stockist catalogue/storefront · Cart · Checkout · Orders (list, detail) · Payments/Ledger · Inventory (buyer's own) · Smart/Quick order · Financials/Analytics · Profile · Purchase Orders/GRN (SP)**.
+
+### 4.1 Dashboard
+- **ERP** ‹ERP›: `/pharmacy/portal` (resolve by `auth_profile_id`, realtime pharmacy_inventory+orders). KPIs Inventory Value(`Σ qty×unit_price`), Low Stock(≤threshold), Expiring Soon(≤30d), Orders This Month. Quick Actions Manage Inventory/Browse/My Orders/Analytics.
+- **HUB** ‹HUB›: PharmacyDashboard (one 8-parallel `pharmacyDashStats`): activeB2BOrders, totalPurchase, pendingPayments, connectedStockists, inventoryItems, lowStockCount, expiringCount + sale metrics. Renders **PurchaseDashboard** (alert cards, 5 KPIs, 8 quick actions, `ReorderSuggestions`, recent B2B) vs SaleDashboard.
+- **MED** ‹MED›: KPIs Total Orders, Pending Deliveries(`≠delivered`), Spent(month), Cart card (live). Smart Order promo; Sign Out.
+- **MR** ‹MR›: hero "Welcome to PharmaMR Marketplace" + decorative search. KPIs Pending Orders, Total Spent, Favorite Suppliers, Total Orders. **OTC Overview** (value/items/**Potential Earnings 5%**). Featured Sellers (live+verified). Quick Actions (My Suppliers→**/suppliers dead link**).
+- **MVP** ‹MVP›: PharmacistDashboard — 4 StatCards (Pending Orders, Due Payments `outstanding/1000K`, Connected Stockists, Recent Purchases; **trends hardcoded**), 6 Quick Actions (Cart badge).
+- **DSW** ‹DSW›: PharmacyHome — read-only search; Quick Actions Smart Order/Compare/Reorder/Offers; **KPI row all hardcoded** (Spent ₹2,45,000/Savings ₹18,500/Active 3/Delivered 24).
+- **DMVP** ‹DMVP›: PharmacyDashboard (DEMO_ORDERS pp-001): Active Orders(2), Total Purchase, Pending Payments, **Connected Stockists hardcoded 3**; Recent Orders(5).
+- **SP** ‹SP›: `getPharmacyDashboardKpis` — Today's/Month Retail Sales, Pending POs, Payables Outstanding, Low Stock, Awaiting GRN; quick actions New Sale/Place Order/Receive GRN/Record Payment; widgets Recent POs + Expiring Soon(≤90d hidden cashier).
+
+### 4.2 Browse / Discover stockists
+- **ERP** ‹ERP›: Browse Stockists (search; product count, next delivery; **PIN-serving stockists sorted first**). StockistCatalogue (CATEGORIES; products is_active&stock>0; discount%=round((mrp-sale)/mrp×100); qty stepper MOQ..stock; Add/Update Cart ring-highlight).
+- **HUB** ‹HUB›: PharmacyBrowse/Stockists/FindStockist (`addToCircle` seeds circle). Ordering page `comparePrice()`=**Math.random() placeholder**, Add-to-Cart **unwired**.
+- **MED** ‹MED›: Stockists (**N+1 queries**). Catalogue (tabs Products/Stockists; grouped by lowercased name→ProductCard per stockist variant). StockistCatalogue embedded Smart Order (**dead alternatives query, no cart**). QuantitySelector clamped [moq,maxStock].
+- **MR** ‹MR›: Marketplace (**no is_catalogue_live filter**; pills All/MR/Stockist/Distributor/Verified/Live; **4.5 hardcoded**; Heart favorite). MarketplaceProducts (`is_available`; **seller-locked cart**; seller-type filter **MR bug**). SellerDetail (**cart-lock NOT enforced**, local count).
+- **MVP** ‹MVP›: FindStockist (Connect real). PharmacistStockists (Outstanding per; holiday chip). BrowseMedicines (**connected only**; Rx=Antibiotic; **Low Stock <10**; "Delivery +2 days" hardcoded; FIFO). PharmacistStockistDetail (catalog **global bug**, Low Stock `<100` inconsistent, batches[0]).
+- **DSW** ‹DSW›: PharmacyBrowse (categories/top-rated/popular). PharmacyStockists (**page-local hardcoded 4, not clickable**). PharmacyStockistDetail (tabs Products/**Reviews "coming soon"**). PharmacyProducts/ProductDetail (getBestPrice inline; price comparison per stockist).
+- **DMVP** ‹DMVP›: PharmacyStockistDetail storefront+cart (blocked banner; **A12 hard credit block**). Stockists/FindStockist(serviceable PIN)/Browse.
+- **SP** ‹SP›: **Discover** (unauth `GET /api/public/stockists` 60/min). Public profile `:slug` (**no PTR** C12; Request Connection). Connected Stockists (ConnectStockistModal invite/GSTIN; **7-day cooldown** `REQUEST_COOLDOWN`). Detail tabs Overview/Catalog[Map Local Product, Create from catalog]/Orders/Bills/Ledger.
+
+### 4.3 Cart
+- **ERP** ‹ERP›: CartContext (persist `${role}_cart_${userId}`). `/pharmacy/cart` grouped by stockist, per-stockist subtotal+Remove All, stepper 1..maxStock, "Delivery Fees: Calculated at checkout", **Total `₹X+`**.
+- **HUB** ‹HUB›: `useCart` (`digi_swasthya_cart`, **single-pharmacy enforced**; hasPrescriptionItems). Cart-based ordering in StockistDetail.
+- **MED** ‹MED›: Cart (localStorage `cart`; grouped; `updateQuantity` async fire-and-forget re-fetch; Total PRE-GST; addToCart reject OOS/moq/over-stock).
+- **MR** ‹MR›: Cart (`/cart` **no Layout**; `cart_items`; grouped by seller; discountedPrice; no GST).
+- **MVP** ‹MVP›: Cart (Subtotal/Tax12%/Total; not grouped).
+- **DSW** ‹DSW›: PharmacyCart (**hardcoded 3, all no-ops**).
+- **DMVP** ‹DMVP›: ephemeral React state (no localStorage); floating bar; "nearing credit limit" 0.8×.
+- SP ‹—›: no cart (POs).
+
+### 4.4 Checkout & placement
+- **ERP** ‹ERP›: **separate order per stockist group**; Subtotal + **GST 5%** + Delivery Fee (`calculate-delivery-fee`, fallback `≥5000?0:50`); Place Order `ORD-{ts}` `order_source=pharmacy_portal`, `rpc deduct_stock`; Place All loops.
+- **HUB** ‹HUB›: StockistDetail placement (`orderingBlocked=is_blocked||holiday&&!allow_preorder`; **credit block** if `outstanding+cartTotal>limit`, warn>80%; order_source platform, `update_circle_outstanding(+total)`, **no stock deduction B2B**).
+- **MED** ‹MED›: per-group Subtotal+GST(`Σ price×qty×gst%/100`) **no fee**; **mock payment** 2s+`random>0.05`; pre-payment stock re-check; per-group insert orders[paid]/items[snapshots]/payments[mock]+`rpc deduct_stock`; **manual rollback ladder**.
+- **MR** ‹MR›: single-seller; **client-side `ORD/count+1`** race; `pharmacy_id=buyer profile id` bug; no decrement/GST.
+- **MVP** ‹MVP›: groups by stockist PLATFORM/CIRCLE; Delivery Address, **4 hardcoded slots UI-only**, notes not persisted; Pay Now/Pay Later credit; per-CIRCLE credit check; **simulated UPI** 2s; one order per stockist.
+- **DSW** ‹DSW›: subtotal + **gst 18%** + fee 0; hardcoded `#ORD-2025-0042`; toast.
+- **DMVP** ‹DMVP›: placeOrder StockistDetail (**hard credit block A12**; `PH{last8}` platform; `rpc +cartTotal` no-op).
+- SP ‹—›: no B2B checkout (POs, §4.7).
+
+### 4.5 Orders (buyer)
+- **ERP** ‹ERP›: search + status filter; collapsible cards net_amount+Due; items+summary.
+- **HUB** ‹HUB›: PharmacyOrders (mode-gated). Detail (Duplicate, **Verify Received Quantities** no stock adjust, Request Return, invoice PDF). PharmacyLedger, **PharmacyRecurringOrders** (`recurring_orders` **no scheduler, inert**), Reorder/QuickOrder history.
+- **MED** ‹MED›: paginated 20. Detail **"Mark as Received"** only when out_for_delivery.
+- **MR** ‹MR›: buyers see orders only via My Suppliers (Orders page = seller view only — **buyer bug**).
+- **MVP** ‹MVP›: OrderList (pharmacist=placedBy). Detail (Cancel placed/confirmed; Request Return; Reorder; Add Payment; Edit Items placed-only).
+- **DSW** ‹DSW›: PharmacyOrders (**hardcoded 3, only All renders**). Detail (timeline; Rate/Report/Contact gated).
+- **DMVP** ‹DMVP›: Orders (pp-001, exact status tabs, sort cycle). Detail (Duplicate; **Download Invoice** delivered real; **Verify Received Quantities** discrepancy notify).
+- SP ‹SP›: buyer orders = mirror `orders` on stockist tenant; viewed via PO detail.
+
+### 4.6 Buyer's own inventory
+- **ERP** ‹ERP›: Inventory table (badges; **Add/Edit unwired**). Analytics tiles. Financials (Outstanding/Credit/Purchases/Avg).
+- **HUB** ‹HUB›: PharmacyInventory (`SharedProductCard`; value `Σ qty×(purchase_rate||price)`; Bulk Price). InventoryForm (AI Auto-Fill, counterfeit banner, `is_visible_to_customers` default true). **PharmacyBulkImport** (circle stockist→their products→insert qty:0 hidden; **primary manual population**). StockAudit, ExpiryManagement, InventoryAuditLog (reads nonexistent `selling_price`).
+- **MVP** ‹MVP›: PharmacistInventory (read-only, auto-populated on delivery; All/Expiring≤90).
+- **SP** ‹SP›: shared Products (owns catalog + GRN products); Expiry Alerts ≤90d.
+
+### 4.7 Purchase Orders / GRN ‹SP dedicated; MR PO≈order›
+- **SP** ‹SP›: **Purchase Orders** (11-state draft→submitted→accepted/rejected→packed→shipped→delivered→partially_received→received +cancel_requested/cancelled). CreatePurchaseOrderPage (2-step; Add from catalog; **credit bar blocks Submit**). `submitPurchaseOrder` (**every product still in catalog else `CATALOG_DRIFT`**; credit check; tx **creates mirror `orders` on stockist tenant** source pharmacy_submitted; emit `order.submitted`; auto-approve if `autoApprovePortalOrders`). Cancel semantics (accepted→cancel_requested). **GRN** (ReceiveGrnModal auto-build from pending, auto-create products from catalog, **Idempotency-Key**; `createGrn` cumulative ≤ pending `OVER_RECEIVE`, expiry>receivedDate `EXPIRED_BATCH`, `PGRN-YYYY-####`, Inventory Dr/GRN_CLEARING Cr; **10-min idempotency cache**).
+- MR ‹MR›: OrderForm creates PO-like `orders`; no GRN.
+
+---
+
+## Module 5 — Pharmacy: B2C sale
+
+> HUB (dual-mode sale), SP (retail POS), DSW (sale view), MR (OTC only). Absent: ERP, MED, MVP, DMVP.
+
+- **HUB** ‹HUB›: Sale nav Dashboard/customer-orders/customer-list/Inventory. **B2C flow** pending→confirmed→preparing→ready_for_pickup→out_for_delivery→delivered. **PharmacyCustomerOrderDetail**: confirmed→`rpc deduct_pharmacy_inventory`, cancelled→restock by name, delivered→`calculateCommissions`+delivered_at. Prescription gate (Verify/Reject). UPI verification (claimed). Item pricing editable (Add/Remove/Set Total/Auto-Price/Substitute/Check Stock partial). Assign staff. **B2CBillGenerator** ("TAX INVOICE" no tax; QR `verify-bill/customer-${id}`). CustomerList/Detail. **PharmacyCustomerReturns** (Approve&Refund `Σ price×qty`; **no restock**). SaleDashboard (7 KPIs, 8 quick actions).
+- **SP** ‹SP›: **PosPage** (search Enter/barcode; Rx badge; FEFO batch capped; qty ±/Disc%/remove; Customer[walk-in]; **Split payment** OR method + change; **Rx block** for scheduled: Rx#*/Doctor*/reg#/Patient*/age). `createRetailSale` (**Rx capture C26** `RX_REQUIRED` schedule H/H1/X/NDPS; **GST-inclusive** `lineTax=sub×gst/(100+gst)`; explicit batchId or FEFO; split=total±0.02 `SPLIT_MISMATCH`; `SALE-YYYY-####`; cash-sale ledger). SalesHistory+SaleDetail(auto-print). **Void** (admin same-day, restock, reversing ledger). Customers (Add Name*/Phone; cashier can create).
+- **DSW** ‹DSW›: SaleDashboard (Go Live/New Sale/Consult/Reports; live Switch; Today ₹0 runtime). SaleInventory (**Add "coming soon"**). SaleCustomers/Detail (**Call/New Order no-op**). Consultations/Detail, StartConsultation (4-step **voice sim setTimeout(3000)**). SaleReports (period cosmetic). Doctor Connect (toast). Live Settings (radius slider, fee — toast). Dialogs SaleOrder/GoLive/RecordPatient/StartConsultation.
+- **MR** ‹MR›: **OTCPartnership** (`pharmacy_otc_subscriptions`/`otc_subscription_plans` as-any; active summary OR 3-step wizard plan/brands[≤max_brands]/review→dummy payment; **`initialize-otc-inventory` never invoked → empty**; flat 5% commission).
+
+---
+
+## Module 6 — Pharmacy: Public Catalogue (unauthenticated ordering)
+
+> Full public ordering: **ERP**. Discover-only (no unauth ordering): HUB, SP. Absent: MED, MR, MVP, DSW, DMVP.
+
+- **ERP** ‹ERP, PharmacyContext + PharmacySessionContext(20-min), no login›:
+  - **License Verification** (`/catalogue/:slug`): OnboardingCarousel; Drug License Number* (case/symbol-insensitive) + PIN(opt 6) → `verify-pharmacy-license` (rate-limited 5/15min); verified → set context + dashboard; attempts remaining.
+  - **Catalogue Dashboard**: latest balance, `get-pharmacy-outstanding-orders`, last 5 confirmations; realtime; Credit panel, Outstanding, **Net Amount Due=max(0,outstanding−credit)**; **Mark Payment**→dialog; **UPI QR** if upi_id; Payment Requests history; Outstanding Orders breakdown; Recent Orders; Logout→clearSession.
+  - **Catalogue** (`/products`): is_active; search(name/brand/generic)+category+sort; stepper min1; cart carries `gst_percentage||5`.
+  - **Orders** (`/orders`): platform orders; realtime.
+  - **Checkout**: **per-item GST** (`tax=sub×gst%/100`; **no fee**); Place Order → OrderConfirmationDialog ("requires stockist approval") → `create-platform-order`; success bill summary + **integrated UPI** (Pay This Order/Pay Total Outstanding/Custom → UpiQrCode + `upi://pay?pa=...` deep link).
+  - **MarkPaymentDialog** (Full/Custom/Specific Order → `mark-payment-paid` **pending** confirmation).
+  - **Public Pharmacy Registration** (`/pharmacy-registration`): Basic/Contact/Location/Docs(→`bills` bucket) → `pharmacy_registration_requests` pending.
+- **HUB** ‹HUB, partial›: public discover cards; **VerifyBill** public (`/verify-bill/:billId`).
+- **SP** ‹SP, partial›: public API `/stockists`, `/stockists/:slug`, `/:slug/catalog` (≤20, **no PTR**), `/verify-bill/:id` (non-sensitive; **no scan UI/QR on invoice**). Request Connection from public profile.
+
+---
+
+## Module 7 — Seller variants (MR / Distributor)
+
+> MR role present in: **ERP** (light) and **MR** (full). Distributor: **MR** only.
+
+- **ERP — MR module** ‹ERP›: MRLayout bottom nav Dashboard/Pharmacies/Collections/Analytics/Profile.
+  - **MROnboarding**: License Number*, Your Name*(mr_name), Company Name*, Phone, Address; slug `slugify+Date.now()`.
+  - **Pharmacies** (`/mr/pharmacies`=dashboard default): lists only **visited** pharmacies (from `mr_pharmacy_visits`); **Record Visit** inserts visit; **Add Pharmacy unwired**.
+  - **Collections**: Total Collected(`Σ mr_order_commissions.commission_amount`), **Target ₹50,000 hardcoded**; Record Collection → `toast "Demo"` **not persisted**.
+  - **Analytics**: Total Visits, Orders Placed(=commissions), Total Commission, **Conversion Rate=commissions/visits×100**.
+  - **Profile**: Personal/Company/Stats.
+- **MR — MR/Stockist/Distributor sellers** ‹MR›: single **SellerDashboard** branches by role (§3.1). Distinctions:
+  - **MR:** subtitle `Brand: {business_type}`; Products filtered to `brand_name=business_type`; header QuickBill+QuickOrder+OCR; KPI Total Revenue=`Σ bills.received_amount` (pharmacies.mr_id join), Pending Payments=`Σ(due−received)`, Active Pharmacies, Products (brand only). Owns Pharmacies list, PharmacyDetail (bill+payment-request engine), BillForm, Payments/Reminders, DeliveryPlanner (simulated), OrderForm.
+  - **Stockist/Distributor:** subtitle "Multi-brand"/"Manage inventory & customers"; header OCR+BulkUpload; KPI Total Revenue=`Σ orders.total_amount where delivered`, Pending Orders, **Customers**=`seller_buyer_relationships` split stockist/pharmacy, Products (distinct brand count). Owns MyCustomers, MyProducts, Orders (status machine w/ stock decrement at packed), ProductForm.
+  - **Distributor extra:** signup Service Areas (comma cities); ProductForm `seller_type="distributor"`; MyCustomers has Stockists tab.
+  - **ProductForm brand lock:** MR brand Select disabled/locked to `business_type`.
+  - **Bugs:** MR products saved `seller_type="stockist"` (marketplace MR filter never matches); MyCustomers outstanding joins bills by profile id vs pharmacies id.
+
+---
+
+## Module 8 — Patient / Customer
+
+> Patient/Customer B2C present in: **ERP** (patient), **HUB** (customer + doctor consults), **DSW** (patient), **SP** (POS customers only — see §5). Absent: MED, MR, MVP, DMVP.
+
+- **ERP — Patient** ‹ERP›: PatientLayout (bottom nav Home/Search/Prescriptions/Wishlist/Profile). Resolves `patient_details` by profile_id.
+  - **Dashboard**: KPIs Active Orders(`patient_orders ∉{delivered,cancelled}`), Prescriptions(active), Wishlist, Pending Refills(`patient_refill_reminders` next≤today). Recent orders; Quick actions Search/Compare; cards Prescription Vault/AI Assistant/Wishlist.
+  - **Medicine Search**: OR filter name/brand/**generic** limit20; heart icon **unwired**.
+  - **Price Comparison**: ilike product_name, sorted selling_price; first=green BEST PRICE; **Star 4.5 & ~45min hardcoded**; Add to Cart=toast **stub**; **queries columns (`product_name`/`selling_price`) not matching schema → likely empty**.
+  - **Checkout**: address RadioGroup, Delivery Slot, Payment(COD/UPI/Card), notes; **Place Order = toast "demo", no write**.
+  - **Prescription Vault**: upload → `prescriptions` bucket; **no OCR**; "Order from Prescription" **unwired**.
+  - **Wishlist**: list, remove optimistic; **Add to Cart unwired**.
+  - **Orders**: history; status color map; items first 3.
+  - **AI Assistant**: disclaimer; symptoms → `ai-symptom-checker` (sends `{symptoms}` only); renders Conditions/Recommendations/OTC; **field-name mismatch vs edge fn → sections empty**.
+  - **Profile**: tabs Personal/Health(Blood Group, Allergies, Emergency)/Addresses(set default, delete).
+  - **PatientSignup.tsx** orphaned (blood group free-text vs Select).
+- **HUB — Customer** ‹HUB›: identity `customer_profiles.id`. Cart via `useCart` single-pharmacy.
+  - **Dashboard**: **profile-completion** prompt (≥5/6 fields); Active Orders, Health summary, Reminder alert(localStorage), Upcoming Consultations, Recent Orders/Prescriptions; nearbyCount(`pharmacy_serviceable_areas` by pin); 8 QuickActions.
+  - **CustomerPharmacies** (from serviceable areas, same PIN first + reviews avg + delivery charge). **CustomerPharmacyDetail** (products `is_visible_to_customers && quantity>0`; **inline order** `CO-<base36>` **raw total no GST/fee**; blocks Rx items). **CustomerMedicineSearch** (`pharmacy_inventory` ilike grouped). **CustomerCart** (hardcoded "Delivery: Free" display).
+  - **CustomerCheckout** (**real path**): fee from `pharmacy_profiles.delivery_fee` (0 if ≥free_above); **GST hardcoded 5%**; grandTotal=total+fee+gst; Payment cash/pay_at_store/upi; **UPI proof upload** (static "15-min" banner **no timer**); prescription upload if hasPrescriptionItems (both signed 24h); inserts `customer_orders` (payment_status upi?"claimed":"unpaid").
+  - **Orders/Detail** (stepper; "I've Paid"→claimed; Cancel `CANCEL_REASONS` 6 → `rpc restore_pharmacy_inventory`; Reorder; Request Return; **Rate & Review inserts into `reviews` but read from `customer_reviews` → never surface**; Download Invoice). OrderTracking (polls 15s). ReturnRequest (`customer_returns` pending). 
+  - **Prescriptions/Detail** ("Order All Items" price:0 Rx; #136 auto-find pharmacies; Share/PDF). **PrescriptionUpload** (`prescription` order_type; **raw path no signed URL, NO OCR**). **BookConsultation** (audio/video/clinic; **free date/time ignores doctor_availability, no double-book**; fee by type; demo payment self-attested). **ConsultationDetail** (duration timer; Join/Reschedule/Cancel; Order Prescription Items; Chat). **MedicineReminders** (**localStorage-only**, setTimeout <24h). HealthProfile, Wishlist, Addresses, QuickOrder (voice `webkitSpeechRecognition` en-IN), PastDoctors.
+- **DSW — Patient** ‹DSW›: PatientLayout (bottom nav Home/Search/Rx/Orders/More). Generated mock (100 patients, 200 orders, 150 Rx, 100 consults, 50 pharmacies).
+  - **Dashboard**: greeting "Hello, Rahul!"; **KPI all hardcoded** (Active 3/Rx 5/Wishlist 12/Refill 2); Quick Actions Upload Rx/Book Consult/Wishlist; Recent Orders; Nearby Pharmacies → **404 links**; **Refill Reminders hardcoded**.
+  - **Search** (`getLiveInventoryForPatients` random-jitter prices; getLowestPrice; cards → **/patient/medicines/:id 404**; **Add to Cart toast; Filter no-op**).
+  - **Prescriptions** ("Prescription Vault"; cards → **/patient/prescriptions/:id 404**; Order → /search).
+  - **Orders** (list → detail). **OrderDetail** (**fully hardcoded ORD-P-001, ignores id**; Contact/Rate toast).
+  - **Consultations** (**hardcoded 4 not the 100; Book New no handler**). **ConsultationDetail** (**hardcoded CONS-001 ignores id**; Download/Rate toast; Order Medicines → /search).
+  - **Wishlist** (**hardcoded 2, no handlers**). Profile/More/Help (hardcoded; some 404 links; Help search **not wired**). Settings (Profile toast; Medical real-local chips; Security toast).
+  - Dialogs: BookConsultation (3-step, toast), UploadPrescription (**no OCR/real upload**, claims AI).
+- **SP — POS customers** ‹SP›: see §5 (customer CRUD, walk-in default).
+
+---
+
+## Module 9 — Doctor
+
+> Present in: **HUB** (full teleconsult + commissions), **ERP** (patient-side AI only, no doctor role UI beyond schema), **DSW** (doctor view, mock). Absent: MED, MR, MVP, DMVP.
+
+- **HUB — Doctor** ‹HUB›: identity `doctor_profiles.id`; nav Dashboard/Sessions/Patients/Rx/More.
+  - **Dashboard** (`doctorStats`): Today's Sessions, Total Patients, **Total Earnings = paid consultation fees + Σ commission earnings**, Pending Sessions; Earnings breakdown (consultation vs referral); Review summary; Today's Schedule; Follow-ups.
+  - **Consultations/Detail**: status booked→in_progress→completed (notify patient each); **meeting link manually pasted** (Meet/Zoom); Mark Payment Paid; Reschedule/Cancel; Write Prescription; Follow-up scheduling. 
+  - **DoctorPrescriptionWriter**: walk-in patient search; per-item medicine search vs target pharmacy inventory; insert `prescriptions`+`prescription_items`+notify. Templates CRUD. Prescriptions/Detail (inline edit = delete+reinsert).
+  - **DoctorAvailability** (7 days × slots; save=delete-all+re-insert; **never read by booking**). **DoctorEarnings** (**paid consultation fees only, excludes commissions — diverges from dashboard**; recharts). **DoctorPharmacies** (`sendRequest` → `doctor_pharmacy_partnerships` pending, `default_commission_pct:5`). **PartnershipDetail** (edit default %, add/delete `doctor_commission_rules` product/brand/category). Patients/Detail, Analytics, Profile (avatar→`public-assets`), Settings.
+- **ERP** ‹ERP, partial›: no doctor role UI; only patient AI Assistant (`ai-symptom-checker`). Doctor concepts absent from routes.
+- **DSW — Doctor** ‹DSW›: DoctorLayout (bottom nav Dashboard/Appointments/Patients/Rx/More). Mock (60 doctors, 23 appts, 16 Rx, 31 earnings, 50 patients).
+  - **Dashboard**: greeting "Dr. Sharma"; KPIs Today(0 runtime)/Pending/Earnings/**Patients "50" hardcoded**; Earnings (+12% hardcoded); Upcoming/Recent.
+  - **Appointments** (tabs; **Start=toast only**; View→detail). **AppointmentDetail** (**Start Call toast + Prescribe → /doctor/prescriptions/new 404**; View Prescription → 404).
+  - **Patients/Detail** (Start Consult toast; **Call no-op**). **Prescriptions** (Download toast). **Earnings** (Withdraw toast; **This Month hardcoded**). More (several 404). Settings: Profile(toast), **Availability real-local slots**, **Bank (routed but unlinked; balances hardcoded; Withdraw no-op)**.
+  - **WritePrescriptionDialog** orphaned (Prescribe navigates to non-existent route → **doctor Rx creation effectively unimplemented**).
+
+---
+
+## Module 10 — Brand
+
+> Present in: **ERP** only. Absent: all others.
+
+- **ERP — Brand** ‹ERP›: BrandLayout (top nav hamburger Sheet + "Brand Portal" + NotificationBell). Dashboard gated on `is_verified`.
+  - **BrandOnboarding**: Brand Name*, Company Name*, Contact Person, Phone, Email, GSTIN, Manufacturing License, Address; insert `brand_details{is_verified:false, is_active:true}`.
+  - **Dashboard**: if `!is_verified` → pending-verification Alert (blocks rest); verified → green badge. KPIs Total Orders(`brand_orders`), Revenue(`Σ total_amount`), active Products(`brand_products`), active/scheduled Campaigns. Quick actions Manage Products/Campaigns/Fulfilment.
+  - **Products**: `brand_products` cards; **Add Product** dialog (Product Name*, Generic, SKU*, Batch*, MRP*, Selling Price*, Stock Qty → insert); **Edit/Delete unwired**.
+  - **Campaigns**: `brand_campaigns` cards; **Create Campaign** (Name*, Description, Discount%, Budget, Start*, End*; `campaign_type` hardcoded "discount"; status "draft"); **View Analytics unwired**.
+  - **Analytics**: Total Revenue, Total Orders, Active Products, **Growth Rate hardcoded 24.5%**.
+  - **Fulfilment**: Active Orders, Pharmacy Partners (unique), **Avg Delivery Time 45min hardcoded**, **Success Rate 98.5% hardcoded**.
+  - **Profile**: Company/License/Stats + verification badge.
+  - **BrandSignup.tsx** orphaned (no route). `brand_batch_verification` table supports anti-counterfeit/recall (data model only).
+
+---
+
+## Module 11 — Delivery Staff
+
+> Full staff module: **HUB**. Route-execution/collection surrogate: **ERP** (stockist-driven). Absent: MED, MR, MVP, DSW, DMVP, SP (SP has staff *roles* but no delivery-app; see §2/§12).
+
+- **HUB — Delivery Staff** ‹HUB, separate credential system›:
+  - **StaffLogin** (`/staff/login`): username/password → `rpc verify_staff_credentials` called twice (stockist then pharmacy); session `localStorage.staff_session {id,name,stockist_id|pharmacy_id,store_name,staff_type,_verified,loginAt}`.
+  - **StaffDashboard** (`SESSION_TTL_MS=24h`; validateSession re-checks server-side `delivery_staff`/`pharmacy_delivery_staff` is_active). Orders: stockist staff → `orders assigned_staff_id` status∈{packed,dispatched,out_for_delivery}; pharmacy staff → `customer_orders` status∈{preparing,out_for_delivery}. KPI row Pending/Today/Total. **Plan Route** (Google Maps `dir/?destination&waypoints`). **Mark Delivered dialog**: optional **delivery-proof photo** (stockist only, `capture=environment` → `documents/delivery-proofs/` signed 1yr → `delivery_proof_url`); stockist "Collect Payment" checkbox (amount + method cash/online → `delivery_collected_amount`, `delivery_payment_status="pending_approval"`, notifies stockist); pharmacy staff only sets status delivered (no payment/inventory).
+  - Staff management by stockist/pharmacy admins: `delivery_staff`/`pharmacy_delivery_staff` (name*/phone*/aadhar/age/police_verification_id/username*/password* via `rpc hash_password` **plaintext fallback**).
+- **ERP — Route Execution** ‹ERP, stockist-side surrogate›: **RouteExecution** (`location.state {selectedPharmacyIds, startingAddress, stockistId}`; **auto-optimize** via `optimize-route`; drag-drop reorder @dnd-kit; per-stop SortablePharmacyCard: Notify Dispatch WhatsApp, Send Payment Link per unpaid order, **Enter Collection Amount** + mode cash/online/cheque/other → Record Payment [FIFO, `payment_confirmations{payment_type:route_collection}`], Mark Delivered). **MapRouteDialog** (starting address, select pharmacies w/ non-delivered orders, Open in Google Maps, Start Route with AI).
+
+---
+
+## Module 12 — Admin
+
+> Present (full) in: **ERP, HUB, MR, MVP, DSW, DMVP**. Tenant-scoped admin only: **SP**. Dormant enum only: **MED**.
+
+- **ERP — Admin** ‹ERP, all behind AdminRoute (re-queries server-side)›:
+  - **Dashboard**: 11-module grid; `useAdminNotifications` badge; Quick Stats Total Users/Active Stockists/Pharmacies/**Pending Tasks=open disputes**.
+  - **User Management**: enrich profiles + role + stockist name; search + role filter; **`is_active` hardcoded true**; Activate/Deactivate only logs to `audit_logs` (**not persisted**).
+  - **Pharmacy Approvals**: realtime; **dual approval** (admin_approved + stockist_approved → insert pharmacy_details, profile_id=admin's stockist record); Reject requires reason.
+  - **Document Verification** (`pharmacy_documents`; Verify/Reject reason). **Batch Recalls** (`RCL-{ts}`, severity; **Search Users by Batch Code** `search_users_by_batch_code`; Mark Resolved). **Disputes** (status machine; Resolution). **Notices** (granular targeting Role/Batch/PIN/State/District arrays; `distribute_notice_to_users`; Switch active). **Message Templates** (CRUD, `{variable}` placeholders). **Territories** (CRUD + read-only Stockist Service Areas view). **Campaigns** (CRUD; Send Now → sent). **Fee Management** (`platform_fees` %/fixed). **Analytics** (8 StatCards; **trend %s hardcoded**; charts **placeholder divs**). **Enhanced Analytics** (**not linked**; Growth 32.5% hardcoded). **Audit Logs** (last 100).
+- **HUB — Admin** ‹HUB, ~57 pages, ProtectedRoute role=admin›:
+  - **Dashboard** (`adminStats` ~16 parallel): **13 clickable KPIs**; New Registrations Today; Revenue Today vs Yesterday; Pending breakdown; recharts; **System Health hardcoded "Operational"**; Recent Admin Actions.
+  - **AdminStockists/Pharmacies/Doctors** (set `approval_status` directly; **bulk approve/reject client-loop**). **AdminUsers** (aggregates 4 tables; Suspend/Restore toggles approval_status; customers exempt). **AdminImpersonate** (view-only). **AdminForceReset** (resetPasswordForEmail). **AdminMergeAccounts** (re-points only notifications+login_activity).
+  - **AdminNotifications** (Broadcast batches of 100; Targeted `admin_send_targeted_notification`). **AdminCounterfeit** (`counterfeit_alerts`; fuzzy-match products/inventory → notify). **AdminOrderDetail/CustomerOrderDetail** (`admin_override_*_status` RPCs). **AdminRefunds** (refund_status machine). **AdminReturns/Commissions** (read-only). **AdminMaintenanceMode** (flag stored **not enforced**). **AdminToSManagement**.
+  - Config CRUD: DrugSchedules, ProductCategories, Specializations, PharmacyCategories, ServiceableAreas, Subscriptions, Banners (**URL only, no upload**). Analytics/GeoDistribution/ApiMonitoring(health hardcoded)/RevenueDetail/etc. **AdminSystemArchitecture (Flowboard)** 16 tabs from `flowboard-data` edge fn + **ArchitectureAIView** (`architecture-ai`).
+- **MED** ‹MED, dormant›: admin enum + RLS policies only; **zero routes/screens/guards**.
+- **MR — Admin** ‹MR, ProtectedRoute only, no client role gate›:
+  - **AdminDashboard**: KPIs Total Users, Pending Verifications, Subscription Requests, **Revenue Est = pending × ₹999**; Recent Subscription Requests (Review → **/admin/subscriptions/:id 404**); **Danger Zone Wipe** (type `DELETE ALL USERS AND DATA` → `admin-wipe` edge fn).
+  - **UserManagement** (Verify/Unverify; `deleteUser` client-side admin call **fails from browser**). **Subscriptions.tsx** (**not routed**; Approve → premium +30d). **SupportManagement** (status Select). **RoleAudit** (real XLSX export).
+- **MVP — Admin** ‹MVP›: AdminDashboard (KPIs Total GMV[+12% hardcoded], Pending Approvals, Active Users[+8%], Flagged Items; banner CTA **no-op**). **ApprovalCenter** (Verify/Reject/Request Update real). StockistList/PharmacyList (Suspend toggles rejected↔approved). StockistDetail/PharmacyDetail (**Suspend writes 'rejected'**; PharmacyDetail Inventory tab **shows global bug**). **Suspensions** (lists rejected users). **CounterfeitManagement** (`toggleCounterfeit` real, enforced in cart/order). **BannerManagement** (real CRUD). **CommissionSetup** (**not persisted, never applied**). AdminPayments (**Commission=5% hardcoded**). Transactions, PlatformLedger (**Balance = last entry's stored field**), AdminAnalytics (**mostly fake**), AdminProfile (fabricated, toast), **UserFlowPage** (static documentation of idealized backend). Recurring quirk: `'suspended'` enum written **nowhere** (Suspend→'rejected').
+- **DSW — Admin** ‹DSW›: AdminLayout (11 items; **hardcoded badges** 3/5/4, bell 12). Dashboard (platformStats hardcoded; +15%; Revenue AreaChart + User Pie hardcoded; **Review buttons no-op**). Users (`slice(0,20)`; Approve/Suspend **toast only**). **UserDetail** (reads local `mockUsers` keyed only `stockist-1|pharmacy-1|doctor-1` → **almost every nav = "User Not Found"**). Orders/Payments/Consultations (read-only). Per-role pages (each own 5-row array; View → not-found). Reports (toast). Settings (**uncontrolled inputs, save toast, values not collected**).
+- **DMVP — Admin** ‹DMVP›: AdminDashboard (KPIs Pharmacies 5/Stockists 4/B2B 8/Pending 2/Revenue/**Active Today 12 hardcoded**/**New Regs 3**/**Today ₹5,590 Yesterday ₹4,200**/**System Health Operational**; charts). Approval queues (bulk Approve/Reject; **no reason/notification here**). Detail (Reject requires reason + notification; per-doc updateDocStatus + Preview). Users (merges profiles; **doctor/customer tabs always 0**; suspend toggle). Orders/Detail (`admin_override_order_status` no-op). Bills (read-only; **Total GST real sum**). Payments (read-only). Notifications (Broadcast chunks 100 + Targeted). **LoginHistory** (reads **empty `login_attempts`** → always 0). Messages. More/Help/Profile(Change Password→**/forgot-password 404**)/Settings (**commission/GST/payment saves NO backend call**).
+- **SP** ‹SP, tenant admin only›: `admin` staff role per tenant gates Settings/Audit Logs/user management/system CSV; **no super-admin/KYC/global moderation** (documented gap). AuditDetailModal; Users add/deactivate (last-admin + self guards).
+
+---
+
+## Module 13 — AI & Edge / Backend Functions
+
+> AI backends (Lovable Gateway): **ERP, HUB, MED, MR**. AI defined-but-null-at-runtime: **DMVP** (mock client), **MR/DSW/MVP** (DSW/MVP have none). Real server AI (Gemini `@google/genai`): **SP**.
+
+- **ERP** ‹ERP, `supabase/functions/*`, Lovable Gateway `ai.gateway.lovable.dev` Gemini-primary+GPT fallback; symptom-checker & extract-prescription use `api.lovable.app`›:
+  - **AI:** `parse-order-message` (auth, ownership-verified; matchConfidence exact/high/medium/low/none; models gemini-2.5-flash→gpt-5-mini). `extract-bill-items` (public, soft-fail 200). `process-bill-image` (auth+ownership; pharmacy resolve; stock exact-match reduce else **auto-create** sale=price×1.2 mrp×1.3 gst5). `extract-product-label` (vision; infers Indian brand). `fetch-product-info` (enrich, joins salts with " + "). `ai-symptom-checker` (public; **client sends only symptoms, reads mismatched field names**). `extract-prescription` (public; **unused by UI**). `chat-assistant` (6 role prompts; **patient/brand/mr tools declared but never executed** — fall through to stockist). `optimize-route` (Google Distance Matrix if key **else random 5-20km**; TSP via gemini).
+  - **Transactional:** `create-platform-order` (public, Zod, `PLT-{ts}-{rand6}`, stock by ilike, gst default 12). `create-batch-cycle` (`delivery_cost=orders×12`, `cost_savings=orders×48`). `reduce-stock-for-order` (auto-create if missing). `calculate-delivery-fee` (Haversine + `stockist_delivery_rules`; default ≥5000?0:50). `mark-payment-paid` (public, **pending** confirmation). `approve-reject-payment` (auth+service-role; **credit-first + FIFO** + self-healing cleanup; 0.01 tolerance). `get-pharmacy-outstanding-orders` (public). `verify-pharmacy-license` (public, rate-limited 5/15min via `check_rate_limit`).
+- **HUB** ‹HUB, all `verify_jwt=false`›: `parse-order-text` (`gemini-3-flash-preview`, tool `extract_order_items`, requires Bearer). `parse-purchase-bill` (**no header check**, vision, soft-fail 200). `autofill-product-details` (Bearer, tool `return_product_details`). `chat-bot` (Bearer + service-role; fuzzy `quick_questions` else general). `architecture-ai`. `flowboard-data` (static v5.0.0 dataset). `seed-admin`, `seed-production-data` (Jaipur seeder pw 12345678). **DB RPCs:** decrement_stock, deduct_product_stock (**double-deduct**), restore_product_stock, deduct_pharmacy_inventory, restore_pharmacy_inventory, update_circle_outstanding, admin_override_*, check_login_rate_limit, record_login_attempt, verify_staff_credentials, hash_password.
+- **MED** ‹MED, all `verify_jwt=true`, `gemini-2.5-flash` no fallback›: `smart-order-parse` (tool-call, service-role inserts session+items; **no 429/402**). `smart-order-recommend` (**no AI**, pure matching → 3 strategies). `extract-bill-items` (vision). `fetch-product-info` (flat output; **client reads wrong `type` vs `product_type`**). `product-ai-fetch` (returns `{product_info:{}}`; **both product forms read wrong shape → no-op**). `bulk-upload-commit` (explicit `getUser`; **no stockist-ownership check → cross-tenant write gap**). `deduct_stock` RPC (**no migration defines it — untracked live DB object**).
+- **MR** ‹MR, `gemini-2.5-flash`›: `ocr-product-label` (user JWT + service-role writes; match→update stock+=, else 2nd enrich call → insert). `autocomplete-product` (**NONE/public — abuse surface**; strips fences; 429/402; **may hallucinate image_url**). `assign-role` (admin needs `jit@ADMIN1`). `admin-wipe` (admin + confirm phrase; deletes 14 tables + auth users; **OTC not wiped**). `delete-my-account` (cascades; **OTC not covered**). `initialize-otc-inventory` (**never called by frontend**; seeds qty 40, hardcoded catalog Derma Co/MamaEarth/Himalaya). DB RPCs: get_next_bill_number(`MR/001`), get_next_order_number(`ORD/0001`), update_bill_statuses, check_credit_limit, get_pharmacy_credit_utilization, `handle_new_user` (default role **pharmacy**), hash_password. Broken/dead RPC `update_overdue_bills` (references non-existent `due_date`).
+- **DMVP** ‹DMVP, mock client — `functions.invoke → {data:null}` ALWAYS›: edge fns exist (parse-order-text, autofill-product-details, parse-purchase-bill[no auth], chat-bot, architecture-ai, seed-admin, seed-production-data, flowboard-data) but **unreachable at runtime → every AI feature returns null → visible failures**. RPC mock stubs only `check_login_rate_limit/record_login_attempt/has_role` truthy; all others null (decrement_stock, deduct_product_stock, update_circle_outstanding, admin_override_* = no-op).
+- **MVP/DSW** ‹—›: **no backend**; "AI" is simulated in-client (regex parsers + setTimeout + "AI Parsing"/"AI Enhance" badges; DSW voice sim setTimeout(3000) → hardcoded transcript).
+- **SP** ‹SP, real Gemini `@google/genai`›: `aiParseService` (`POST /purchases/parse`, multer ≤10MB, `gemini-2.0-flash`, strict-JSON, fuzzy match; gated `FEATURE_AI_PARSE`+`GEMINI_API_KEY`). `aiOrderParseService` (`/orders/parse-text`, no dedicated UI). `aiProductService` (`/products/autofill`). **WhatsApp** (`whatsappService`, `POST /communication/send-bill`, Meta Graph v20.0 media+document; gated `FEATURE_WHATSAPP`). `billVerificationService` (`GET /api/public/verify-bill/:id`; **no QR/scan UI**). Single model, no fallback, name-only match, no-op without key.
+
+**Shared AI note** ‹ERP, HUB, MED, MR, DMVP›: all AI hits `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`; model pinning varies (ERP gemini-2.5, HUB/DMVP gemini-3-flash-preview, MED/MR gemini-2.5-flash); SP alone uses direct Google GenAI.
+
+---
+
+## Module 14 — Smart Order engine (paste/parse → match → order)
+
+> Present in ALL 8 apps (varying fidelity). Common shape: paste free-text medicine list → parse (AI or regex) → match against catalogue → confidence/found summary → add matched to order/cart.
+
+- **ERP** ‹ERP›: **QuickOrderDialog** + OrderCreation Quick Add + Dashboard Quick Order — Zod (pharmacy required, text≥10) → `parse-order-message` → matchConfidence badges (Exact/High/Medium/Select), inline product Select for low/none, manual add, taxRate 5/12; blocks on unmatched; `ORD-{ts}` `order_source=whatsapp`, decrement stock.
+- **HUB** ‹HUB›: **StockistCreateOrder** paste → `parse-order-text {text, products:[{id,name}]}`. **PharmacyQuickOrder** (`orders/quick`): `parse-order-text` → **findBestStockists** (serviceable_areas by pin → approved stockists → substring match → sum → sort cheapest → "Best Price" #0 + next delivery day); place → `order_source=quick_order`, `+outstanding`, **no credit check**.
+- **MED** ‹MED, deepest 3-strategy›: **SmartOrder** page (`/pharmacy/smart-order`): `smart-order-parse {rawText, pharmacyId}` (AI tool-call, inserts session) → `smart-order-recommend {sessionId}` (**pure matching, no AI**): fuzzyMatch exact→substring→word-overlap; filters `stock_quantity ≥ qty`; **3 recommendations** — (1) Best Single Stockist (most itemsAvailable, tie lowest cost), (2) Cheapest Split (per-item lowest totalPrice, savings vs single), (3) Fastest Delivery (`getDaysUntilDelivery`, null→999). Add to Cart per strategy (**omits stockQuantity/moq/deliveryDate → validation bypassed, delivery_date=null**). Also embedded Smart Order card in StockistCatalogue (dead alternatives, no cart).
+- **MR** ‹MR›: **QuickOrderModal** ("Quick Order to Bill"): `parseOrderText` (split on `.`/newline/comma; qty `\d+N`/`qty \d+`; last word=brand); match `products ilike` limit1; decrement stock; creates a **bill** (not order); **line items not persisted; unmatched dropped**. (Not AI.)
+- **MVP** ‹MVP, regex, no backend›: **QuickBill** (stockist, WhatsApp→bill 5-step; regex qty trailing/leading; substring fuzzy on own inventory; manual `<select>` remap; FEFO batch; confirmed CIRCLE order + invoice). **QuickOrder** (pharmacist, WhatsApp→order; hyphen/dash split; substring `.find()` on connected inventory; FIFO estimate but **`batches[0]` in actual order lines bug**; groups by real stockistId; PLATFORM placed unpaid).
+- **DSW** ‹DSW, simulated›: stockist **CreateOrder** (regex `/^(.+?)\s+(\d+)\s*$/`, "AI Parsing" cosmetic badge, toast). pharmacy **SmartOrder** (`setTimeout(1500)` + regex; 3 recommendations — cheapest real, **quickest=base×1.1 stockist 1, best_value=base×1.05 stockist 2** placeholder multipliers; Add to Cart toast→/cart). QuickOrderDialog (regex, GST 18%).
+- **DMVP** ‹DMVP, AI null›: **StockistCreateOrder** paste → `parse-order-text {text, products}` → **null → "No items could be parsed"**. **PharmacyQuickOrder** → `parse-order-text {text}` (no products) → null → "Could not parse items" (**broken past step 1**; findBestStockists logic present but unreachable; `getNextDeliveryDay` defined but never called, nextDelivery hardcoded "Available").
+- **SP** ‹SP›: CreateOrderPage "Paste Order" (client-side WhatsApp parser regex `^(name)[sep](x?)(qty)(unit)?$`, fuzzy exact→contains→token). Server `POST /orders/parse-text` (aiOrderParse, gemini-2.0-flash, exact/high/low/none confidence) — **no UI wire (page uses own client parser)**.
+
+---
+
+## Module 15 — Payments / Credit / Money logic
+
+### 15.1 Order/payment status vocabularies (superset — see per-app in §3.3)
+`payment_status`: ERP paid/unpaid/partial · HUB paid/unpaid/partial/claimed/verified/rejected/failed · MED paid/failed · MR pending/partial/paid via bill status · MVP pending/partial/paid/overdue · DMVP paid/unpaid · SP unpaid/partial/paid (+ delivery_payment_status pending_approval/approved/rejected in HUB). Confirmation status (ERP): pending/approved/rejected/on_hold. Refund status (HUB): pending/approved/rejected/processed. approval_status (HUB/MR/DMVP): pending/approved/rejected(/suspended).
+
+### 15.2 Order-numbering schemes ‹superset›
+ERP: `ORD-{Date.now()}` (manual/quick-bill/OCR), `ORD-{ts}` order_source whatsapp, `PLT-{ts}-{rand6}` (public), `INIT-{ts}` (placeholder), `RCL-{ts}` (recall). HUB: `ORD-`+base36, child `-S`+base36 (split), `PH<last8 ts>` (B2C), `SO`+last8 (duplicate), `BILL-<ts>-<n>`, `CN-`+base36, `PLT`. MED: mock `MOCK-<ts>-<rand9>`, `MOCK-PAY-<ts>`. MR: `MR/001` (bill), `ORD/0001` (order via RPC) but **Checkout `ORD/count+1` client-side race**. MVP: `ORD-YYYYMMDD-####`, `INV-2024-###`, `led-*`, `PAY-{ts}`, `TXN-{ts}`. DMVP: `ORD-`base36, `PH{last8}`, `SO{last8}`, `-S`base36, `BILL-{ts}-{idx}`. SP: `ORD-YYYY-####`, `INV-YYYY-####`, `PAY-#####`, `RET-####`, `GRN-YYYY-####`, `SPAY-#####`, `PO-YYYY-####`, `PGRN-YYYY-####`, `SALE-YYYY-####`, `PPAY-#####`, `SRET-####` (order/PO use collision retry).
+
+### 15.3 Credit-first + FIFO settlement
+- **ERP** ‹ERP›: **credit-first + FIFO** appears in FIVE places, same algorithm + 0.01 tolerance: (1) Pharmacies custom payment, (2) `approve-reject-payment` edge fn, (3) route collection, (4) partial payment (single-order), (5) mark-fully-paid (bulk). `creditUsed=min(payment,credit)`, `totalFundsToDistribute=creditUsed+payment`, leftover → credit_balance. Outstanding = `Σ max(0, total − paid)` over unpaid/partial (`recalculatePharmacyBalance` duplicated everywhere).
+- **HUB** ‹HUB›: **CollectPaymentDialog** FIFO auto or manual; `StockistRecordPayment` (#51 marks all paid if outstanding≤0). `update_circle_outstanding` atomic in most flows, **non-atomic `.update()`** in CollectPaymentDialog/BillPreviewDialog/StockistReturns/return credit_balance branch. **Net Due = outstanding − credit_balance**.
+- **MED** ‹MED›: no credit model; payments mock (`Math.random()>0.05` 95%; 2s delay; no real gateway; **no DB transaction — best-effort rollback deletes**).
+- **MR** ‹MR›: `check_credit_limit` RPC (≥100 blocked, ≥90 warning) — **PharmacyDetail display-only, BillForm hard-blocks** `dueAmount > max_credit_limit`. `update_bill_statuses` bill machine (critical/overdue/due_soon/pending/paid by remaining_due_date). Reminders = `payment_reminders`/`payment_requests` rows + simulated modal (**no server messaging**). **Money bugs:** PharmacyDetail remaining=total−2×upfront; BillForm rolls previous_due (double-count).
+- **MVP** ‹MVP›: FIFO in 3 places (CirclePharmacies, CirclePharmacyDetail, PharmacistPayments). `addPayment` clamps to remaining due (no overpay), blocks cancelled. Outstanding = `max(0, Σ grandTotal − Σ paid)` over non-cancelled. `getCreditUsed/getCreditLimit/canUseCredit`. **Checkout hard-blocks pay-later CIRCLE over limit; CreateOrder no credit check**. Cheque cast onto method union / cheque→cash fidelity loss.
+- **DSW** ‹DSW›: no money moves — **every settle/collect/approve = toast + local state**. FIFO not implemented; CollectPaymentDialog quick 25/50/Full → toast.
+- **DMVP** ‹DMVP›: **CollectPaymentDialog** FIFO/manual, insert payment confirmed, circle `outstanding=max(0,−amt)` **direct non-atomic, never touches credit_balance**. Credit enforcement **asymmetric**: pharmacy placeOrder **hard block**, StockistCreateOrder **warn-allow**. Returns → credit_balance+= (paid) / RPC −= (unpaid) but **never inserts order_returns**. All RPC writes no-op.
+- **SP** ‹SP, real double-entry›: `recordPayment` (non-cash requires **unique reference** `DUPLICATE_REFERENCE`/`REFERENCE_REQUIRED`; tx FIFO across oldest bills or explicit allocations; refuse over-allocate; outstanding-=; ledger method Dr/Debtors Cr). Void reverses. **`getPharmacyExposure`** = unpaid bill balances Σmax(0,total−paid) + in-flight approved-unbilled orders; enforced at create/finalize/approve; connection creditLimit precedence. `pharmacies.outstanding` denormalized + reconcilable. Delivery-staff N/A. Payable side (`recordPayablePayment` → emits `payment.recorded` → stockist reciprocal `recordPayment`).
+
+### 15.4 GST / tax logic ‹variant per app — KEEP ALL›
+- **ERP:** portal checkout flat **5% + delivery fee**; public catalogue **per-item gst_percentage, no fee**; OrderCreation **SGST/CGST split (tax/2 each)**, per-item gst default 5; QuickOrder/QuickBill 5/12 toggle (default 12); create-platform-order default 12.
+- **HUB:** stockist bills/orders **NO GST computed** ("TAX INVOICE" cosmetic; gst_rate/hsn unused; GST report reads unpopulated `bills.gst_amount`); Customer Checkout flat **5% + fee**; inline order raw total; B2C bill line items only.
+- **MED:** per-line `gst_amount=price×qty×gst%/100`, per-stockist total=subtotal+Σgst, stored on order_items; **no CGST/SGST**; missing gst treated as 0. Bulk-upload margin models GST **on profit** (non-standard).
+- **MR:** **no GST/tax anywhere** (`tax_amount`/`discount_amount` columns never written).
+- **MVP:** **flat 12%** everywhere (`Math.round(subtotal×0.12)`); no split, no per-item, no fee; discount hardcoded 0.
+- **DSW:** OrderDetail/CreateOrder/QuickOrder **18% hardcoded** (ignores per-product 5/12); CreateBill uses pre-computed per-order gst; Checkout **18%**; AcceptOrder **12%**; patient/sale orders no GST line. **Net: Subtotal+GST≠Total on OrderDetail.**
+- **DMVP:** **no GST math** despite gst_rate/gst_amount + "TAX INVOICE".
+- **SP:** `computeGst` — `isInterstate=sellerState≠buyerState`; intra CGST=round2(tax/2)+SGST=round2(tax−cgst); inter all IGST; rates 0/5/12/18/28; order/bill GST-**exclusive**, retail POS GST-**inclusive**.
+
+### 15.5 Stock RPCs / deduction timing ‹variant›
+- ERP: `deduct_stock` on order create; process-bill-image/reduce-stock auto-create.
+- HUB: `decrement_stock` (B2B create) + `deduct_product_stock` (packed — **double-deduct**); `restore_product_stock` (cancel packed+); `deduct_pharmacy_inventory` (B2C confirm)/`restore_pharmacy_inventory` (customer cancel); **B2B purchase = no deduction**; delivery → autoPopulateInventory.
+- MED: `deduct_stock` at checkout (untracked); bulk add/reduce/upsert.
+- MR: decrement at "packed" (sequential, no tx).
+- MVP: FEFO batch pick; deduct on confirm, restore on cancel; expired excluded from totalStock.
+- DMVP: RPCs no-op.
+- SP: **FEFO `reserveStock`** (atomic conditional decrement, recurses, `InsufficientStockError`→409); `receiveStock` upsert; `releaseStock`; every mutation writes `stock_movements` (C24). Adjust-stock cannot exceed qtyReceived (C25).
+
+### 15.6 UPI / QR / receipts / double-entry ledger
+- ERP: `qrcode.react` (level H) + `upi://pay?pa=&pn=&am=&tn=Order-&cu=INR`; PaymentLinkDialog (editable UPI, 100/50/25% or slider, WhatsApp).
+- HUB: bill QR to **hardcoded `digi-swasthya-hub.lovable.app/verify-bill/`**; `generate-receipt-pdf` A5; WhatsApp `wa.me/91<phone>` (country code hardcoded).
+- MED: mock references only; no gateway/UPI/QR.
+- MR: `generateUPILink` (`upi://pay?pa=&pn=&am=&cu=INR&tn=Bill`); WhatsApp deep links; **PaymentProcessModal hardcoded Kotak bank xxxx5414**; Upgrade payee **9672123710**.
+- MVP: **no wa.me/upi://pay**; only tel: + clipboard; WhatsApp "send" = record + toast.
+- DSW: wa.me wired (CreateBill/QuickBill/SharePaymentLink); tel:/maps/clipboard real.
+- DMVP: html2canvas→jsPDF (A4), `generate-receipt-pdf` A5, QR qrcode.react → **hardcoded lineage domain** (won't reach local VerifyBill).
+- SP: **double-entry ledger** (`postEntry` throws on imbalance >0.01; 16 seeded accounts incl **GRN_CLEARING** suspense; sales/purchase/payment/return/void all post reversing entries). WhatsApp via client-rasterized PDF.
+
+---
+
+## Module 16 — Delivery config & fee engine
+
+- **ERP** ‹ERP›: **DeliverySettings** tabs — Delivery Dates (multi-select Calendar → `stockist_delivery_dates{is_active}`), Service Areas (6-digit PIN + name → `stockist_service_areas`, dup 23505, Switch, "only pharmacies in these areas can order"), **Delivery Fees** (rule type **Flat Fee / Free Above Order Amount / Per KM Charge**; priority=count+1; `stockist_delivery_rules`). **`calculate-delivery-fee`** edge fn: Haversine (dispatch↔pharmacy lat/lng) + rules by priority (order_amount free / flat_fee / per_km × max(0,dist−base)); default **≥₹5000?0:50**; always 200.
+- **HUB** ‹HUB›: StockistServiceableAreas (PINs + per-PIN `delivery_settings`), StockistDeliveryRoutes (Google Maps URL, `delivery_route_templates`), StockistHolidays (`stockist_holidays` start/end/reason/allow_preorder, notifies circle). Pharmacy delivery config in business details. B2C: fee from `pharmacy_profiles.delivery_fee` (0 if ≥free_delivery_above). PharmacyDeliveryRoutes.
+- **MED** ‹MED, DORMANT›: **DeliveryRulesConfig** (5 rule cards: Free on Profit / Free on Order Amount / Free on Scheduled Dates / Distance-Based / Flat Fee; priority fixed 1..5; "first matching rule wins"). ServiceableAreasManager (PIN + area). DeliveryAndDates (Dates tab **never loads on mount bug**). **`useDeliveryFee` + `distanceCalculator` Haversine ENTIRELY DORMANT** — imported by nobody; checkout never applies fee, never sets `orders.delivery_fee`; **no UI to capture lat/lon** (LocationInput unused).
+- **MR** ‹MR, partial›: no delivery-fee engine; **DeliveryPlanner** (route only, **simulated** distance random 10-59km, time×2.5min, Open in Google Maps, no persistence).
+- **MVP** ‹MVP›: **DeliverySetup** (Service Areas + Delivery Slots — real CRUD). **HolidayManagement** (real; allow_preorder; `isStockistOnHoliday` exact date===today). Checkout **4 hardcoded delivery slots UI-only**; delivery charge type in registration (free/flat/free_above/distance) collected but not applied. No fee in any total.
+- **DSW** ‹DSW›: Delivery Routes page (mock routes, "Today" hardcoded `2026-01-27`; Call staff tel: wired; Create toast). Sale Live Settings (radius slider 1-15km, deliveryFee editable, operating hours — toast, not persisted). No fee math.
+- **DMVP** ‹DMVP, partial›: Serviceable Areas (add/remove PIN real-shape but no-op writes). Pharmacy **Business Details Delivery Configuration** (min_order_amount, delivery_fee, free_delivery_above — **stored never applied**); Operating Hours (stored never applied). No fee math.
+- **SP** ‹SP, partial›: Serviceable Areas PINs + per-PIN `delivery_settings` (delivery_days); DeliveryRoutes (Google Maps directions URL, no optimization; templates); StockistHolidays (start/end/allow_preorder, notifies circle). Bill dueDate = billDate + paymentTermsDays. No delivery-fee-on-order engine (fees not in order totals).
+
+---
+
+## Module 17 — Realtime / Offline / PWA / Infra
+
+### 17.1 Realtime
+- **ERP** ‹ERP›: **extensive** — dashboard-orders/stats, pharmacies (payments/orders/details), products-realtime, orders-realtime, payments, payment-approvals, notices INSERT, activity_log INSERT, catalogue dashboard (orders/pharmacy_details/payment_confirmations).
+- **HUB** ‹HUB, only 3 channels›: `notifications-{user.id}`, `chat-{conversationId}`, `peer-{sortedIds}`. **No realtime on orders/inventory/payments** (polling only).
+- **MED** ‹MED›: **none** (refetch on mount/mutation).
+- **MR** ‹MR, only 1›: `pharmacy-bills-changes` (PharmacyDetail). Rest = TanStack pull.
+- **MVP/DSW** ‹—›: none (no backend).
+- **DMVP** ‹DMVP›: `useRealtimeNotifications` = literal no-op; MockChannel no-ops; TopNav badges hardcoded (chat 1, bell 2).
+- **SP** ‹SP›: no websocket realtime; **event bus polled** `POST /events/process` every 10s (`useEvents`).
+
+### 17.2 Offline / sync
+- ERP ‹ERP›: **offlineSync.ts** singleton queue in `localStorage.offline_sync_queue`; replays on `window online`; `offlineAwareFetch` queues POST/PUT/DELETE/PATCH offline → synthetic **HTTP 202** `{queued:true}`. NetworkStatus widget.
+- HUB ‹HUB›: `useOfflineDetector` + OfflineBanner (no mutation queue).
+- MED ‹—›: none.
+- DMVP ‹DMVP›: `useOfflineDetector` + OfflineBanner; **no mutation queue**.
+- SP/MR/MVP/DSW ‹—›: none.
+
+### 17.3 PWA
+- ERP ‹ERP›: vite-plugin-pwa, dev port 8080, SWC, gzip+brotli, manual chunks; `registerType:'prompt'`, `skipWaiting:false`, `navigateFallback:'/offline'`; Workbox Supabase NetworkFirst(10s,1d,100)/images CacheFirst(30d)/fonts(365d); update poll 60s; PWAInstallPrompt + PWAUpdateNotification.
+- HUB ‹HUB›: `public/manifest.json` (theme #16a34a, standalone/portrait), **hand-written `public/sw.js`** (`digi-swasthya-v3`, network-first, SKIP_WAITING); **two overlapping update mechanisms** (UpdateBanner + useVersionCheck); `useVersionCheck` **"1.0.0" vs constants "2.0.0"** mismatch.
+- MED ‹MED›: vite-plugin-pwa `registerType:'autoUpdate'`, port 8080, manifest "MedOrder - Medicine Marketplace", Workbox Supabase NetworkFirst 24h.
+- MR ‹MR›: VitePWA autoUpdate, Workbox glob, manifest PharmaMR theme #ffffff.
+- MVP ‹MVP›: **no service worker, no PWA plugin**; Install page absent (has /install? no). localStorage-only.
+- DSW ‹DSW›: VitePWA autoUpdate, port 8080, manifest "Digi Swasthya" theme #4a7c94, Workbox precache + Google Fonts CacheFirst; Install page (`beforeinstallprompt`, iOS/standalone detection).
+- DMVP ‹DMVP›: `public/manifest.json` + hand-written sw.js; vite react-swc + lovable-tagger (**no VitePWA**), port 8080. Version footer "v1.0.0" vs APP_VERSION "2.0.0".
+- SP ‹SP›: server Express (helmet CSP off, CORS credentials, 10MB JSON, PORT 4000, `DATABASE_URL` default `pglite:memory`); client axios baseURL `/api` withCredentials, 401→login redirect.
+- MED extra ‹MED›: **Install page** (`/install`, iOS/standalone/`beforeinstallprompt`, not linked). ERP/HUB also PWA install prompts.
+
+### 17.4 Storage buckets & TTLs
+- ERP ‹ERP›: `product-images` (public), `bills`/`prescriptions` (signed 1h); `uploadToStorage` folder=user.id. CSV `parseCSVContent`/`mapCSVToProduct`.
+- HUB ‹HUB, inconsistent by design›: **`documents`** (registration=public URL; resubmissions/delivery-proofs=signed 365d/1yr; checkout Rx/UPI proofs=signed 24h; Rx upload=**raw path no signed URL**; pharmacy payment proof=30d; business docs=1d; purchase bills raw); `product-images`, `product_media`/`pharmacy_inventory_media`, `public-assets` (doctor avatar), `platform` (logo).
+- MED ‹MED›: `bills` (`${stockistId}/…` signed 900s); legacy `ocr-bills` unused; `product-images`/`prescriptions` unused. RLS corrected to `user_owns_stockist`.
+- MR ‹MR›: `product-images` (public), `licenses` (private; **Upgrade mis-reads via getPublicUrl → won't resolve**).
+- SP ‹SP›: multer uploads; invoice base64 data-URL; no bucket abstraction (PGlite embedded).
+- MVP/DSW ‹—›: no storage (object URLs / placeholders); MVP FileUpload 5MB silently drops oversized.
+- DMVP ‹DMVP›: MockStorage → `https://placeholder.com/...` for all (product-images/documents/platform).
+
+### 17.5 Data-layer quirks (prototypes)
+- DMVP ‹DMVP›: **mock supabase** — `.or()`/`.filter()`/`contains`/`textSearch` all no-op (→ StockistOrders shows ALL stockists' orders; PeerChatPage shows whole table); joins only via small JOIN_MAP; insert/update/delete/upsert no-op; `functions.invoke → null`; RPC 3 truthy rest null.
+- MVP ‹MVP›: AppStateContext (~1050 lines) persists ~29 slices to `digi-swasthya-state`; merges seed + dynamic overrides; artificial 600/700/1000/1200/1500/2000ms delays throughout.
+- DSW ‹DSW›: **no persistence** except tour flag; page-local arrays bypass shared mock modules in many pages; detail pages ignore `useParams().id` (patient OrderDetail/ConsultationDetail).
+
+---
+
+## Module 18 — Data model
+
+- **ERP** ‹ERP, ~70 tables + RPCs›: identity (profiles, user_roles, stockist_details, pharmacy_details, patient_details, brand_details, mr_details); catalog (products, product_batches, pharmacy_inventory, pharmacy_expiry_alerts, brand_products); orders (orders, order_items, order_batch_cycles, patient_orders, patient_order_tracking, brand_orders, delivery_tracking, route_executions); finance (invoices, payment_confirmations, payment_reminders, platform_fees, commission_ledger, mr_order_commissions, subscription_plans, user_subscriptions); connections (pharmacy_stockist_connections, pharmacy_registration_requests, pharmacy_documents, territories, stockist_service_areas, stockist_delivery_dates, stockist_delivery_rules, batch_delivery_rules); patient (patient_prescriptions, patient_addresses, patient_refill_reminders, patient_wishlist, wishlist, loyalty_points/transactions, ratings_reviews, referrals, search_history); brand/compliance (brand_campaigns, campaigns, brand_batch_verification, batch_recalls, disputes); mr (mr_pharmacy_visits); governance (admin_notices, user_notice_recipients, message_templates, notification_queue, notification_preferences, communication_log, support_tickets, audit_logs, activity_log, analytics_events, platform_settings, catalogue_rate_limits). RPCs: has_role, is_admin, check_rate_limit, deduct_stock, distribute_notice_to_users, search_users_by_batch_code.
+- **HUB** ‹HUB, ~70 tables + 15 RPCs, project ggliujfrabwtodwtjnul›: identity/roles (profiles, user_roles, *_profiles, login_activity, login_attempts); catalog (products, product_batches, product_media, product_categories, pharmacy_inventory, pharmacy_inventory_media, pharmacy_categories, drug_schedules); B2B (orders, order_items, order_returns, order_status_history, delivery_staff, delivery_settings, delivery_route_templates, stockist_holidays, serviceable_areas, admin_serviceable_areas); B2C (customer_orders, customer_order_items, customer_returns, customer_return_items, customer_reviews, customer_wishlist, customer_addresses); finance (payments, payment_reminders, bills, bill_orders, credit_notes, subscription_plans); connections (stockist_pharmacy_circle, pharmacy_serviceable_areas, pharmacy_delivery_staff, pharmacy_consultation_settings); healthcare (consultations, prescriptions, prescription_items, prescription_templates, doctor_availability, doctor_specializations, doctor_pharmacy_partnerships, doctor_commission_rules, doctor_commission_earnings); compliance (counterfeit_alerts, reviews); governance (admin_audit_log, notifications, messages, peer_messages, conversations, chat_messages, quick_questions, platform_settings, platform_banners). Enums: app_role admin/stockist/pharmacy/customer/doctor; approval_status pending/approved/rejected. `as any` tables (not in types): pharmacy_stock_audits, recurring_orders, manufacturer_returns, price_history (dead).
+- **MED** ‹MED, project kefbopoxcturwiqkfgdf›: user_roles, stockists, pharmacies, stockist_products (no hsn_code), bulk_upload_drafts, orders, order_items, payments, smart_order_sessions/items/recommendations, stockist_delivery_dates/rules/serviceable_areas. RPCs: has_role, user_owns_stockist, deduct_stock (**declared/called but no migration — untracked**), update_updated_at_column. Enum app_role admin/stockist/pharmacy. Buckets: bills; legacy ocr-bills unused.
+- **MR** ‹MR, project uuwwnggimhvtvnislptd›: bills, cart_items (persistent seller-locked), order_items, orders (buyer_id, seller_id, seller_type, stockist_id→profiles, pharmacy_id→pharmacies, tax_amount/discount_amount unused), products (seller_type, discount_percentage, min/max_order_quantity), profiles (username, is_catalogue_live, subscription_*, bank_*), pharmacies (mr_id, max_credit_limit, payment_behavior_score, avg_payment_days), seller_buyer_relationships, store_settings (no UI writes), subscription_requests, support_tickets, user_roles, payment_reminders, payment_requests, otc_brands/inventory/shipments/shipment_items; **as any**: pharmacy_otc_subscriptions, otc_subscription_plans. View product_sales_summary (unread). RPCs: check_credit_limit, get_next_bill_number, get_next_order_number, get_pharmacy_credit_utilization, has_role, update_bill_statuses, update_overdue_bills (broken). Enums app_role (mr/stockist/distributor/pharmacy/admin), product_category (10). Admin pw `jit@ADMIN1`; wipe phrase `DELETE ALL USERS AND DATA`.
+- **MVP** ‹MVP, localStorage `digi-swasthya-state`, no DB›: ~29 persisted slices (cartItems, dynamicOrders/Payments/Ledger, invoices, reminders, connectedStockists, orderStatusOverrides, dynamic Stockists/Pharmacists/Medicines/Batches, batchQtyOverrides, counterfeitOverrides, banners+overrides+deleted, circleEntries, addresses, orderCounter(10)/invoiceCounter(5), deliveryAreas/Slots, holidays, returnRequests, creditNotes, pharmacyInventory, supportMessages). Seed: 1 admin/5 stockists/6 pharmacists, 18 medicines (med-006 counterfeit)/19 batches, 9 orders, 6 payments/15 ledger, 3 banners/5 notifications/5 commissionRules/11 circlePharmacies (unused). Enums OrderStatus, ApprovalStatus (suspended unused), PaymentStatus, OrderType PLATFORM/CIRCLE.
+- **DSW** ‹DSW, no backend, in-memory mock modules›: stockist-mock (20+8 pharmacies, 10 products, 5 incoming, 6 orders, 5 payments, 3 notices, 5 notifications), pharmacy-mock (8 stockists, 15 products w/ stockistPrices, 5 cart, 6 orders, 7 offers), pharmacy-sale-mock (5 patients, 4 doctors, 4 consults, 3 saleOrders, 7 inventory), patient-mock (100/200/150/100/50 generated), doctor-mock (60/23/16/31/50), admin-mock (platformStats hardcoded, 235 users, 15 verification, 100 orders, 150 transactions, 50 consults). unified-data-helpers (getPlatformMetrics/getPatientPrescriptionVault unused).
+- **DMVP** ‹DMVP, mock, types PostgrestVersion 14.4›: 22 tables (bill_orders, bills, chat_messages, conversations, login_activity, login_attempts, messages, notifications, order_items, order_status_history, orders, payments, peer_messages, pharmacy_profiles, product_batches, product_media, products, profiles, serviceable_areas, stockist_pharmacy_circle, stockist_profiles, user_roles); order_returns/quick_questions **referenced but absent**. 15 RPCs (3 stubbed truthy). Enums app_role (customer/doctor unused), approval_status. Seed: 4 stockists (sp-004 pending), 5 pharmacies (pp-005 pending), 12 products, 8 orders, 5 bills, 4 payments, 4 circle (all sp-001). 55 historical SQL migrations (not applied).
+- **SP** ‹SP, PGlite Postgres, Drizzle `db/schema.ts`›: money `numeric(14,2)` strings; `(tenantId,id)` unique indexes; `bills.order_id` unique (idempotent). Tables: tenants, users, refresh_tokens, password_reset_tokens, audit_logs; pharmacies, suppliers, products, product_batches, stock_movements; orders, order_items, order_returns; bills, bill_items, payments, payment_allocations, supplier_payments; purchases; purchase_orders, grn, payable_bills, payable_payments, retail_sales, customers, stockist_returns; stockist_connections, stockist_catalog_items, stockist_public_catalog_items; ledger_accounts (16 seeded incl GRN_CLEARING), ledger_entries; cross_tenant_events, processed_cross_tenant_events; delivery_staff, pharmacy_delivery_staff, delivery_settings, delivery_route_templates, serviceable_areas, stockist_holidays. `lib/ids.ts` numbering; `lib/gst.ts`, `lib/inventory.ts` (FEFO), `lib/ledger.ts`.
+
+---
+
+## Module 19 — Cross-cutting conventions
+
+- **Currency:** ‹all› `₹`. ERP `toLocaleString('en-IN',{2dp})` (some Math.round/toFixed); MED `.toFixed(2)` no grouping; MR/HUB `toLocaleString('en-IN')`; MVP/DSW `toLocaleString('en-IN')` + abbreviated `₹{k}K`; SP numeric strings round2.
+- **Pagination:** ERP TanStack (staleTime 60s); HUB `usePaginatedQuery` 20 (staleTime 15s, **tab counts per-page**); MED manual 20 (`count:'exact'`, **search only current page**); MR TanStack; DMVP usePaginatedQuery (**`.filter()` ignored**); SP TanStack Query 5.
+- **Branding drift** ‹kept›: HUB "Digi Swasthya"/"Digi Swasthya Hub"/"Digital Swasthya"; MED "MedOrder"/"MediConnect"/"Medicine Ordering Marketplace"; MR "PharmaMR"/"Chameleon *"/"P" glyph; SP "Stockist"/"Pharmacy" shells. Version mismatches (HUB 1.0.0 vs 2.0.0; DMVP v1.0.0 vs APP_VERSION 2.0.0).
+- **Status vocabularies** differ per app and per surface (enumerated in §3.3, §5, §15.1) — **all variants kept**.
+- **Hardcoded/stub inventory** (superset, per app):
+  - **ERP:** EditProduct HSN/Batch not persisted; AddProduct batch_code omitted; Analytics "Active Pharmacies" counts ALL (bug); PharmacyDetail Send Reminder `pa=yourUPI@bank` stub; DateRangeFilter display-only; chat-assistant patient/brand/mr tools never executed; optimize-route random distance; extract-prescription unused; Settings notification switches cosmetic; Remember-me unused; orphans PatientSignup/BrandSignup/Index/RoleSelection.
+  - **HUB:** double stock deduction; Home "Pending Bills" always 0; price_history dead; Export PDF emits xlsx; StockTransfer/Dispose no re-aggregate; BatchManager LIFO headline; outstanding non-atomic in several flows; bill QR hardcoded lovable domain; manufacturer-return via window.prompt; RecurringOrders no scheduler; customer-return no restock; staff password plaintext fallback; Rx upload no OCR; two divergent customer order paths; UPI "15-min" static banner; booking ignores doctor_availability; reminders localStorage setTimeout<24h; ReviewOrder writes `reviews` reads `customer_reviews` (never surface); doctor meeting links manual; Earnings excludes commissions (diverges from dashboard); maintenance flag not enforced; two SW update mechanisms; WhatsApp country code 91 hardcoded.
+  - **MED:** AI-autofill broken both forms (wrong request key + wrong response shape); CustomPricing edits lost; Delivery Dates never loads on mount; Product Type Add/Edit value mismatch; Smart Order→cart bypasses validation (delivery_date null); N+1 queries; delivery-fee engine dormant; admin dormant; Index/ProductTable/LocationInput dead; payments mock; bulk-upload-commit no ownership check; GST default 18 (Edit 0).
+  - **MR:** ~15 dead links/unreachable pages; PharmacyDetail remaining=total−2×upfront; BillForm double-counts previous_due; Checkout client-side order# race + pharmacy_id join break; buyers see no orders; MyCustomers outstanding wrong join; MR products seller_type=stockist; SellerDetail cart bypasses lock; Quick modals don't persist line items; update_overdue_bills broken; MySuppliers reads nonexistent full_name; Notifications always empty; Settings tabs inert; Reports Customer/Route stub, PDF stub; Analytics InventoryAlerts hardcoded; OTC init never invoked; PaymentProcessModal hardcoded Kotak; Upgrade private-bucket getPublicUrl; Profile OTC card duplicated; no GST; hardcoded 4.5 ratings; ₹999 subscription; ₹100,000 credit fallback; payment terms 7 vs 30.
+  - **MVP:** login always succeeds; registration never persists (demo session); ForgotPassword/ResetPassword timer+toast; file uploads object-URL 5MB drop; Analytics/Reports/Subscription/Profile stubs; AddItem/EditProduct discard fields; BulkUpload/PurchaseBills ignore file; BulkPriceUpdate upload fabricates prices; Credit tab hardcoded 0; credit fallback ₹175000; cheque→cash fidelity loss; CommissionSetup/AdminPayments not persisted/5% hardcoded; AdminAnalytics mostly fake; Suspend writes 'rejected' (suspended never written); PlatformLedger balance=last entry; UserFlowPage documents non-existent backend; credit notes minted never applied; GST flat 12%; discounts always 0; no wa.me/upi; static notification dot; duplicate /stockist/settings route; GlobalSearch navigates /stockist/* regardless of role.
+  - **DSW:** entire app no backend — every write toast/local (reset on reload); GuidedTour flag only persistence; simulated AI/voice (setTimeout + hardcoded transcript); many 404 nav links; page-local arrays bypass shared modules; detail pages ignore params; hardcoded KPIs/badges throughout; GST inconsistent (18% vs 12% vs per-order); theme toggle inert; OTP accepts any 6-digit; admin UserDetail 3 synthetic keys → mostly "not found".
+  - **DMVP:** mock supabase all writes no-op; `.or()`/`.filter()` ignored (cross-stockist leak, whole-table peer chat); AI null → visible failures; seed status/vocab mismatches (confirmed/processing/whatsapp_parse/neft); bill status chaos (confirmed/final/finalized); dead links (~15 unrouted from More, /record-payment 404, /forgot-password 404); AdminLoginHistory reads empty login_attempts; StockistBusinessDetails price-change filters non-existent status='active'; SharedProductDetail sales chart always empty; QR lineage domain; no GST/delivery math; delete-account toast-only; AdminSettings no backend call.
+  - **SP:** bill QR client-half missing (backend verify exists, no scan UI); multi-step registration missing (single form; PAN/WhatsApp/city/PIN/pincodes/docs/bank not collected); platform super-admin missing; duplicate order partial (PO rejected-only, no confirm; stockist no duplicate); AI single model no fallback; WhatsApp requires client PDF raster + Meta creds; overdue derived not stored (markOverdueBills no-op); refresh tokens revoked but no /auth/refresh; catalog push always full re-sync (changedProductIds unused).
+- **Error codes** ‹SP, most formalized›: InsufficientStockError→409, CREDIT_LIMIT_EXCEEDED, PHARMACY_INACTIVE, CONNECTION_INACTIVE, PO_NOT_SUBMITTABLE/CANCELLABLE, CATALOG_DRIFT, OVER_RECEIVE, EXPIRED_BATCH, BATCH_NOT_AVAILABLE, RX_REQUIRED, SPLIT_MISMATCH, DUPLICATE_REFERENCE, REFERENCE_REQUIRED, BILL_REQUIRED, ORDER_HAS_BILL, REQUEST_COOLDOWN (7-day), PAYMENT_EVENT_*, RETURN_*, CANCEL_REQUEST_*, UNKNOWN_EVENT_TYPE. Others use Postgres 23505 (dup) friendly messages (ERP/MED/MR/DMVP).
+- **Cross-tenant architecture** ‹SP unique›: connection record + append-only `cross_tenant_events` (`emitCrossTenantEvent`/`applyEvent` atomic claim via `processed_cross_tenant_events` onConflictDoNothing; handled types order.*/bill.generated/connection.*/payment.recorded|voided/catalog.changed/return.*; unknown→UNKNOWN_EVENT_TYPE). Two catalogs (connection catalog w/ PTR; public catalog **never stores PTR** C12). Contrast: ERP/HUB/MED/MR/DMVP use single-DB RLS scoping; MVP/DSW single-client mock.
+- **Hardcoded secrets/magic strings** ‹kept›: MR admin pw `jit@ADMIN1`, wipe phrase `DELETE ALL USERS AND DATA`, delete `DELETE`, subscription ₹999, OTC 5%/qty40, credit ₹100,000, payee 9672123710, Kotak xxxx5414; DSW GSTIN `27AABCU9603R1ZM`; ERP `INIT-{ts}`, `pa=yourUPI@bank`; HUB `digi-swasthya-hub.lovable.app`; MED margin 20%/GST 18/MRP×1.1/95% success; SP JWT_SECRET ≥32, DEFAULT_CREDIT_LIMIT 50000, todayIST Asia/Kolkata.
+
+---
+
+*End of unified feature map. Union of 8 exhaustive per-app reviews (ERP, HUB, MED, MR, MVP, DSW, DMVP, SP). Every page, flow, sub-flow, form field, action, calculation, status machine, edge case, stub, and hardcoded value found in any single app is preserved above with per-app source tags and partial/extra/variant deltas.*
+
+---
+
+---
+
+# PART II — COMPLETE PER-APP REVIEWS
+
+> Merged verbatim from [`_reviews/review-*.md`](./_reviews/).
+
+
+---
+
+## Appendix A — stockpharmaerp (ERP)
+
+> Source: `_reviews/review-stockpharmaerp.md` · Repo folder: `stockpharmaerp/`
+
+# StockPharma ERP — Exhaustive Functional Review
+
+> In-product name: **Digi Swasthya Store** (AI assistant branded **Digi Swasthya AI**)
+> Multi-role B2B/B2C pharmaceutical distribution & commerce PWA.
+> Stack: Vite + React 18 + TS · shadcn/ui + Tailwind · React Router v6 · TanStack Query · Zustand · Supabase (Auth/Postgres/Storage/Realtime/Edge Functions) · Lovable AI Gateway (`ai.gateway.lovable.dev`, Gemini-primary + GPT fallback; two functions use `api.lovable.app/v1/ai/chat`).
+
+This document goes far deeper than `FEATURES.md`: it captures exact routes, fields, validations, columns, KPI formulas, status flows, and code-level logic per screen. Currency everywhere is `₹` via `toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})` unless a page uses `Math.round`/`toFixed`.
+
+---
+
+## 0. GLOBAL ARCHITECTURE
+
+### 0.1 Router (`src/App.tsx`)
+- **QueryClient**: `staleTime 60s`, `gcTime 600s`, `retry 2` with exp backoff (`min(500*2^n, 5000)`), `refetchOnWindowFocus false`, `refetchOnReconnect true`, `refetchOnMount false`. Mutations: `retry 1`; global `onError` auto-calls `supabase.auth.refreshSession()` on 401.
+- Providers nested: `QueryClientProvider > TooltipProvider > BrowserRouter > AuthProvider > PharmacyProvider > CartProvider`. Global widgets: `Toaster` (shadcn), `Sonner`, `PWAInstallPrompt`, `PWAUpdateNotification`, `NetworkStatus`, `SessionTimeoutWarning`, all wrapped in `RouteErrorBoundary` + `Suspense` (fallback `PageLoadingSpinner`). All page components are `React.lazy`.
+- **Route table** (path → guard → component):
+  - Public: `/` & `/login` → Login; `/forgot-password`; `/reset-password`; `/role-selection` (ProtectedRoute, no role — deprecated, just redirects to /login).
+  - Onboarding (ProtectedRoute `requiredRole=X requiresOnboarding=false`): `/onboarding/{stockist|pharmacy|patient|brand|mr}`.
+  - Stockist (ProtectedRoute `requiredRole=stockist`): `/stockist/home`, `/stockist/pharmacies`, `/stockist/pharmacies/:pharmacyId`, `/stockist/products`, `/stockist/orders`, `/stockist/orders/:orderId`, `/stockist/order-creation`, `/stockist/payments`, `/stockist/payment-approvals`, `/stockist/analytics`, `/stockist/route-execution`, `/stockist/pharmacy-approvals`, `/stockist/batch-ordering`, `/stockist/delivery-settings`, `/stockist/profile`.
+  - Pharmacy portal (requiredRole=pharmacy): `/pharmacy/portal`, `/pharmacy/inventory`, `/pharmacy/ordering`, `/pharmacy/financials`, `/pharmacy/analytics`, `/pharmacy/stockists`, `/pharmacy/stockists/:stockistId`, `/pharmacy/cart`, `/pharmacy/checkout`, `/pharmacy/orders`, `/pharmacy/profile`.
+  - Patient (requiredRole=patient): `/patient/dashboard`, `/patient/search`, `/patient/checkout`, `/patient/prescriptions`, `/patient/compare`, `/patient/ai-assistant`, `/patient/wishlist`, `/patient/orders`, `/patient/profile`.
+  - Brand (requiredRole=brand): `/brand/dashboard`, `/brand/products`, `/brand/campaigns`, `/brand/analytics`, `/brand/fulfilment`, `/brand/profile`.
+  - MR (requiredRole=mr): `/mr/dashboard` (=MRPharmacies), `/mr/pharmacies`, `/mr/collections`, `/mr/analytics`, `/mr/profile`.
+  - Shared (ProtectedRoute, any role): `/support`, `/settings`.
+  - Admin (AdminRoute): `/admin`, `/admin/users`, `/admin/recalls`, `/admin/notices`, `/admin/disputes`, `/admin/analytics`, `/admin/enhanced-analytics` (NOT linked from dashboard grid), `/admin/audit-logs`, `/admin/fees`, `/admin/documents`, `/admin/templates`, `/admin/territories`, `/admin/campaigns`, `/admin/pharmacy-approvals`.
+  - Public catalogue (no auth; `PharmacySessionProvider` on all except license page): `/catalogue/:stockist_slug` (LicenseVerification), `/catalogue/:stockist_slug/dashboard`, `/catalogue/:stockist_slug/products`, `/catalogue/:stockist_slug/orders`, `/catalogue/:stockist_slug/checkout`.
+  - Public: `/pharmacy-registration`. Errors: `/not-authorized`, `/offline`, `*` → NotFound.
+- **Orphaned components** (built but NOT wired into router): `PatientSignup.tsx`, `BrandSignup.tsx` (self-serve signup pages exist but no route; only the Login page signup tab is used). `Index.tsx` exists (role→dashboard redirect) but `/` is mapped to Login, so Index is effectively dead too.
+
+### 0.2 Contexts
+- **AuthContext**: state `user, session, isLoading, userRole, isRoleLoading, onboardingComplete{stockist,pharmacy,patient,brand,mr}` (all default **true**), `signOut, refreshSession, lastActivity, updateLastActivity`. On sign-in, one `Promise.all` (8s `ROLE_FETCH_TIMEOUT`) queries: `user_roles` (single role via maybeSingle), `stockist_details` by profile_id, `pharmacy_details` by BOTH `auth_profile_id` and `profile_id`, `patient_details`, `brand_details`, `mr_details`. `onboardingComplete[role]` = `queryError ? true : !!data` (error → assume complete to avoid redirect loops). Session timeout `SESSION_TIMEOUT=30min`, activity events `mousedown/keydown/scroll/touchstart` (1s debounce), checked every 60s → toast + signOut. `signOut` clears Zustand store (`usePharmacyStore.clearAll()`), calls `supabase.auth.signOut()`, `localStorage.clear()`, `sessionStorage.clear()`, navigates `/login`. Handles `SIGNED_IN/SIGNED_OUT/TOKEN_REFRESHED`.
+- **useUserRole(userId)** hook: fetches ALL roles, picks most-privileged: **admin > stockist > pharmacy > mr > brand > patient**.
+- **CartContext** (pharmacy portal): items `{productId, productName, stockistId, stockistName, quantity, unitPrice, mrp, maxStock}`. Persist key `${role}_cart_${userId}` (guest_cart fallback). `addItem` merges by productId (qty clamped to maxStock), `updateQuantity` clamps 1..maxStock. Helpers: getStockistItems/Subtotal, getTotalItems, getTotalAmount (`Σ unitPrice*qty`), getUniqueStockists, clearStockistItems, clearCart.
+- **PharmacyContext** (public catalogue): `pharmacy{id,name,license_number,outstanding_balance,credit_balance}`, `stockist{id,name,company_name,upi_id,slug}`, `orders[]`, `cart[]`. Session persisted to `localStorage.pharmacy_session`; cart to `localStorage.pharmacy_cart`. Cart item carries `gst_percentage`. `clearSession` wipes both keys.
+- **PharmacySessionContext**: 20-min inactivity timeout (`PHARMACY_SESSION_TIMEOUT`), checked every 60s → toast + `clearSession()` + navigate to `/catalogue/{slug}` (re-verify license).
+
+### 0.3 Route guards
+- **ProtectedRoute**: uses cached auth (no queries). Skeleton loader; `MAX_LOADING_TIME=10s` fallback forces render. Redirect logic: no user → `/login` (saves `from`); no role → `/login`; role mismatch → own dashboard (`roleDashboardPaths`); onboarding redirect ONLY when `onboardingComplete[role]===false` (explicit).
+- **AdminRoute**: security-hardened — ignores cache, re-queries `user_roles` server-side every mount; non-admin → `/not-authorized`; unauth → `/login`.
+- **DashboardLayout** (stockist wrapper) also independently checks: no user→/login, no role→/role-selection, stockist w/o `stockist_details`→/onboarding/stockist.
+
+### 0.4 Layouts & Navigation (exact items)
+- **Stockist** (`DashboardLayout`/`StockistLayout` = StockistTopNav + StockistBottomNav): TopNav has global search Popover (searches pharmacies by name/owner/phone/area limit5, products by name/brand/generic/category limit5, orders by order_number limit5 — all selecting a result just navigates to the list page), StockistChatAssistant, Support (headphones), Notifications bell, User dropdown (Profile / Logout). **BottomNav** (StockistBottomNav): Home, Pharmacies, Products, Orders, Payments, **Profile**. (Note a second `BottomNav.tsx` exists with Home/Pharmacies/Products/Orders/Payments/**Analytics** — unused variant.)
+- **Pharmacy** (`PharmacyLayout` = PharmacyTopNav + PharmacyBottomNav): TopNav search (catalogue-enabled stockists by name/company limit5 → `/pharmacy/stockists/:id`), PharmacyChatAssistant, cart button with item-count badge, Support, User dropdown. BottomNav: Home, Stockists, Cart, Orders, Profile.
+- **Patient** (`PatientLayout` = PatientTopNav + PatientBottomNav): TopNav = hamburger Sheet (Profile/Settings/Support/Logout) + "Digi Swasthya" title + NotificationBell + user icon. BottomNav: Home, Search, Prescriptions, Wishlist, Profile.
+- **Brand** (`BrandLayout` = BrandTopNav + BrandBottomNav): TopNav = hamburger Sheet (Profile/Settings/Support/Logout) + "Brand Portal" + NotificationBell.
+- **MR** (`MRLayout` = MRBottomNav): BottomNav Dashboard, Pharmacies, Collections, Analytics, Profile.
+- **Admin** (`AdminLayout` = AdminSidebar collapsible + AdminTopNav): Sidebar items → Dashboard, Users, **Approvals** (`/admin/pharmacy-approvals`), Batch Recalls, Notices, Disputes, Analytics, Audit Logs, Fee Management, Documents, Templates, Territories, Campaigns, Settings. (Sidebar does NOT list Enhanced Analytics.)
+
+### 0.5 Infra
+- **storage.ts** `uploadToStorage(file, bucket)`: folder = `session.user.id`; path `${uid}/${timestamp}_${cleanName}`; `product-images`→public URL; `bills`/`prescriptions`→signed URL (1h). CSV: `parseCSVContent` (delimiter auto-detect `,`/`;`/tab, header normalize), `mapCSVToProduct` (alias map for product_name/brand/category/type/mrp/purchase_price(ptr)/sale_price(pts)/stock_quantity/gst/manufacturer/generic_name/batch_number).
+- **offlineSync.ts**: singleton queue in `localStorage.offline_sync_queue`; replays on `window online`; `offlineAwareFetch` queues POST/PUT/DELETE/PATCH when offline and returns synthetic **HTTP 202** `{queued:true}`.
+- **supabaseHelpers.ts**: `withTimeout`, `invokeWithTimeout(fn, body, 30000)` — default 30s edge invoke timeout.
+- **PWA** (vite.config): dev port 8080, SWC, gzip+brotli, manual vendor chunks; `registerType:'prompt'`, `skipWaiting:false`, `navigateFallback:'/offline'`. Workbox: Supabase→NetworkFirst(10s,1d,100), images→CacheFirst(30d), fonts→CacheFirst(365d). Update poll 60s.
+- **SessionTimeoutWarning**: AlertDialog appears in final 5 min with live `mm:ss` countdown; "Stay Logged In"→refreshSession, "Logout Now"→signOut.
+
+---
+
+## 1. AUTH & ONBOARDING
+
+### 1.1 Login (`/login`, `/`) — `Login.tsx`
+- Card titled **Digi Swasthya Store** / "Your Complete Healthcare Platform". Tabs: **Login** / **Sign Up**.
+- **Login form**: Email (email, required), Password (password, required), "Remember me" checkbox (state only, not used), "Forgot password?" link. Submit → `supabase.auth.signInWithPassword`. On success toast; `useEffect` redirects by role via `redirectBasedOnRole`: admin→/admin; else `roleConfig[role].dashboard` unless `onboardingComplete[role]===false` → onboarding.
+- **Sign Up form**: role grid (6 cards: **stockist/pharmacy/patient/brand/mr** — note admin NOT self-signup; the grid is `Object.keys(roleConfig)` = 5 roles) with icons (Building2/Store/User/Briefcase/Users); Email (required), Password (required, min 6), Confirm Password (required). Validations: role selected, passwords match, length≥6. Submit → `auth.signUp` (emailRedirectTo `${origin}/login`) → upsert `user_roles{user_id,role}` (onConflict user_id,role) → upsert `profiles{id,email}` → navigate to `roleConfig[role].onboarding`. Duplicate email → friendly error.
+- Loading: skeleton card while `authLoading`.
+
+### 1.2 ForgotPassword (`/forgot-password`)
+- Email input → `auth.resetPasswordForEmail(email, {redirectTo:${origin}/reset-password})`; success state shows confirmation + Back to Login.
+
+### 1.3 ResetPassword (`/reset-password`)
+- Verifies session from reset link (else redirects to /forgot-password). New Password + Confirm (min 6, must match) → `auth.updateUser({password})` → /login.
+
+### 1.4 RoleSelection (`/role-selection`) — deprecated
+- Immediately toasts "Please use the signup form to select your role" and redirects to /login.
+
+### 1.5 Onboarding flows
+- **StockistOnboarding** (`/onboarding/stockist`): auth+role check; if `stockist_details` exists → /stockist/home. First run shows **OnboardingCarousel** (3 slides: Add Your Products / Share Your Catalogue / Track Everything) gated by `localStorage.onboarding_completed_stockist`. Form fields: Drug License Number*, Your Name* (stockist_name), Company Name*, Phone (tel), Business Address (textarea). Submit → slug `slugify(companyName)+'-'+Date.now()` → insert `stockist_details{profile_id, license_number, stockist_name, company_name, phone, address, catalogue_slug}` → /stockist/home.
+- **PharmacyOnboarding** (`/onboarding/pharmacy`): keys on `auth_profile_id`; carousel (Browse Stockists / Compare & Order / Track Your Orders) gated by `onboarding_completed_pharmacy`. Fields: Pharmacy Name*, Owner Name*, Drug License Number*, GST Number*, Phone* (tel), Email, Address* (textarea), PIN Code*, Area. Insert `pharmacy_details{auth_profile_id, pharmacy_name, owner_name, license_number, gst_number, phone, email, address, pin_code, area}` → /pharmacy/portal.
+- **PatientOnboarding** (`/onboarding/patient`): no carousel. Fields: Full Name* (patient_name), Phone* (tel), Date of Birth (date), Gender (Select male/female/other), Blood Group (Select A+…O-). Client validation requires name+phone. Insert `patient_details` → /patient/dashboard.
+- **BrandOnboarding** (`/onboarding/brand`): waits for auth/role, redirects if role≠brand; if `brand_details` exists → /brand/dashboard. Fields: Brand Name*, Company Name*, Contact Person, Phone, Email, GSTIN, Manufacturing License, Address (textarea). Insert with `is_verified:false, is_active:true` → /brand/dashboard.
+- **MROnboarding** (`/onboarding/mr`): if `mr_details` exists → /mr/dashboard. Fields: License Number*, Your Name* (mr_name), Company Name*, Phone, Address. Insert with slug `slugify(companyName)+'-'+Date.now()` (catalogue_slug) → /mr/dashboard.
+- **OnboardingContent**: STORAGE_KEYS = `onboarding_completed_{stockist|pharmacy|catalogue}`. Illustrations in OnboardingIllustrations.tsx.
+
+---
+
+## 2. STOCKIST MODULE
+
+### 2.1 Dashboard (`/stockist/home`) — `Dashboard.tsx`
+- Uses `useStockistId` (React Query), `usePendingPayments(stockistId, 3)`, `useProcessPayment`, `useDashboardStats(stockistId)`. Realtime channel `dashboard-orders-updates` on `orders` filter stockist_id → refetch platform orders.
+- **Header**: title "Dashboard" / "Welcome to your stockist control panel"; `DateRangeFilter` (calendar range popover, 2 months, Clear button — **display only, not applied to any query**); **Export** button → `ExportDataDialog`.
+- **Quick Actions** card → `QuickActions` component: 8 tiles — **Quick Order** (paste→parse), **Quick Bill**, **Edit Order**, **OCR Scan** (ProductScanDialog), **Bulk Upload**, **Map Route**, **Upload Bill Photo** (BillUploadDialog), **Delivery Settings** (navigates). (Edit Order tile opens EditOrderDialog with `selectedOrderId=null` — effectively needs an order id, so it renders null until one is chosen — a soft stub.)
+- **KPI Cards** (`KPICards`, clickable → `handleKPIClick` opens `KPIDetailDialog`): 5 cards, each shows hardcoded fake trend badges:
+  - **Total Revenue** = `Σ orders.total_amount` (all orders for stockist). Sub "Today: ₹{todayRevenue}". trend "+12.5%".
+  - **Pending Payments** = `Σ pharmacy.outstanding_balance` over pharmacies that have orders w/ this stockist. trend "-5.2%".
+  - **Total Credits** = `Σ pharmacy.credit_balance` (same pharmacy set). trend "+3.1%".
+  - **Active Pharmacies** = count of `is_active` pharmacies that have orders w/ stockist. trend "+2".
+  - **Total Orders** = orders.length. Sub "Today: {todayOrders}". trend "+8.7%".
+  - `useDashboardStats` formulas: parallel fetch orders (`total_amount,payment_status,created_at,pharmacy_id`) + active pharmacies (`outstanding_balance,credit_balance`). `todayOrders`=orders where `new Date(created_at).toDateString()===today`. Realtime channels `dashboard-stats-orders-{id}` (orders), `dashboard-stats-pharmacy-{id}` (pharmacy UPDATE).
+  - **KPIDetailDialog** content by type: revenue/orders → order list (pharmacy name, order_number, relative time, ₹total, payment badge); pending → pharmacies with outstanding (name/area/₹outstanding); credits → pharmacies (+₹credit); pharmacies → cards (owner/area/total_orders). `handleKPIClick` queries: pending = unique pharmacy_ids from orders w/ payment_status in (unpaid,partial), then pharmacy_details `gt outstanding_balance 0`; credits = `gt credit_balance 0`; pharmacies = `is_active true`.
+- **Payment Approvals card**: border turns `destructive/50` when pending>0; destructive Badge "{n} Pending". Shows up to 3 pending confirmations, each: pharmacy_name, ₹amount, payment_type badge, optional pharmacy_notes; inline buttons **Reject / Hold / Approve** (via `useProcessPayment.mutateAsync({confirmationId, action})`). "View All Payment Approvals" link. Empty state → "No payment approval requests yet" + View Payment History link.
+- **Recent Platform Orders** card (only if platformOrders>0): fetches orders `order_source='platform'` limit5; each row (pharmacy name, order_number, "Platform Order" badge, ₹total, left-border primary) → `/stockist/orders/:id?source=platform`. "View All Platform Orders".
+- **LowStockAlert** (orange card, only renders if any): products where `stock_quantity <= min_stock_threshold`, sorted asc, top 5 (name, brand, "{n} left" badge). "View All Products".
+- **TopProducts** ("Top Selling Products"): aggregates `order_items` joined to confirmed orders of stockist; ranks by total_quantity desc top 5 (rank badge, name, units sold, ₹revenue).
+- **NoticesPanel**: fetches `user_notice_recipients` for user (not dismissed) → `admin_notices` active & not expired. Each notice: icon by type (alert/warning/info), title, priority badge, content, created date, dismiss X (sets `dismissed_at`), click marks `read_at`. "N New" badge = unread count. Realtime on `user_notice_recipients` INSERT.
+- **RecentOrders** (collapsible): last 5 orders (order_number, pharmacy_name, relative time, ₹total, status badge). Status colors map draft/confirmed/processing/delivered/cancelled.
+- **ActivityFeed** (collapsible): `activity_log` last 50, filter Select (all / catalogue_update / price_change / order_modified / payment_reminder); shows 10 with icon+description+relative time; realtime INSERT.
+- **ExportDataDialog**: RadioGroup Orders/Payment Confirmations/Activity Log → fetches all rows for stockist → naive CSV (headers = Object.keys(row[0]), values JSON.stringify for objects) → downloads `{type}_{yyyy-MM-dd}.csv`.
+
+### 2.2 Pharmacies (`/stockist/pharmacies`) — `Pharmacies.tsx`
+- Uses `useStockistId` + `useCachedPharmacies(stockistId)` (cache w/ invalidate). Realtime: `pharmacies-payments-updates` (payment_confirmations UPDATE→approved), `pharmacies-orders-updates` (orders *), `pharmacies-details-updates` (pharmacy_details UPDATE). Search filter over name/owner/phone/area.
+- **fetchPendingOrders**: orders for stockist where `payment_status in (unpaid,partial) OR delivery_status≠delivered OR status=cancelled`, ordered created_at ASC (FIFO), grouped by pharmacy_id.
+- **Per-pharmacy financials** (`calculateFinancials`, computed for ALL pharmacies):
+  - `totalOutstanding = Σ max(0, total_amount - paid_amount)` over unpaid/partial orders.
+  - `latestBillDue` = first (newest listed) unpaid order's due + its `payment_due_date||created_at`.
+  - `pastDues = Σ max(0, due)` over unpaid orders whose `payment_due_date < now`.
+  - `ordersPending` = count of all grouped orders.
+- **Pharmacy card**: name (click→detail), owner, Active/Inactive badge + Lock icon when inactive (opacity-60). Contact: phone (tel link + copy-to-clipboard), address. Financial block: Credit Balance (green, if>0), Total Outstanding (destructive), **Net Due** = `max(0, outstanding_balance - credit_balance)` (only if credit>0), Latest Bill Due (amber), Past Dues (red, if>0), Orders Pending count.
+- **Row menu** (MoreVertical): View Details, Edit (EditPharmacyDialog), Mark Active/Inactive (toggle is_active), Delete Permanently (`handleDelete`: hard delete, on FK failure falls back to soft delete `is_active=false`).
+- **Payment actions per card**:
+  - **Custom amount input + Submit** (`handleCustomPayment`): credit-first FIFO. Fetches pharmacy.credit_balance; if credit>0 uses `creditUsed=min(payment,credit)`, `totalFundsToDistribute=creditUsed+payment`, deducts creditUsed. Then FIFO over unpaid orders sorted oldest-first (excludes cancelled): applies `min(remaining, orderDue)`, marks 'paid' when `|total-newPaid|<0.01` (rounding tolerance) else 'partial'; leftover >0.01 → back to credit_balance. Inserts an **approved** `payment_confirmations{payment_type:'custom', payment_method:'custom_amount', processed_by}`. Recalculates `outstanding_balance`. Disabled if inactive/empty/≤0.
+  - **Create Order** → navigates `/stockist/order-creation` with `state.preSelectedPharmacyId`.
+  - **Quick Bill** → QuickBillDialog (preselected).
+  - **WhatsApp Reminder** → `wa.me/{phone}?text=` "Payment reminder for outstanding amount: ₹{totalDue}…".
+  - **Mark Fully Paid** (`handleMarkFullyPaid`): sets `paid_amount=total_amount, payment_status=paid` for all unpaid orders; recalcs balance; logs `activity_log{activity_type:'payment_received'}`. Disabled if outstanding≤0.
+- **Expandable orders** ("View All Orders (N)"): each order shows order_number (link→OrderItemsDialog), amount, computed due `max(0,total-paid)`, status badge with 0.01 tolerance (paid/partial/CANCELLED), inline **delivery_status Select** (Pending/Dispatched/Delivered — optimistic update, revert on error).
+- **Dialogs**: AddPharmacyDialog, EditPharmacyDialog, QuickBillDialog, OrderItemsDialog.
+- **AddPharmacyDialog fields**: Pharmacy Name*, Full Name (Google Maps), Owner Name, Phone(tel), Pin Code (6), GST Number*, License Number* ("used as password for catalogue access"), Credit Limit (₹, default 0), Area, Full Address (textarea), Location Coordinates (lat,lng). On submit: inserts `pharmacy_details{profile_id: stockist.id, ...}` (profile_id set to stockist's id for RLS) + **creates placeholder order** `INIT-{ts}` (total 0, delivered, paid) to establish relationship so pharmacy appears immediately.
+
+### 2.3 Pharmacy Detail (`/stockist/pharmacies/:pharmacyId`) — `PharmacyDetail.tsx`
+- Recomputes on load from orders: total_orders count, total_revenue `Σ total_amount`, outstanding `Σ (total-paid)` over unpaid/partial.
+- Header: Create Order, Send Reminder (WhatsApp w/ a hardcoded placeholder `upi://pay?pa=yourUPI@bank...` link — bug/stub).
+- **Quick stats** (4 cards): Total Outstanding (red), Total Revenue, Total Orders, Credit Limit.
+- **Tabs**: Orders (`PharmacyOrdersList`), Bills (`PharmacyBillsList` — only orders with bill_number+bill_image_url, View Bill), Reminders (`PharmacyRemindersList` — `payment_reminders`, Nudge re-sends WhatsApp + logs a new reminder), Details (`PharmacyDetailsTab` — basic/contact/financial incl. Available Credit = credit_limit − outstanding).
+
+### 2.4 Products (`/stockist/products`) — `Products.tsx`
+- 20 hardcoded `MEDICAL_CATEGORIES` (Analgesics… Others). Realtime `products-realtime` on products.
+- Header: Add Product; quick actions **Scan** (ProductScanDialog), **Bulk** (BulkUploadDialog), **Enhance All** (`handleEnhanceAllProducts`: finds products missing generic/brand/manufacturer/category/type; confirm; loops `fetch-product-info` per product, updates fields; toast "Enhanced N products").
+- Search (name/brand/category). Filters (4 Selects): Brand (distinct), Category (MEDICAL_CATEGORIES), **Expiry** (30/60/90/120 days — filters where earliest `product_batches.expiry_date` diff in [0,days]), **Sort** (default/name/price-low/price-high/stock-low).
+- `fetchTopProducts`: 30-day order_items aggregation by product_name (top 5 names matched to product objects). `fetchExpiryMap`: earliest batch expiry per product.
+- **Sections**: Top Products This Month (horizontal cards); Items to Watch Out For (products where `stock ≤ threshold && stock>0`, top 4).
+- **Product card** (grid): image (fallback placeholder.svg), name, brand, sale_price bold + MRP strikethrough (if mrp>sale), "Stock: N | Sale: ₹", expiry badge (`getExpiryBadge`: Expired if diff<0, {diff}d destructive if≤30, {diff}d secondary if≤90, {months}mo outline), row menu (Edit/Delete w/ confirm), **Add Stock** (QuickUpdateStockDialog).
+- **AddProductDialog fields**: Product Name* + **Auto Fetch** button (`fetch-product-info` fills generic/brand/manufacturer/type/category/pack_size/strength); Generic Name/Salt (hint "+ for multiple salts"); Brand; Manufacturer; Form/Type (Select: tablet/capsule/syrup/injection/drops/cream/powder/suspension/inhaler/lotion/gel/patch/spray/solution); Category (Select ~24 values); Pack Size; Strength (hint "+" for combos); MRP; Purchase Price; Sale Price; Stock Quantity (default 0); Min Stock Alert (default 10); MOQ (default 1); GST % (default 5); Product Image (upload to `product-images`); Description; batch_code (in state but not in insert). Insert to `products`; logs `activity_log{activity_type:'catalogue_update'}`.
+- **EditProductDialog**: same fields pre-filled + **HSN Code** and **Batch Code** inputs + **Fetch with AI**. NOTE: update payload does **NOT persist `hsn_code` or `batch_code`** (they're in the form but omitted from the `.update(...)` object) — known gap. Type dropdown only has 6 options (fewer than Add).
+- **QuickUpdateStockDialog**: mode toggle **Add Stock** vs **Set Stock**; quantity input; live "New stock will be: N" preview (add mode); updates `stock_quantity`.
+- **ProductScanDialog (OCR)**: upload image→`uploadToStorage(product-images)`→`extract-product-label`; staged progress (10/30/70/85/100%). Prefills mrp/batch_number/expiry_date. Matches existing product (exact `.eq(name)` then `.ilike`). Shows "Product exists" (blue, current stock/MRP) or "New" (green). **"Correct — Enable Editing"** unlocks MRP*/Stock*/Purchase*/Sale*/Batch/Expiry (all disabled until confirmed). Existing → `stock += entered`, updates prices/brand/manufacturer/strength; new → insert. Logs activity.
+- **BulkUploadDialog** (3 tabs): **Purchase Bill / Sale Bill / Full Catalogue**. Accepts images/PDF/CSV/XLSX (catalogue = CSV/XLSX only), 10MB max. Spreadsheets parsed locally (`parseSpreadsheet` w/ header alias map + `isValidProductName` filter that rejects phone/email/gstin/total/page/etc); images→`extract-bill-items` (AI). **Preview** table: matches against existing products (normalized name) → status found/new/error; margin input (default 20%). Purchase: existing → `stock += qty`, set purchase_price + `sale_price=price*(1+margin/100)`; new → insert w/ `mrp=price*1.3`. Sale: existing → `stock -= qty`; new → error "not found". Catalogue tab: upsert on conflict `stockist_id,name` (dupes counted skipped). Templates downloadable. AbortController cancel. Logs activity per operation.
+
+### 2.5 Orders (`/stockist/orders`) — `Orders.tsx`
+- Realtime `orders-realtime-updates` (UPDATE). Filters: Pharmacy (Select of active pharmacies), Payment Status (paid/unpaid/partial), Order Source (manual/platform/whatsapp), Clear button. **Status tabs** (buttons with counts): All / Pending (`status=confirmed && delivery_status=pending`) / Out for Delivery (`delivery_status=out_for_delivery`) / Delivered / Cancelled.
+- Desktop **table** columns: Order # | Pharmacy | Status | Payment | Delivery | Amount (right) | Date (MMM dd, yyyy) | Actions (OrderActionsDropdown). Mobile: OrderCard grid. New Order → PharmacySelectDialog → `/stockist/order-creation?pharmacy=:id`.
+- Badges: status(draft=secondary/confirmed=default/cancelled=destructive), payment(paid=default/unpaid=destructive/partial=secondary), delivery=outline.
+- **OrderActionsDropdown** actions: **Mark as Paid** (paid_amount=total, status=paid; inserts approved payment_confirmation `manual_mark_paid`), **Partial Payment** (dialog; validates `amount ≤ due`; new status paid if `|total-newPaid|<0.01` else partial; inserts confirmation `manual_partial`), **Mark as Delivered** (delivery_status=delivered, status=confirmed), **Cancel Order** (confirm; if paid>0 message says "₹X added as credit"; sets status=cancelled).
+
+### 2.6 Order Detail (`/stockist/orders/:orderId`) — `OrderDetail.tsx`
+- Three status cards (Order/Payment/Delivery). **Order Information**: order_number, order date (PPp), delivery_date (if set), **Order Source** badge ("Platform Order" if platform else "Manual Order"), notes. **Payment Information**: Subtotal = `total_amount - tax_amount`, Tax, Total (bold), Net Amount, **Send Reminder** button → PaymentLinkDialog (requires phone). **Pharmacy Details** (name/owner/phone/address). **Order Items (N)** with **Edit Items** → OrderItemsDialog; each item: name, description, "Qty × ₹unit (GST %)", tax line, ₹total (uses Math.round).
+
+### 2.7 Order Creation (`/stockist/order-creation`) — `OrderCreation.tsx`
+- pharmacyId from `?pharmacy=` or `location.state.preSelectedPharmacyId`. Loads stockist + pharmacy + active products (`gst_percentage, batch_code`).
+- **Quick Add — Paste Order**: textarea → **Parse & Add Items** (`parse-order-message`); adds matched items where `productId && matchConfidence≠'none'`, warns unmatched count.
+- **Manual add**: product Select + quantity; allows over-stock (toast warning "Only N in stock. Item added but marked as insufficient."). Per-item GST = `product.gst_percentage||5`; `tax=subtotal*rate/100`.
+- **Order Summary**: Subtotal `Σ qty*unit`, **SGST = tax/2**, **CGST = tax/2**, Total `subtotal+tax`.
+- **Order Items table**: Product (insufficient→destructive bg + "Only N left" badge + inline **Update Stock** button→QuickUpdateStockDialog), Quantity, Unit Price, Tax (%+₹), Total, remove. Clear All.
+- **Create Order** (`handleCreateOrder`): order `ORD-{Date.now()}`, `status=confirmed, payment_status=unpaid, delivery_status=pending, order_source=manual`, total/net=totalAmount, tax_amount; inserts items (incl gst_percentage, tax_amount, batch_code); decrements product stock per item; opens PaymentLinkDialog (on close → /stockist/orders); recalculates pharmacy `outstanding_balance`.
+
+### 2.8 Payments (`/stockist/payments`) — `Payments.tsx`
+- Realtime `orders-payments-updates`. Summary cards: **Total Outstanding** = Σ over dedup-by-pharmacy of `pharmacy.outstanding_balance` (uses `findIndex` dedup); **Pending Invoices** = `Σ total_amount` of unpaid/partial + count; **Received This Month** = `Σ total_amount` of paid orders whose `updated_at` month/year = now + count.
+- Tabs: **Pending Invoices** (table: Pharmacy | Order # | Status | Invoice Amount | Outstanding | Order Date | Actions), each row **Send Reminder** (dialog: amount prefilled=outstanding||total, "Use Full Outstanding" button, message textarea; inserts `payment_reminders{status:sent}` + `communication_log{type:whatsapp}`, opens WhatsApp) and **Mark Paid** (`handleMarkPaid`: paid_amount=total, status=paid; inserts approved confirmation `manual_payments_page`; recalcs balance). **Received** tab (last 50 paid: Pharmacy|Order#|Amount|Payment Date).
+
+### 2.9 Payment Approvals (`/stockist/payment-approvals`) — `PaymentApprovals.tsx`
+- Realtime `payment-approvals-realtime`. Header: animated destructive "{n} Pending" badge (pending count) + Refresh. Lists all confirmations (pharmacy, ₹amount, payment_type + created datetime, pharmacy_notes, status badge approved/rejected/on_hold/pending). Review button for pending/on_hold → dialog with optional **Your Notes** textarea and **Reject / Put on Hold / Approve** → `approve-reject-payment` edge fn.
+
+### 2.10 Analytics (`/stockist/analytics`) — `Analytics.tsx`
+- KPI cards: Total Revenue (`Σ total_amount`), Total Orders, Active Pharmacies (**count of ALL pharmacy_details** via head count — not scoped to stockist, likely a bug), Products (stockist's count). Tabs (Recharts): **Revenue Trends** (LineChart revenueByMonth, last 6 months by `MMM yy`), **Order Analysis** (PieChart ordersByStatus), **Top Pharmacies** (BarChart top 5 by revenue). topProducts collected as `[]` (unused).
+
+### 2.11 Route Execution (`/stockist/route-execution`) — `RouteExecution.tsx`
+- Requires `location.state {selectedPharmacyIds, startingAddress, stockistId}` (from MapRouteDialog). Fetches pharmacies + their non-delivered orders. **Auto-optimizes on load** via `optimize-route`. Route Summary: total distance + per-leg "d1 + d2 + return" + **Re-optimize with AI**. **Drag-and-drop reorder** (@dnd-kit) — reorders list, toasts "Re-optimizing…" (does not actually recompute distances). Per-stop **SortablePharmacyCard**.
+- **SortablePharmacyCard**: drag handle, stop number, name/address, badges Due/Credit/Net/Fully Paid, distance. Expanded: Orders to Deliver list; **Notify Dispatch via WhatsApp** (whatsapp_number||phone; message with all order numbers); **Send Payment Link** per unpaid order (requires stockist UPI configured → PaymentLinkDialog); **Enter Collection Amount** + payment mode Select (cash/online/cheque/other) → **Record Payment** (FIFO over orders, inserts approved `payment_confirmations{payment_type:'route_collection'}`); **Mark Delivered** (sets all pharmacy orders delivery_status=delivered). `totalDue=Σ(total-paid)`, `netDue=max(0,totalDue-credit)`, `isFullyPaid=|totalDue|<0.01`.
+- MapRouteDialog (from Quick Actions): starting address input; lists pharmacies with non-delivered orders (grouped, expandable per-order w/ payment+delivery badges, click order# → OrderItemsDialog); Select All / checkbox select; **Open in Google Maps** (builds `maps/dir` URL origin+destination+waypoints from coords/google_maps_name/address); **Start Route with AI** → navigates to RouteExecution.
+
+### 2.12 Pharmacy Approvals (`/stockist/pharmacy-approvals`) — `StockistApprovals.tsx`
+- Realtime on `pharmacy_registration_requests`. Shows only requests whose `pin_code ∈ stockist_service_areas` (active). If no service areas → empty. Table: Pharmacy | Owner | License # | PIN | Status | Submitted | Review.
+- Status badge logic: approved→"Approved & Added"; rejected; both approved→"Both Approved"; admin_approved→"Admin Approved"; stockist_approved→"You Approved"; else "Pending Review".
+- Review dialog: all fields + document buttons (drug_license/gst_certificate/other) + approval indicators (Admin Approved / Your Approval). **Approve** (`handleApprove`): sets stockist_approved+by+at+stockist_id; if `admin_approved` already true → status='approved' + **inserts `pharmacy_details`** (profile_id=stockist.id, is_active). Dual-approval model.
+
+### 2.13 Batch Ordering (`/stockist/batch-ordering`) — `BatchOrdering.tsx`
+- Fetches current `order_batch_cycles` where status='collecting'. If none → **Start New Cycle** → `create-batch-cycle`. Summary cards: Cycle Period, Total Orders, Total Value, Delivery Date. List of batched orders (pharmacy, order_number, ₹total, status).
+
+### 2.14 Delivery Settings (`/stockist/delivery-settings`) — `DeliverySettings.tsx`
+- Tabs: **Delivery Dates** (multi-select Calendar → toggles/inserts `stockist_delivery_dates{is_active}`; upcoming list w/ Active/Disabled badges), **Service Areas** (add 6-digit PIN + optional area name → `stockist_service_areas`; dup PIN error 23505; Switch toggle active; delete; "only pharmacies in these areas can order"), **Delivery Fees** (rule type Select: **Flat Fee / Free Above Order Amount / Per KM Charge**; value; inserts `stockist_delivery_rules` w/ priority=count+1; table priority/type/description/status/delete).
+
+### 2.15 Stockist Profile (`/stockist/profile`) — `StockistProfile.tsx`
+- Edit toggle. Tabs: **Personal** (Stockist Name/Company/License/Phone/Email(readonly)/Address), **Bank** (UPI ID, Bank Name, Account Number, IFSC, Account Holder Name), **Business** (GSTIN, Default Credit Days default 30), **Catalogue** (status badge active/inactive; shareable `${origin}/catalogue/{catalogue_slug}` w/ copy), **Areas** (add PIN, toggle active, delete `stockist_service_areas`).
+
+### 2.16 Stockist Quick dialogs (details)
+- **QuickOrderDialog**: pharmacy Select (fetched by `profile_id=stockistId`), order textarea (Zod: pharmacy required, text≥10). **Analyze Order with AI** → `parse-order-message`; results table with matchConfidence badges (Exact/High/Medium/Select), inline product Select for low/none, editable qty, remove, add manual item, order summary (taxRate toggle 5/12, default 12). **Create Order**: blocks if any unmatched or none/low; order `ORD-{ts}`, `order_source='whatsapp'`, status=confirmed; net=total+tax; inserts items+tax; decrements stock; logs activity; recalcs balance.
+- **QuickBillDialog**: pharmacy Select (all active), product Select+qty (validates stock), items table, total. **Create Bill**: `ORD-{ts}`, confirmed/unpaid/pending, `order_source='manual'`; inserts items; decrements stock; logs `order_created`; recalcs balance. (taxRate state exists but total is untaxed.)
+- **BillUploadDialog**: upload image/PDF→`uploadToStorage(bills)`→`extract-bill-items` (preview). Pharmacy matching: exact/partial/not_found (create-new checkbox or select existing). **Confirm & Create Order** → `process-bill-image` (passes preview items to skip re-AI); shows created count / auto-created products / failed.
+
+---
+
+## 3. PHARMACY MODULE
+
+### 3.1 Authenticated Portal (`/pharmacy/*`, CartContext)
+- **Dashboard** (`/pharmacy/portal`): resolves pharmacy by `auth_profile_id`. Realtime on `pharmacy_inventory` + `orders`. KPIs: **Inventory Value** = `Σ quantity*(unit_price||0)`; **Low Stock Items** = count where `quantity ≤ low_stock_threshold`; **Expiring Soon** = count where `expiry_date ≤ now+30d`; **Orders This Month** = count since 1st of month. Quick Actions grid: Manage Inventory, Browse Stockists, My Orders, View Analytics.
+- **Inventory** (`/pharmacy/inventory`): `pharmacy_inventory` table (Product | Batch | Quantity | MRP | Expiry Date | Status | Actions). Stock badge Out/Low/In (`getStockStatus`), expiry badge Expired/"Expires in Nd" (≤30). **Add Product** + **Edit** buttons are present but **unwired** (no handlers).
+- **Ordering** (`/pharmacy/ordering`): per-stockist tabs (catalogue_enabled stockists) listing products (MRP, Your Price=sale_price, Stock). `comparePrice()` is a **`Math.random()` placeholder** ("Lowest price! Save ₹X"); **Add to Cart** button is unwired.
+- **Browse Stockists** (`/pharmacy/stockists`): search name/company/address. Cards: product count (head count), next delivery date (earliest active future `stockist_delivery_dates`), phone, address. **Stockists serving the pharmacy's PIN sorted first** (via `stockist_service_areas`). View Catalogue → StockistCatalogue.
+- **Stockist Catalogue** (`/pharmacy/stockists/:stockistId`): CATEGORIES = All/Tablets/Capsules/Syrups/Injections/Ointments/Drops/Other. Products where `is_active && stock_quantity>0`. Search (name/brand/category) + category filter. Card: name, brand, sale_price + MRP strikethrough, **discount% = round((mrp-sale)/mrp*100)**, stock, pack size, quantity stepper clamped **MOQ..stock**, Add/Update Cart (ring-2 highlight when in cart). Quantities initialized from cart + MOQ. Cart badge count in header.
+- **Cart** (`/pharmacy/cart`): empty state (Browse Stockists). Items **grouped by stockist**, per-stockist subtotal + "Remove All", per-item qty stepper (1..maxStock) + remove, Clear Cart. Order Summary: per-stockist subtotals, Subtotal, "Delivery Fees: Calculated at checkout", **Total shown as `₹X+`** (fees pending). Proceed to Checkout / Continue Shopping.
+- **Checkout** (`/pharmacy/checkout`): **separate order per stockist group**. Per group: Subtotal, **GST 5%** (`subtotal*0.05`), **Delivery Fee** via `calculate-delivery-fee` (fallback `subtotal≥5000?0:50`), Total = subtotal+gst+fee; free-delivery green alert if fee=0; per-order notes textarea. **Place Order** per group: order `ORD-{ts}`, `order_source='pharmacy_portal'`, confirmed/unpaid/pending, delivery_address=pharmacy.address; inserts items; RPC **`deduct_stock`** per item (warns on insufficient); clears that stockist's cart. **Place All N Orders** loops groups. Grand Total = Σ group totals. Success screen when all completed. Payment is COD/credit terms (alert). Delivery address card = pharmacy name/address/phone.
+- **Orders** (`/pharmacy/orders`): search (order#/stockist) + status filter (all/confirmed/processing/shipped/delivered/cancelled). Collapsible cards: order_number + status badge + payment badge; stockist, date; ₹net_amount + "Due: ₹{net-paid}" (if>0). Expanded: items list, summary (Subtotal, GST, Total, Paid if>0). STATUS_COLORS/PAYMENT_COLORS maps.
+- **Financials** (`/pharmacy/financials`): Outstanding (from pharmacy_details), Credit Balance (+₹), Total Purchases (`Σ total_amount`), Avg Order Value (`total/count`).
+- **Analytics** (`/pharmacy/analytics`): inventory stat tiles only (no charts) — Total Products, Low Stock Items, Expiring Soon (≤30d), Inventory Value (`Σ qty*unit_price`).
+- **Profile** (`/pharmacy/profile`): tabs Store Info (name/owner/phone/email readonly), License (drug license, GST), Location (address/PIN(6)/area). Keys by `auth_profile_id`.
+
+### 3.2 Public Catalogue (`/catalogue/:stockist_slug/*`, PharmacyContext, no login)
+- **License Verification** (`/catalogue/:slug`): first-visit OnboardingCarousel (Quick Verification / Browse Products / Easy Ordering) gated by `onboarding_completed_catalogue`. Form: Pharmacy Drug License Number* (mono, case/symbol-insensitive), Pharmacy PIN Code (optional, 6). Submit → `verify-pharmacy-license`. On `verified` → sets PharmacyContext pharmacy+stockist(+upi_id)+orders → `/catalogue/{slug}/dashboard`. Shows rate-limit message + "Attempts remaining: N" on failure. "First time user? Contact stockist" alert.
+- **Catalogue Dashboard** (`/dashboard`): fetches latest balance, outstanding orders via `get-pharmacy-outstanding-orders`, last 5 `payment_confirmations`. Realtime on orders / pharmacy_details / payment_confirmations. Welcome card (name, license). Credit Balance panel (if>0), Outstanding Balance (destructive), Net Amount Due = `max(0, outstanding-credit)`. **Mark Payment** button (if outstanding>0) → MarkPaymentDialog. **UPI QR** (UpiQrCode for full outstanding) if stockist.upi_id. Quick actions Browse Products / My Orders. **Payment Requests** history (₹amount, datetime, status badge ✓Approved/✗Rejected/⏸On Hold/⏳Pending). **Outstanding Orders** breakdown (per order: number, date, Paid badge if partial, item lines, ₹outstanding). Recent Orders (last 5). Logout → clearSession.
+- **Catalogue** (`/products`): products `is_active`. Search (name/brand/generic) + category + sort (name/price_asc/price_desc). Product card: image, name, brand, "Salts: {generic}", MRP strikethrough + sale_price, strength/pack badges, quantity stepper (min 1), Add to Cart. Cart carries `gst_percentage||5`. Cart button count in header.
+- **Orders** (`/orders`): platform orders list (order_number, datetime, payment/delivery/status badges, Total/Paid/Pending, notes). Realtime.
+- **Checkout** (`/checkout`): **per-item GST** — `calculateTotals`: per item `subtotal=qty*unit`, `tax=subtotal*gst%/100`, total; grandTotal=subtotal+Σtax; **no delivery fee**. Cart item rows w/ qty steppers/remove. **Place Order** → OrderConfirmationDialog (review + "requires stockist approval" warning) → `create-platform-order`. Success screen: bill summary (Subtotal, Total Tax, This Order Total, Outstanding Balance) + **integrated UPI payment**: RadioGroup (Pay This Order / Pay Total Outstanding / Custom Amount) → dynamic UpiQrCode + copyable `upi://pay?pa=...&am=...&tn=Order-...` deep link + "Payment requires stockist confirmation before updating your balance." Back to Dashboard / Continue Shopping.
+- **MarkPaymentDialog**: RadioGroup Full Outstanding / Custom Amount / Specific Order (Select of unpaid orders). Notes. → `mark-payment-paid` (creates **pending** confirmation). "Pending Approval" notice.
+
+### 3.3 Public Pharmacy Registration (`/pharmacy-registration`)
+- Public form (no auth). Sections: **Basic** (Pharmacy Name*, Owner Name*, Drug License Number*, GST Number*), **Contact** (Phone*, WhatsApp Number, Email), **Location** (Address* textarea, PIN Code*, Area, Google Maps Name, Coordinates lat,lng), **Document Uploads** (Drug License required-labeled, GST Certificate, Other; image/PDF → uploaded to `bills` bucket via getPublicUrl). Insert `pharmacy_registration_requests{...urls, status:'pending'}`. Resets form on success.
+
+---
+
+## 4. PATIENT MODULE (resolves `patient_details` by profile_id)
+
+- **Dashboard** (`/patient/dashboard`): KPIs — Active Orders (`patient_orders` where status∉{delivered,cancelled}), Prescriptions (active count), Wishlist count, Pending Refills (`patient_refill_reminders` active & `next_refill_date ≤ today`). Recent orders (5) w/ status color map (placed/confirmed/packed/dispatched/delivered/cancelled). Quick actions: Search Medicines, Compare Prices; cards Prescription Vault / AI Assistant / Wishlist.
+- **Medicine Search** (`/patient/search`): OR filter `products` on name/brand/**generic** (limit 20); card shows price (`ptr||mrp`), MRP strikethrough, In/Out of Stock badge, stockist name, heart icon (unwired).
+- **Price Comparison** (`/patient/compare`): searches `products.product_name` ilike, `is_active && stock>0`, sorted by `selling_price` asc limit 20. First card = green **BEST PRICE** banner. Shows selling_price, MRP strikethrough, **% off = round((mrp-selling)/mrp*100)**, stockist name, **Star 4.5 hardcoded**, **~45 min ETA hardcoded**, Add to Cart = `toast.success("Added to cart!")` **stub**. (Queries columns `product_name`/`selling_price`/`manufacturer` which differ from the `products` schema used elsewhere — likely returns nothing.)
+- **Checkout** (`/patient/checkout`): address RadioGroup (auto-selects default), Delivery Slot RadioGroup (Today within 2h / Tomorrow Morning), Payment Method (COD/UPI/Card), notes. **Place Order** = `toast.info("Cart integration required. This is a demo…")` then navigates to /patient/orders — **no order written (explicit demo stub)**.
+- **Prescription Vault** (`/patient/prescriptions`): upload image → `prescriptions` bucket (getPublicUrl) → insert `patient_prescriptions{prescription_image_url, prescription_date:today}`. **No OCR on upload** (comment "without AI extraction for now"). Cards show image, date, medicines[] (if present), **"Order from Prescription" button unwired**.
+- **Wishlist** (`/patient/wishlist`): `patient_wishlist` list; remove (optimistic delete); **Add to Cart unwired**.
+- **Orders** (`/patient/orders`): `patient_orders` history; status badge color map; items (first 3 + "+N more").
+- **AI Assistant** (`/patient/ai-assistant`): persistent medical disclaimer Alert. Symptoms textarea → `ai-symptom-checker` (body `{symptoms}` only — age/history not sent). Renders Possible Conditions, Recommendations, OTC Medicines (arrays), disclaimer; "Search for Medicines" button. (NOTE: renders `analysis.possibleConditions/recommendations/otcMedicines/disclaimer`, but the edge fn returns `possible_conditions/suggested_otc_medicines/when_to_see_doctor` — **field name mismatch** so most sections may be empty.)
+- **Profile** (`/patient/profile`): tabs Personal (name/phone/email readonly/DOB/gender Select), Health (Blood Group Select, Allergies readonly join, Emergency Contact name+phone), Addresses (`patient_addresses`; set default (unsets others), delete). Save updates `patient_details`.
+- **PatientSignup.tsx** (orphaned, no route): self-serve — creates auth user + profiles + user_roles(patient) + patient_details; blood group is **free-text input** here vs Select elsewhere.
+
+---
+
+## 5. BRAND MODULE (dashboard gated on `is_verified`)
+
+- **Dashboard** (`/brand/dashboard`): if `brand_details && !is_verified` → pending-verification Alert (blocks rest). Verified → green "Verified" badge. KPIs: Total Orders (`brand_orders` count), Revenue (`Σ total_amount`), active Products (`brand_products` count), active/scheduled Campaigns count. Quick actions Manage Products / Campaigns / Fulfilment.
+- **Products** (`/brand/products`): `brand_products` cards (name, generic, selling_price, MRP, stock, batch, SKU, active badge). **Add Product** dialog fields: Product Name*, Generic Name, SKU*, Batch Number*, MRP*, Selling Price*, Stock Qty → insert `brand_products`. **Edit / Delete buttons present but unwired**.
+- **Campaigns** (`/brand/campaigns`): `brand_campaigns` cards (name, status badge, description, start date, ₹budget, discount%). **Create Campaign** fields: Campaign Name*, Description, Discount %, Budget, Start Date*, End Date*; `campaign_type` hardcoded "discount"; inserted status="draft". **View Analytics button unwired**.
+- **Analytics** (`/brand/analytics`): Total Revenue, Total Orders, Active Products, **Growth Rate hardcoded 24.5%**.
+- **Fulfilment** (`/brand/fulfilment`): Active Orders (brand_orders not delivered), Pharmacy Partners (unique pharmacy_id), **Avg Delivery Time hardcoded 45 min**, **Success Rate hardcoded 98.5%**.
+- **Profile** (`/brand/profile`) — not read in full but per pattern: Company / License (GSTIN, mfg license) / Stats + verification badge.
+- **BrandSignup.tsx** orphaned (no route).
+- Batch verification (`brand_batch_verification` table) supports anti-counterfeit/recall workflows (data model only).
+
+---
+
+## 6. MEDICAL REPRESENTATIVE (MR) MODULE
+
+- **Pharmacies** (`/mr/pharmacies` = `/mr/dashboard` default): lists only **visited** pharmacies (derived from `mr_pharmacy_visits`); search name/phone. **Record Visit** inserts `mr_pharmacy_visits{visit_date:today}`. **Add Pharmacy button unwired**.
+- **Collections** (`/mr/collections`): Total Collected = `Σ mr_order_commissions.commission_amount`, **Target hardcoded ₹50,000**, collection count. Record Collection form (pharmacy name, amount, date) → `toast.success("Collection recorded! (Demo)")` **not persisted**.
+- **Analytics** (`/mr/analytics`): Total Visits, Orders Placed (=commissions count), Total Commission, **Conversion Rate = commissions/visits*100**.
+- **Profile** (`/mr/profile`): Personal / Company / Stats (per pattern).
+
+---
+
+## 7. ADMIN MODULE (all behind AdminRoute)
+
+- **Dashboard** (`/admin`): 11-module navigation grid (Users, Batch Recalls, Notices, Disputes, Analytics, Audit Logs, Fee Management, Document Verification, Message Templates, Territories, Campaigns). `useAdminNotifications` → destructive "{n} new alerts" badge. Quick Stats: Total Users (`profiles` count), Active Stockists, Pharmacies, **Pending Tasks = open disputes count**.
+- **User Management** (`/admin/users`): enriches `profiles` with role (maybeSingle) + stockist name/company. Search email/name/company + role filter (all/admin/stockist/pharmacy/patient/brand/mr). Table: Email|Name|Company|Role|Status|Joined|Actions. **`is_active` always hardcoded true**; Activate/Deactivate button only logs to `audit_logs` via `useAuditLog` — **status not persisted**.
+- **Pharmacy Approvals** (`/admin/pharmacy-approvals`): realtime; table all requests. **Dual approval**: "Approve as Admin" sets admin_approved; if `stockist_approved` already true → status='approved' + inserts `pharmacy_details` (profile_id = current admin's stockist_details id — note: uses admin's own stockist record). **Reject requires reason** (rejection_reason). Status badge logic identical to stockist side.
+- **Document Verification** (`/admin/documents`): `pharmacy_documents` joined to pharmacy name/gst. Queue table (Pharmacy|Document Type|Uploaded|Status|Review). Review dialog: single-step **Verify** / **Reject** (reason required on reject) sets verification_status+verified_at+verified_by; "View Document" link.
+- **Batch Recalls** (`/admin/recalls`): Create Recall dialog (Batch Number*, Product Name*, Manufacturer, Severity Select critical/high/medium/low, Recall Reason*, Instructions) → `RCL-{ts}`, status='active', recall_date=today. **Search Users by Batch Code** → RPC `search_users_by_batch_code` → results (Type badge, Name, Contact, Product Count). Recalls table + **Mark Resolved** (active only).
+- **Disputes** (`/admin/disputes`): `disputes` joined to reporter `profiles.email`. Table: Dispute #|Raised By|Type|Subject|Priority|Status|Date|View. Status colors open/in_progress/resolved/closed/escalated. View dialog: subject/description; status Select (in_progress/resolved/escalated/closed); Resolution textarea + **Mark as Resolved** (sets resolution + resolved_at).
+- **Notices** (`/admin/notices`): Create dialog: Title*, Content*, Type (announcement/alert/update/warning/recall), Priority (low/medium/high/urgent), **granular targeting** — Role (All/Stockists/Pharmacies), Batch Codes / PIN Codes / States / Districts (comma-separated → arrays), Expiration (datetime-local). Insert `admin_notices` → RPC `distribute_notice_to_users` (reports "sent to N users"). Table w/ target badges + **Switch toggle active**. (View button stub.)
+- **Message Templates** (`/admin/templates`): CRUD `message_templates`. Fields: Template Name*, Type (email/sms/whatsapp), Subject (email only), Message Body* (with `{variable}` placeholders), Variables (comma-separated → array). Table (name/type/variable badges/status/edit+delete).
+- **Territory Management** (`/admin/territories`): CRUD `territories` (Territory Name*, State*, District, PIN Codes comma→array). Table w/ first-3 PIN badges + "+N". Second card: **read-only Stockist Service Areas** view (toggle show; joins `stockist_service_areas` + stockist name/company/phone; columns Stockist/Company/PIN/Area/District/State/Phone).
+- **Campaign Management** (`/admin/campaigns`): CRUD `campaigns`. Fields: Campaign Name*, Type (promotional/informational/reminder), Target Audience (all/stockists/pharmacies/active), Message Content*, Schedule (datetime-local). status = scheduled if scheduled_at else draft. **Send Now** (drafts) sets status=sent+sent_at. Status badges draft/scheduled/sent/failed.
+- **Fee Management** (`/admin/fees`): CRUD `platform_fees`. Fields: Fee Name*, Type (percentage/fixed), Value, Applies To (stockist/pharmacy/both), is_active. Table shows value as `{v}%` or `₹{v}`.
+- **Analytics** (`/admin/analytics`): 8 StatCards (Total Users, Stockists, Pharmacies, Orders, Revenue, Pending Orders, Active Disputes, Active Recalls) — **trend %s hardcoded** ("+12% from last month" etc). Revenue/Order/User charts are **placeholder divs** ("chart would go here").
+- **Enhanced Analytics** (`/admin/enhanced-analytics`, NOT linked): 4 KPIs (Users, Orders, Revenue, **Growth Rate hardcoded 32.5%**).
+- **Audit Logs** (`/admin/audit-logs`): last 100 `audit_logs` joined to email; client-side search (action/entity/email); columns Timestamp|User|Action|Entity Type|Entity ID (first 8 chars)|IP Address.
+
+---
+
+## 8. SHARED PAGES
+
+- **Settings** (`/settings`): role-aware layout wrapper. Tabs: **About** (app_info from `platform_settings` — name/version/tagline/developer/email/copyright; role-specific announcement banner if show_banner), **Notifications** (Push/Email/WhatsApp switches — **display only, defaults, not persisted**), **Manage** (admin only) — edit app_info + separate announcement editors for stockist/pharmacy/patient/brand/mr (Title/Message/show_banner Switch → updates `platform_settings.{role}_announcement`).
+- **Support** (`/support`): role-aware layout. Lists user's `support_tickets` split Open/Resolved. **New Ticket** dialog: Subject*, Category (general/billing/bug/feature), Priority (low/medium/high), Description* → insert. **Mark Resolved** per open ticket. Badges for status/priority.
+- **NotFound** (`*`), **NotAuthorized** (`/not-authorized`), **Offline** (`/offline`).
+- **NotificationBell** (patient/brand top nav): shows latest 10 unread from `notification_queue` (per FEATURES; not re-read here).
+
+---
+
+## 9. AI & EDGE FUNCTIONS (`supabase/functions/*`)
+
+All AI via Lovable Gateway `ai.gateway.lovable.dev/v1/chat/completions` (except symptom-checker & extract-prescription use `api.lovable.app/v1/ai/chat`). Gemini-primary + GPT fallback. CORS `*`.
+
+### AI-powered
+- **parse-order-message** — auth required; **ownership-verified** (stockist.id must match profile_id). Body length ≤100000, orderText ≤5000, stockistId UUID regex. Fetches active products; prompt matches order text to catalogue; models `google/gemini-2.5-flash` → `openai/gpt-5-mini`, temp 0.2. Returns `{items:[{originalText, productId|null, productName, quantity, matchConfidence: exact|high|medium|low|none, suggestions[]}]}`. Confidence guide exact=100%…none<40%; parses "50N"/"x100"/"100 boxes"; top-3 suggestions for low/none.
+- **extract-bill-items** — public (no auth); **soft-fails HTTP 200** with `{ok:false, error, items:[]}`. Validates image URL host (supabase/lovable). `gemini-2.5-pro` → `gpt-5` vision. Cleans items (name≤200, qty≥1, price≥0). Handles 429/402.
+- **process-bill-image** — auth required + ownership-verified. Skips AI if `previewItems` supplied (`useProvidedData`). Else `gemini-2.5-pro`→`gpt-5` vision. Resolves pharmacy (pre-selected / create_new / exact-name / license-normalized match / else create w/ gst_number:'PENDING'). Creates order `ORD-{ts}` (confirmed/unpaid/pending, bill_image_url). Inserts items. **Stock: exact-name match** → reduce (`max(0, stock-qty)`); else **auto-create product** w/ stock 0, `sale_price=price*1.2, mrp=price*1.3, gst 5`. Returns `{order_number, order_id, stock_update:{reduced,created,failed}}`.
+- **extract-product-label** — auth. `gemini-2.5-pro`→`gpt-5` vision. Separates medicine name vs brand, **infers popular Indian brand** for generics (e.g. Paracetamol→Dolo), extracts strength/mrp/batch_number/expiry_date (YYYY-MM-DD).
+- **fetch-product-info** — auth. `gemini-2.5-pro` temp 0.7. Enriches product name → name/generic_name/brand (forces popular Indian brand)/manufacturer/strength/pack_size/category/type; joins multiple salts with " + ".
+- **ai-symptom-checker** — public (no auth). `api.lovable.app` + `gemini-2.5-pro`. Body `{symptoms, age, medicalHistory}`. Returns `possible_conditions, suggested_otc_medicines[{name,purpose}], when_to_see_doctor, disclaimer`. (Client sends only `symptoms` and reads different field names — mismatch noted.)
+- **extract-prescription** — public. `api.lovable.app` + `gemini-2.5-flash`. Returns medicines[{name,dosage,frequency,duration}], doctor_name, clinic_name, prescription_date, diagnosis. **Not invoked anywhere in current UI** (prescription upload skips OCR).
+- **chat-assistant** — no explicit auth check (uses service role). Body `{messages, stockist_id, pharmacy_id, role}`. `gemini-2.5-flash` with **function-calling tools**, `tool_choice:auto`, tool-loop. Six role system prompts (all "Digi Swasthya AI", enforce data isolation + ₹ formatting). Tool sets declared for stockist(6)/pharmacy(4)/admin(5)/patient(4)/brand(4)/mr(4), BUT executor selection is only `admin | pharmacy | else→stockist` — **patient/brand/mr tools declared but never executed** (fall through to stockist executor with wrong id). Stockist tools: get_pending_orders, get_todays_orders, get_outstanding_pharmacies, get_low_stock_products, get_payment_summary, get_dashboard_stats (real scoped Supabase queries). 429→credits/rate-limit messages. Only StockistChatAssistant + PharmacyChatAssistant are mounted in UI.
+- **optimize-route** — no auth. Body `{startingPoint, pharmacies[]}`. Builds distance matrix via Google Distance Matrix API if `GOOGLE_MAPS_API_KEY` set, **else `estimateDistanceMatrix` = random 5-20 km** (demo). `gemini-2.5-flash` temp 0.3 solves TSP → `{optimizedOrder(ids), distances[], totalDistance, explanation}`. Fallback to sequential order on parse error.
+
+### Transactional / business logic
+- **create-platform-order** — **public** (intentionally; guarded by license verification + Zod). Zod: pharmacy_id/stockist_id UUID, items[1..100]{product_name≤200, qty int 1..10000, unit_price 0..1e6, total_price, gst_percentage?, tax_amount?}, total_amount 0..1e7. Rounds all to integers. Order `PLT-{ts}-{rand6}`, confirmed/unpaid/pending, order_source='platform'. Inserts items (gst default 12). **Stock reduction by `ilike '%name%'` first match** (`max(0, stock-qty)`). Recomputes pharmacy `outstanding_balance = Σ round(total-paid)` over unpaid/partial.
+- **create-batch-cycle** — service role. Aggregates pending+confirmed orders in date range into `order_batch_cycles`; **`delivery_cost = orders*12`, `cost_savings = orders*(60-12)`** (modeled ₹60 vs ₹12/order). Links orders via `batch_cycle_id`.
+- **reduce-stock-for-order** — service role, Zod-validated. Per item: `ilike` match → reduce; if not found → **auto-create** (stock=qty, then set to 0, min_stock 10, gst 5, category 'Unclassified'); logs `activity_log` (product_created/stock_reduced); low-stock warnings when `newStock ≤ threshold`.
+- **calculate-delivery-fee** — service role. Haversine distance (stockist dispatch lat/lng ↔ pharmacy lat/lng). Applies active `stockist_delivery_rules` by priority: order_amount (free if `order_total ≥ min_order_amount`), flat_fee, distance (`per_km_charge * max(0, dist-base_distance_km)`). Default: **free if ≥₹5000 else ₹50**. Always returns 200 even on error (default ₹50).
+- **mark-payment-paid** — **public** (pharmacy link). Zod: amount 1..1e7, payment_type enum. Inserts **pending** `payment_confirmations` (requires stockist approval).
+- **approve-reject-payment** — auth required (user-verified) + **service-role writes**. Zod: confirmation_id UUID, action approve/reject/on_hold, notes≤500. Updates confirmation status (on_hold clears processed_at/by). **On approve** = credit-first + FIFO settlement: `creditUsed=min(amount, credit)`, `totalFundsToDistribute=creditUsed+amount`. If `order_id` set → apply to that order (excess → credit). Else FIFO over oldest unpaid/partial (excl cancelled). Leftover → credit_balance. **Self-healing cleanup pass**: any unpaid/partial order where `|total-paid|<0.01` → marked paid. Itemized credit note in stockist_notes. 0.01 tolerance throughout.
+- **get-pharmacy-outstanding-orders** — **public** (service role). Zod pharmacy_id+stockist_id. Returns unpaid/partial orders w/ order_items, filtered to `round(paid) < round(total)`.
+- **verify-pharmacy-license** — **public**, **rate-limited** via RPC `check_rate_limit` (5 attempts / 15 min per license, returns 429 + retry minutes). Normalizes license (lowercase, strip non-alphanumeric). Looks up stockist by `catalogue_slug` + `catalogue_enabled`. If `pharmacy_pin_code` provided, validates against active `stockist_service_areas` (else "does not deliver to PIN"). Matches active pharmacy by normalized license. Returns `{verified, pharmacy{id,name,license,outstanding,credit}, stockist{id,name,company_name,upi_id}, orders(last 10)}` or verified:false with attempts_remaining.
+
+---
+
+## 10. PAYMENTS, CREDIT & MONEY LOGIC (consolidated)
+
+- **Status vocab**: order `status` draft/confirmed/cancelled; `payment_status` paid/unpaid/partial; `delivery_status` pending/dispatched/out_for_delivery/delivered. Confirmation `status` pending/approved/rejected/on_hold. Order sources: manual, platform, pharmacy_portal, whatsapp.
+- **Order numbering**: manual/quick-bill/OCR = `ORD-{Date.now()}`; quick-order (WhatsApp parse) = `ORD-{ts}` w/ `order_source=whatsapp`; platform (public catalogue) = `PLT-{ts}-{rand6}`; process-bill-image = `ORD-{ts}`; AddPharmacy placeholder = `INIT-{ts}`; recall = `RCL-{ts}`.
+- **Credit-first + FIFO settlement** appears in FIVE places with the same algorithm & 0.01 tolerance: (1) Pharmacies page custom payment, (2) approve-reject-payment edge fn, (3) SortablePharmacyCard route collection, (4) OrderActionsDropdown partial payment (single-order), (5) mark-fully-paid (bulk). Leftover funds → `credit_balance`.
+- **Outstanding balance** always recomputed as `Σ max(0, total_amount - paid_amount)` over unpaid/partial orders (`recalculatePharmacyBalance` duplicated across many files).
+- **GST differs by surface**: portal checkout = flat **5% + delivery fee**; public catalogue checkout = **per-item `gst_percentage`, no delivery fee**; stockist OrderCreation = **SGST/CGST split (tax/2 each)**, per-item gst default 5; QuickOrder/QuickBill dialogs use a 5/12 tax toggle (default 12); create-platform-order defaults item gst to 12 if absent.
+- **UPI**: QR via `qrcode.react` (level H, size 200, downloadable PNG) + `upi://pay?pa={upi}&pn={name}&am={amount}&tn=Order-{num}&cu=INR` deep links. Payments always require stockist confirmation before balances update. PaymentLinkDialog also lets stockist edit their UPI ID inline (saved to stockist_details) and pick 100/50/25% or slider payment amount, then Send via WhatsApp.
+
+---
+
+## 11. KNOWN STUBS / PLACEHOLDERS / BUGS (code-verified)
+
+- **Patient**: Checkout placement is explicit demo (no write); Add-to-Cart on Search/Compare/Wishlist and "Order from Prescription" unwired; no OCR on prescription upload; PriceComparison Star 4.5 & ~45min hardcoded, Add-to-Cart toast stub; PriceComparison queries columns (`product_name`, `selling_price`) that don't match the products schema; AIAssistant reads response field names that don't match the edge fn output.
+- **Pharmacy portal**: PharmacyOrdering price comparison uses `Math.random()` + Add-to-Cart unwired; Inventory Add/Edit buttons unwired.
+- **Brand**: Analytics growth 24.5%, Fulfilment 45min & 98.5% hardcoded; Product Edit/Delete + Campaign "View Analytics" unwired; campaign_type hardcoded "discount".
+- **MR**: Collections target ₹50,000 hardcoded; Record Collection demo-only (not persisted); Add Pharmacy unwired.
+- **Admin**: User active-status hardcoded true + not persisted (only audit-logged); Analytics charts are placeholder divs + trend %s hardcoded; Enhanced Analytics growth 32.5% hardcoded + not linked from dashboard; Notices/Users "View" buttons stubs.
+- **Stockist**: EditProductDialog collects HSN Code & Batch Code but the update omits them (not persisted); AddProduct collects batch_code but insert omits it; Analytics "Active Pharmacies" counts ALL pharmacies (not scoped); PharmacyDetail Send Reminder uses hardcoded `pa=yourUPI@bank` placeholder; DateRangeFilter on dashboard is display-only.
+- **AI**: chat-assistant declares patient/brand/mr tools but only stockist/pharmacy/admin executors exist; optimize-route uses random distance matrix without Google Maps key; extract-prescription edge fn unused by UI.
+- **Settings**: Notification preference switches are cosmetic (not persisted). **Remember me** on Login unused.
+- **Orphaned routes/components**: PatientSignup, BrandSignup, Index (no `/` mapping), RoleSelection (deprecated redirect). A duplicate `BottomNav.tsx` (Analytics variant) is unused.
+
+---
+
+## 12. DATA MODEL (from types.ts groupings; ~70 tables/RPCs)
+
+- Identity: profiles, user_roles, stockist_details, pharmacy_details, patient_details, brand_details, mr_details.
+- Catalog/inventory: products, product_batches, pharmacy_inventory, pharmacy_expiry_alerts, brand_products.
+- Orders/delivery: orders, order_items, order_batch_cycles, patient_orders, patient_order_tracking, brand_orders, delivery_tracking, route_executions.
+- Payments/finance: invoices, payment_confirmations, payment_reminders, platform_fees, commission_ledger, mr_order_commissions, subscription_plans, user_subscriptions.
+- Connections/territory: pharmacy_stockist_connections, pharmacy_registration_requests, pharmacy_documents, territories, stockist_service_areas, stockist_delivery_dates, stockist_delivery_rules, batch_delivery_rules.
+- Patient engagement: patient_prescriptions, patient_addresses, patient_refill_reminders, patient_wishlist, wishlist, loyalty_points, loyalty_transactions, ratings_reviews, referrals, search_history.
+- Brand/compliance: brand_campaigns, campaigns, brand_batch_verification, batch_recalls, disputes.
+- MR: mr_pharmacy_visits.
+- Governance/comms: admin_notices, user_notice_recipients, message_templates, notification_queue, notification_preferences, communication_log, support_tickets, audit_logs, activity_log, analytics_events, platform_settings, catalogue_rate_limits.
+- RPCs used in code: `has_role`, `is_admin`, `check_rate_limit`, `deduct_stock`, `distribute_notice_to_users`, `search_users_by_batch_code`.
+
+*Generated by reading src/App.tsx, all src/pages/**, src/components/** (dialogs/layouts/dashboards), contexts, hooks, lib, and supabase/functions/*.*
+
+---
+
+---
+
+## Appendix B — digi-swasthya-hub (HUB)
+
+> Source: `_reviews/review-digi-swasthya-hub.md` · Repo folder: `digi-swasthya-hub/`
+
+# Digi Swasthya Hub — EXHAUSTIVE Functional Review (code-derived)
+
+> Deep, source-verified functional review going beyond `FEATURES.md`. Captures every role, page, section, form field (name/type/validation/default), flow step, calculation, state transition, edge case, edge-function contract, and known stub — with exact identifiers from the code.
+>
+> Stack: Vite 5 + React 18 + TS · shadcn/Tailwind · React Router v6 · TanStack Query v5 (global `staleTime 60s`, `gcTime 300s`, `refetchOnWindowFocus false`) · Supabase (Auth/Postgres/Storage/Realtime/Deno edge fns) · Lovable AI Gateway · recharts · jsPDF + html2canvas + qrcode.react + xlsx.
+
+---
+
+## 0. GLOBAL ARCHITECTURE & CROSS-CUTTING
+
+### 0.1 Routing & guards (`src/App.tsx`)
+- `queryClient` default options: `staleTime 60000`, `gcTime 300000`, `refetchOnWindowFocus:false`.
+- `initTheme()` runs at module load: reads `localStorage["theme"]` — `"dark"` adds `.dark`; `"system"` uses `matchMedia("(prefers-color-scheme: dark)")`; else removes `.dark`.
+- **`UpdateBanner`** (mounted OUTSIDE router): registers `/sw.js`, listens `updatefound`/`statechange`, shows fixed top banner "A new version is available!" with "Update Now" → `postMessage({type:'SKIP_WAITING'})`; `controllerchange` → `window.location.reload()`. This is a SECOND update mechanism alongside `useVersionCheck` in `AppLayout` (duplicated logic).
+- **`ProtectedRoute`**: `if loading → Spinner`; `if !user → /login`; `if role && !roles.includes(role) → /login`. No approval/onboarding redirect here (approval gating happens only in `Login`).
+- **`RootRedirect`** priority: admin → stockist → pharmacy → customer → doctor → `/login`.
+- **`SuspenseWrap`** = `ErrorBoundary` + `Suspense` (Spinner fallback). All non-auth pages are `lazy()`.
+- Public routes: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/pending-approval`, `/onboarding/stockist`, `/onboarding/pharmacy`, `/staff/login`, `/staff`, `/verify-bill/:billId`, `*` (NotFound).
+- Five role layouts each render `<AppLayout>` with a per-role `navItems` + `basePath`. Only `PharmacyLayout` passes `showModeToggle purchaseNav saleNav`.
+
+### 0.2 `AppLayout` (`components/layout/AppLayout.tsx`)
+Mounts `useRealtimeNotifications()`, `useSessionTimeout()`, `useVersionCheck()`, `usePharmacyMode()`. Renders `OfflineBanner`, `ToSDialog`, update banner (from `useVersionCheck.updateAvailable` → `applyUpdate`), `TopNav`, `<Outlet context={{ pharmacyMode: mode }}>`, `BottomNav`. `activeNav` swaps purchase/sale nav for pharmacy by `mode`.
+
+### 0.3 `TopNav` (`components/layout/TopNav.tsx`)
+- Left: platform logo from `platform_settings.key='logo_url'` (`staleTime 600000`), else Pill icon; business name + user name.
+- Right icons: **Chat** (`MessageSquareText`) → admin `/admin/messages`, others `${base}/chats`; unread badge = `messages(receiver_id, read=false)` + `peer_messages(receiver_id, read=false)` counts (`refetchInterval 30000`). **Bell** → `notifications` (relative "notifications") with unread count (`notifications.user_id, read=false`, `refetchInterval 30000`). **Avatar**: for pharmacy (showModeToggle) → Popover with user info + "Purchase View"/"Sale View" toggle + "View Profile"; others → click navigates to `profile`.
+- `avatarUrl` from `profiles.avatar_url` by `user.id`.
+
+### 0.4 `BottomNav`
+5 fixed items per role; active match = exact path or `startsWith(fullPath + "/")`; index path matches exact base.
+
+### 0.5 Hooks
+- **`useAuth`**: `getSession()` then `onAuthStateChange`; `fetchUserData` deduped by `fetchedForUser` ref; `Promise.all([user_roles, profiles(full_name,avatar_url)])`. `SIGNED_OUT` clears state. Exposes `{user, roles, loading, profile, signOut}`.
+- **`useStockistProfile/usePharmacyProfile/useCustomerProfile/useDoctorProfile`**: `select("*")` from `*_profiles` by `user_id`, `.single()`, `staleTime 300000`, `enabled:!!user`. The **profile.id** keys nearly all child queries (NOT `user.id`).
+- **`useCart`** (`localStorage["digi_swasthya_cart"]` `{items, pharmacyId}`): single-pharmacy enforced — adding from a different pharmacy fires `toast.error` with "Clear Cart" action (clears + adds). `addItem` merges quantity for same `product_id`. `removeItem` clears `pharmacyId` when empty. `updateQuantity ≤0` removes. Derived: `total = Σ price×qty`, `itemCount = Σ qty`, `hasPrescriptionItems = some(requires_prescription)`. CartItem fields: `product_id, product_name, quantity, price, pharmacy_id, requires_prescription`.
+- **`usePharmacyMode`** (`localStorage["pharmacy_mode"]`, default `"purchase"`): `{mode, setMode, toggleMode}`.
+- **`useSessionTimeout(30min)`**: resets on `mousedown/keydown/touchstart/scroll`; on timeout `toast.warning("Session expired due to inactivity")` + `signOut()`. 5-min heartbeat updates `profiles.updated_at`.
+- **`useAutoFillProduct`**: validates ≥3 chars, invokes `autofill-product-details`; toasts `"${fields_filled} fields suggested"` / "No details found".
+- **`usePaginatedQuery`**: page size default 20, `range(from,to)`, `count:"exact"`, `staleTime 15000`. Exposes page/totalPages/hasMore/next/prev/goToPage. (Note: filter application — many callers pass filters but tab counts computed client-side per page.)
+- **`useRealtimeNotifications`**: channel `notifications-${user.id}`, INSERT filter `user_id=eq`, invalidates `["notifications", user.id]` + toast.
+- **`useVersionCheck`**: `APP_VERSION="1.0.0"` (⚠ diverges from `constants.APP_VERSION="2.0.0"`); polls `reg.update()` every 5 min; `applyUpdate` posts SKIP_WAITING + reload.
+- **`useToSAcceptance`**: `localStorage["tos_accepted"]`, sets `tos_accepted_at` on accept.
+- **`useOfflineDetector`**: `navigator.onLine` + online/offline events.
+
+### 0.6 Shared components
+- **`SharedProductCard`**: computes `stockQty = stock_quantity ?? quantity ?? 0`, `salePrice = sale_price ?? price ?? 0`, `isExpiringSoon = expiry < now+90d`, `isExpired = expiry < now`, `margin = round((salePrice-purchase_rate)/salePrice*100)`. Badges: Out of Stock (`stockQty≤0`), Rx (`requires_prescription`), Hidden (pharmacy + `is_visible_to_customers===false`), Narcotic (`is_narcotic`). Shows up to 3 active batches (`stock_quantity>0`) + "+N more". Customer role shows Add-to-Cart / qty steppers. Purchase rate + margin only for stockist/pharmacy/admin.
+- **`SharedProductDetail`** (used by stockist & pharmacy detail; pharmacy=`pharmacy_inventory`, stockist=`products`): gallery (`product_media`/`pharmacy_inventory_media`), batches (stockist only, `product_batches` asc), **6-month sales chart** built from `order_items⋈orders` (stockist) or `customer_order_items⋈customer_orders` matched by `product_name` (pharmacy), excluding cancelled. Stock value = `Σ activeBatch.stock_quantity × purchase_rate`. Actions: Clone (stockist, name+" (Copy)"), Edit, Delete (`confirm`), Add-to-Cart (customer), visibility toggle (pharmacy → `is_visible_to_customers`). Expiry display logic: 0 batches→product.expiry; 1 batch→that batch; >1→"N/A (see Batch History)". Embeds `BatchManager` (stockist).
+- **`BatchManager`**: inserts `product_batches` (batch_number/mrp/sale_price/purchase_rate/stock_quantity/expiry_date), then re-aggregates product `stock_quantity=Σ batch stocks`, `in_stock=total>0`, but sets headline `sale_price/price/mrp/batch_number/expiry_date` from the **latest** batch (`created_at desc`) → LIFO headline price, not FIFO. "Quick Add" prefills from most-recent batch (qty blank). Validation: needs batch_number OR stock_quantity.
+- **`StockAlerts`** (stockist/pharmacy): lists items with `min_stock_level>0 && qty≤min`. "Send Alert Notification" inserts a `notifications` row to the CURRENT user (self-notify).
+- **`ReorderSuggestions`** (pharmacy): low-stock list; "Quick Reorder" → `/pharmacy/orders/quick`; "Auto-Reorder" copies `${name} x ${deficit}` (deficit = `max(1, min−qty)`, min defaults 10) to clipboard then navigates.
+- **`QuickActions`/`KpiCard`/`MenuPage`/`EmptyState`/`PaginationControls`/`BackButton`/`OfflineBanner`/`ToSDialog`/`ProductGalleryUploader`/`ProductImageGallery`/`DoctorReviews`** — presentational; `MenuPage` footer hardcodes "Digi Swasthya v1.0.0".
+
+### 0.7 Constants (`lib/constants.ts`, `lib/pharma-brands.ts`)
+- `ORDER_STATUS_COLORS`, `PAYMENT_STATUS_COLORS`, `ORDER_STATUS_LABELS` maps.
+- `getGreeting()`: <12 morning / <17 afternoon / else evening.
+- `APP_VERSION="2.0.0"`.
+- `PHARMA_BRANDS` (~100 Indian brands). `PRODUCT_CATEGORIES` (16). `GST_RATES` `["0%","5%","12%","18%","28%"]`. `DRUG_SCHEDULES` `["None","H","H1","X","G","J"]`. `DRUG_TYPES` `["Allopathy","Ayurvedic","Homeopathy","Unani"]`. `PACK_TYPES` (13). `INDIAN_STATES_CITIES` full map + `getCitiesForState`.
+- `format-date.ts`: `formatDate` "dd MMM yyyy", `formatDateTime` "dd MMM yyyy, hh:mm a", `formatRelative`.
+- `generate-receipt-pdf.ts`: A5 jsPDF "PAYMENT RECEIPT" (stockist→pharmacy, amount, method, ref, notes) → `receipt-<8>.pdf`.
+
+---
+
+## 1. AUTHENTICATION, ONBOARDING & SESSIONS
+
+### 1.1 Login (`pages/Login.tsx`)
+- **Role picker** cards: Customer(label "Patient"), Pharmacy, Stockist, Doctor. Admin hidden.
+- **`roleConfig`** labels/subtitles per role. **Dev-only** `devCredentials` prefill on role select when `import.meta.env.DEV` (patient1/pharmacy1/stockist1/doctor1@gmail.com pw `12345678`; admin `jitesh.cse.apm@gmail.com`/`Jitesh@123`).
+- **5-tap admin reveal**: `handleLogoTap` — 5 taps within 1500ms sets `adminMode`, selects admin, toast "Admin login enabled". Also a dev-only "Admin Login (Dev)" button.
+- **PWA install banner**: `beforeinstallprompt` captured; `handleInstall` prompts; hidden if standalone.
+- **Login flow (`handleLogin`)**: (1) `rpc("check_login_rate_limit",{p_email})` — `false` → "Too many failed attempts... 15 minutes". (2) `signInWithPassword`. (3) on error `record_login_attempt({p_success:false})` + tailored messages ("Invalid login"→..., "Email not confirmed"→...). (4) on success `record_login_attempt(true)`. (5) fetch `user_roles`; if selected role not held → `signOut()` + role-mismatch error. (6) approval gate for stockist/pharmacy/doctor: read `approval_status` — `pending`→`/pending-approval`; `rejected`→`signOut()`+error. Customers never gated. (7) `navigate("/"+role)`.
+- Fields: email (type=email, required), password (type=password, required, show/hide toggle). **"Remember me" checkbox exists but is NOT wired.** "Delivery Staff Login →" link to `/staff/login`. Footer: "A brand of Chameleon - The Agency (OPC) Pvt Ltd."
+
+### 1.2 Registration (`pages/Register.tsx` → 4 components)
+Type picker (Customer/Pharmacy/Stockist/Doctor). Each form: `auth.signUp({email,password,options:{emailRedirectTo:origin, data:{full_name}}})` → insert `user_roles` → insert profile. Password min 6 (Supabase default). All docs upload to the single **`documents`** bucket.
+
+**CustomerRegistration** (3 steps: Personal/Address/Complete): fields fullName*, phone*, email*, password*, gender(male/female/other), dateOfBirth, address*, state*(→resets city), city*(disabled until state), pinCode*(digits, 6 max). Step gates: step0 needs name+phone+email+password; step1 needs address+city+state+pin. **Auto-active** (no docs, no admin notify). Inserts `customer_profiles`.
+
+**PharmacyRegistration** (5 steps: Pharmacy/Documents/Contact/Bank/Complete). Fields: pharmacyName*, pharmacyType*(Retail/Hospital/Chain/Clinic/Online), licenseNumber; docs drugLicense/gstCertificate/pharmacyCertificate (+ drugLicenseNumber, gstNumber text); ownerName*, ownerDesignation, ownerContact, phone*, whatsappNumber, email*, password*, address*, state*, city*, pinCode*; bank optional (bankName, accountNumber, ifscCode(uppercase), upiId, accountHolderName). Docs → `documents` bucket **public URL**; columns `drug_license_url`/`gst_certificate_url`/`pharmacy_certificate_url`. Notifies all admins (`type:"registration"`). Approval **pending**. Has "Skip" → login. Doc field shows "⏳ Pending" badge; Eye/RefreshCw/Trash buttons (Eye is decorative).
+
+**StockistRegistration** (5 steps). Business types: "Pharmaceutical Stockist", "Pharmaceutical Wholesale Distributor", "Medical Representative" (reveals brand picker from `PHARMA_BRANDS` + "+ Add New" custom + MR agreement doc). Fields: businessName*, businessType*, panNumber*(uppercase, 10), mrBrand/mrBrandCustom; docs drugLicense(Form 20B/21B)/gstCertificate/wholesaleLicense/fssaiLicense (+ numbers) + mrAgreement (MR only); phone*, whatsappNumber, email*, password*, address*, state*, city*, pinCode*; **serviceable-area PIN chips** (6-digit validated, dedup); bank **required** (bankName*, accountNumber*, ifscCode*, upiId, accountHolderName*). **PIN gate**: on submit checks `admin_serviceable_areas` where `pin_code=form.pinCode AND is_active=true` — if none → error "not in serviceable area". Inserts `stockist_profiles` (+ `serviceable_areas` rows per PIN chip). Notifies admins. Approval **pending**.
+
+**DoctorRegistration** (5 steps: Professional/Documents/Contact/Rates/Complete). 20 hardcoded SPECIALIZATIONS. Fields: fullName*, specialization*, qualification, registrationNumber, experienceYears(number), bio; docs medicalCertificate, idProof; phone*, email*, password*, address*, state*, city*, pinCode*; **default fees audio=300, video=500, clinic=200** (`consultation_fee_audio/video/clinic`). Docs → public URL (`medical_certificate_url`, `id_proof_url`). Notifies admins. Approval **pending**.
+
+### 1.3 PendingApproval (`pages/PendingApproval.tsx`)
+Reads `approval_status`+`rejection_reason` from role table (stockist/pharmacy/doctor). If `rejected`: shows reason + **resubmission**: upload corrected doc → `documents` at `resubmissions/{userId}/…` → `createSignedUrl(365d)` → update profile `[docField]=signedUrl`, `approval_status="pending"`, `rejection_reason=null`. `docField` = `medical_certificate_url` for doctor else **`license_url`** (⚠ differs from registration columns `drug_license_url` etc.). Logout → `/login`.
+
+### 1.4 Forgot/Reset password
+`ForgotPassword`: `resetPasswordForEmail(email,{redirectTo:origin+/reset-password})`; success screen. `ResetPassword`: listens `PASSWORD_RECOVERY` event or `#type=recovery` in hash; requires match + min 6; `updateUser({password})`. Invalid link → "Request New Link".
+
+### 1.5 Onboarding
+`StockistOnboarding`/`PharmacyOnboarding`: **static 3-slide carousels** (hardcoded copy), Skip/Next/Get Started → role dashboard. No data written, no "seen" flag. Routes exist but nothing auto-navigates to them.
+
+---
+
+## 2. STAFF (DELIVERY) MODULE — separate credential system
+
+### 2.1 StaffLogin (`pages/staff/StaffLogin.tsx`)
+Fields username, password. Calls `rpc("verify_staff_credentials",{p_username,p_password,p_staff_type})` **twice** — first `"stockist"`, then `"pharmacy"`. On `valid` → `localStorage["staff_session"]` `{id,name,phone,stockist_id|pharmacy_id,store_name,staff_type,_verified:true,loginAt:Date.now()}`. Else "Invalid credentials or account inactive".
+
+### 2.2 StaffDashboard (`pages/staff/StaffDashboard.tsx`)
+- `SESSION_TTL_MS = 24h`. `validateSession`: missing → `/staff/login`; expired (loginAt+24h) → clear+redirect; else re-validate server-side against `delivery_staff`/`pharmacy_delivery_staff` by id (`is_active`) — inactive → logout.
+- Orders: stockist staff → `orders` where `assigned_staff_id=id AND status∈{packed,dispatched,out_for_delivery}`; pharmacy staff → `customer_orders` where `status∈{preparing,out_for_delivery}`. Delivered list limit 10.
+- **KPI row**: Pending (`orders.length`), Today (delivered created today), Total (delivered).
+- **Plan Route**: multi-select order cards → Google Maps `dir/?api=1&destination=<last>&waypoints=<...>` (addresses from customer/pharmacy profiles).
+- **Mark Delivered dialog**: optional **delivery-proof photo** (stockist staff only, `capture="environment"`) → `documents` at `delivery-proofs/{orderId}-<ts>.<ext>` → `createSignedUrl(1yr)` → `delivery_proof_url`. Stockist staff: "Collect Payment" checkbox → amount + method (cash/online) → sets `delivery_collected_amount`, `delivery_payment_status="pending_approval"`, `delivery_payment_method`; sets `status="delivered"`, `delivered_at`; inserts `notifications` to stockist (`type:"delivery"`). Pharmacy staff: only sets `customer_orders.status="delivered"` (no payment capture, no inventory effects here).
+
+---
+
+## 3. STOCKIST MODULE
+
+Nav: Home / Products / Pharmacies / Orders / More. All keyed on `useStockistProfile().id`. No realtime; polling only. Full route list (from App.tsx): `""`, `products`(+`/add`,`/:id`,`/:id/edit`,`/:id/price-history`), `orders`(+`/create`,`/:id`), `pharmacies`(+`/find`,`/:id`,`/:id/ledger`), `more`, `payments`, `analytics`, `profile`, `business`, `export`, `reports`, `settings`, `help`, `notifications`, `privacy-security`, `returns`, `expiry-management`, `serviceable-areas`, `staff`(+`/add`,`/:id/edit`), `delivery-routes`, `holidays`, `chats`, `chat/:peerId`, `messages`, `credit-notes`, `export-catalogue`, `bill-history`, `batch-management`, `record-payment`, `manufacturer-returns`, `bulk-bill`, `expiry-calendar`, `stock-transfer`.
+
+### 3.1 Home (`StockistHome.tsx`)
+- Prefetches products/orders/circle on mount.
+- **8 clickable KPI cards** from `["stockistKPI"]` (`staleTime 10000`, `refetchInterval 30000`):
+  - Pending Orders = `count(status="pending")` → /orders
+  - Total Products = `count(products)` → /products
+  - **Pharmacies = unique `pharmacy_id` over ALL orders** (Set) → /pharmacies
+  - **Revenue = Σ total_amount where status∈{completed,delivered}** → /analytics
+  - **Outstanding = Σ stockist_pharmacy_circle.outstanding** → /payments
+  - Today's Orders = `count(created_at ≥ today)` → /orders
+  - **Stock Value = Σ stock_quantity × price** → /products
+  - **Pending Bills = count(bills.status="draft")** → /bill-history ⚠ nothing writes `status="draft"` so always 0
+- "New Pharmacies This Month" banner (circle rows `created_at ≥ subMonths(1)`).
+- Alert cards: Expiring Soon (`expiry_date ≤ today+30d & stock>0`, limit5), Low Stock (`min_stock_level>0 & qty≤min`, limit5), Safety Alerts (counterfeit_alerts active fuzzy-matched to products by name OR exact batch).
+- Charts (recharts BarChart): Monthly Order Trend (6mo, `orders` count), Revenue vs Outstanding, Top Pharmacies by Revenue (delivered/completed, top5), Top Products by Sales (nested `order_items` for delivered/completed order ids, top5 by qty).
+- Widgets (sub-components): **DeliveryPerformance** avg hours = `Σ(delivered_at−created_at)/3600000 / n` over delivered w/ delivered_at. **ReturnRate** = `returns/orders×100` (red if >5%). **PaymentCollection** = `Σ confirmed payments / Σ (delivered+completed) revenue ×100` (accent if ≥80%).
+- 4 Quick Actions: Create Order (/orders/create), **Collect Payment (navigates to /pharmacies only)**, Bulk Upload (opens `BulkUploadCatalogue`), Upload Bill (opens `BulkUploadPurchaseBill`).
+- Recent Orders (limit5).
+
+### 3.2 Products
+**StockistProducts** (`products`): grid of `SharedProductCard` (role stockist); batch-loads `product_batches` for all product ids → `batchesByProduct`. Filters (client): search(name/brand/composition), brand(`PHARMA_BRANDS`), category(`PRODUCT_CATEGORIES`), expiryFrom/To (string compare), sort(newest/name/price/expiry), grid cols 2/3 toggle (via `ProductFilters`). Buttons: Add, Bulk Catalogue, Purchase Bill, **Bulk Price**. Bulk Price dialog: field(sale_price|mrp), direction(increase|decrease), type(percentage|flat), value; `window.confirm`; processes in batches of 10; `newPrice=max(0, round(...*100)/100)`; when field=sale_price also sets `price`.
+
+**StockistAddProduct/EditProduct** render `ProductForm`. **ProductForm** fields (dialog): image (→`product-images` bucket public URL), name*, brand*(searchable `PHARMA_BRANDS` + custom), manufacturer, category*(select), mrp*, sale_price*, purchase_rate, stock_quantity, min_stock_level, min_order_quantity(default 1), batch_number, expiry_date*, hsn_code, gst_rate*(select), drug_schedule*(select), drug_type(select), composition*, pack_type(select), pack_size, fssai_license, requires_prescription(checkbox), is_narcotic(checkbox). On save: `price = sale_price ?? price`; `in_stock = stock_quantity>0`. (Only `name` truly enforced in code; other `*` are visual.) **AI Autofill** via `useAutoFillProduct` fills only empty fields. Edit-with-price-change → inserts `notifications type:"price_change"` to circle pharmacies but does NOT write `price_history`.
+
+**StockistProductDetail** wraps `SharedProductDetail role="stockist"` (embeds BatchManager, sales chart, batch pricing table).
+
+**StockistPriceHistory** (`products/:id/price-history`): reads `price_history` (via `as any`) — **DEAD surface, no writer**, always "No price changes recorded". Shows Sale/MRP old→new with trend icon when rows exist.
+
+### 3.3 Batches / Expiry / Transfer
+- **StockistBatchManagement** / **StockistBatchExpiryCalendar** (month calendar dot per expiry).
+- **StockistExpiryManagement**: pulls ALL `product_batches⋈products`, filters to this stockist. Buckets via date-fns: Expired (`isPast`), 30 days (`≤30 & !past`), 90 days (`31–90`), Safe (`>90 & stock>0`). **Dispose** (`confirm`) → sets `product_batches.stock_quantity=0` only (does NOT re-aggregate parent product stock).
+- **StockistStockTransfer**: pick product (stock>0), from-batch, to-batch (must differ), qty (≤ source stock). Updates source `stock_quantity−qty`, dest `+qty`. **No product re-aggregate, no log.** Needs ≥2 batches.
+
+### 3.4 Orders
+**StockistCreateOrder** (`orders/create`, optional `?pharmacy=`): select circle pharmacy; paste order text → `parse-order-text` (passes `{id,name}` catalog) → items matched to products; manual add/qty steppers; product match select. `totalAmount = Σ price×qty`. **Credit-note** select (active notes for pharmacy) → `creditDiscount`, `finalAmount = max(0, total−creditDiscount)`. **Credit limit check**: if `credit_limit>0 && outstanding+total>credit_limit` → warning dialog showing excess = `max(0,(outstanding+total)−limit)`, "Proceed Anyway". On create: insert `orders` (`order_number="ORD-"+base36`, status `"pending"`, `order_source = orderText? "whatsapp":"manual"`, `items_count`, `applied_credit_note_id`, `credit_discount`), insert `order_items`, **`rpc("decrement_stock",{p_product_id,p_quantity})` per item at creation**, mark credit note `used`, `rpc("update_circle_outstanding",{p_circle_id,p_delta:finalAmount})`, notify pharmacy (`type:"order"`).
+
+**StockistOrders** (`orders`): `usePaginatedQuery` (20) all orders. Tabs All/Pending/Active/Done via `getStatusGroup` (pending; active=packed/dispatched/out_for_delivery/processing; done=delivered/completed). Search name/order#. **Tab counts are per-page** (computed over fetched page only). Create button.
+
+**StockistOrderDetail** (`orders/:id`) — the richest screen:
+- Status flow `pending→packed→dispatched→out_for_delivery→delivered`. `canModify` = pending|packed. `canReturn`=delivered. `canAssignStaff`=packed/dispatched/out_for_delivery. `canPartialDeliver`=dispatched/out_for_delivery. `canSplit`=pending.
+- **updateStatus**: on **packed** → `rpc("deduct_product_stock")` per item (⚠ SECOND deduction after create-time `decrement_stock` → double-deduct risk). On **delivered** → `autoPopulateInventory(pharmacy_id)` (upsert each ordered product into `pharmacy_inventory` by name, add qty if exists else full insert with `is_visible_to_customers:true`) + set `delivered_at`. Every transition notifies pharmacy.
+- **Cancel** (`confirm`): sets cancelled, `update_circle_outstanding(−total)`; if was packed/dispatched → `restore_product_stock` per item.
+- **Edit items** (pending/packed): inline qty; save deletes zero-qty rows, recomputes `total_amount`+`items_count`, `update_circle_outstanding(diff)`. Blocks all-zero ("Cancel instead").
+- **Assign delivery staff**: active staff sorted least-loaded-first (counts open assignments); "Suggested" badge when top has 0.
+- **Partial Delivery** (`#30`): qty per item → appended to `partial_delivery_items` JSON + `autoPopulateSingleItem` (adds to existing pharmacy inventory only). Notifies via card.
+- **Split Order** (`#31`, pending, >1 item): move qty (max item.qty−1) to a new child order (`order_number = <orig>-S<base36>`, `order_source="split"`, `parent_order_id`, status pending); reduces/deletes original items; recomputes totals.
+- **Return** (delivered): per-item qty + reason → insert `order_returns` (`status:"completed"`, refund_amount) + if paid `credit_balance +=` else `update_circle_outstanding(−refund)`; creates `credit_notes` (`CN-`+base36, active).
+- **Duplicate**: clones into new order (`SO`+last8 ts, `order_source:"platform"`, pending).
+- **Bill**: existing bill → View (BillPreviewDialog readOnly); else Create Bill (BillPreviewDialog).
+- **Print Packing Slip**: `window.open` HTML table + print (packed/dispatched/out_for_delivery).
+- **Record Payment** (payment_status≠paid): `CollectPaymentDialog`.
+- Shows delivery_proof_url image, credit-note applied card, partial delivery history, requested_batch per item.
+
+### 3.5 Pharmacies (circle)
+**StockistPharmacies**: `stockist_pharmacy_circle ⋈ pharmacy_profiles`. Filter chips All/Outstanding(>0)/Credit(credit_balance>0 & outstanding=0)/No Dues(outstanding=0). Per card: Outstanding, **Credit(shows credit_limit)**, **Net Due = outstanding − credit_balance** (shows "₹X CR" when negative). Pending-order summary. "Collect Payment" inline when outstanding>0. Dropdown: View/Edit(`EditPharmacyDialog`)/Record Order(→create?pharmacy=)/Generate Bill(`QuickBillDialog`)/Remove from Circle (`confirm`, delete row).
+
+**StockistPharmacyDetail** (`pharmacies/:id`): header with call/copy/WhatsApp/chat; **credit usage Progress** = `outstanding/credit_limit×100`; Outstanding/Credit Limit/Available(=limit−outstanding) grid. Collect Payment button (disabled when outstanding≤0). Tabs: Orders (expandable to items), Payments, Bills (view via BillPreviewDialog readOnly), **Ledger** (merges orders debit + payments credit + `order_returns` refund credit, sorted asc, running balance; footer Final Balance). Details dialog shows business info, contact, address, 3 documents with status badges + View, and Danger Zone remove-from-circle. `EditPharmacyDialog`/`QuickBillDialog`/`CollectPaymentDialog` wired.
+
+**StockistPharmacyLedger** (`pharmacies/:id/ledger`) — separate route; per FEATURES omits returns from running balance.
+
+**EditPharmacyDialog**: edits `credit_limit`, `notes`, `is_blocked` (toggle). On block change + pharmacy.user_id → notifies pharmacy (`type:"circle_status"`, "Account Blocked/Unblocked"). Non-atomic `.update()`.
+
+### 3.6 Payments / Credit Notes / Returns
+**CollectPaymentDialog**: methods cash/upi/bank_transfer/cheque. Loads unpaid/partial orders oldest-first. **FIFO auto-allocation** by entered amount OR **manual selection** (click orders → sets amount to selected sum, marks selected full). "Full (₹total)" button. On record: insert `payments` (`status:"confirmed"`, method, reference_id), mark allocated orders paid/partial, `outstanding = max(0, outstanding−amt)` via **non-atomic `.update()`**.
+
+**StockistRecordPayment** (`record-payment`): manual payment; fields pharmacy(select w/ outstanding), amount*, method(cash/upi/bank_transfer/cheque), reference_id, notes. Inserts `payments` (`collected_by:"manual"`, confirmed); `update_circle_outstanding(−amt)` (atomic); **#51** if resulting outstanding ≤0 → marks all this pharmacy's `unpaid` orders `paid`; notifies pharmacy.
+
+**StockistPayments** (`payments`): summary Collected(month)/Outstanding/Approvals. Bank details card (edit→/business). Tabs: Payments (list + Receipt PDF via `generateReceiptPdf` for confirmed), Bills, **Approvals** (delivery-staff collections `delivery_payment_status="pending_approval"`). **Approve**: insert `payments` (`collected_by:"delivery_staff"`, staff_id, confirmed), set order `delivery_payment_status="approved"`+`payment_status="paid"`, `update_circle_outstanding(−amount)`. **Reject**: sets `delivery_payment_status="rejected"`, `delivery_collected_amount=0`. **WhatsApp Reminder** dialog: pick pharmacy w/ outstanding → inserts `payment_reminders` (`sent_via:"whatsapp"`) + notification (`type:"payment_reminder"`) + opens `wa.me/91<phone>?text=` with UPI/bank details.
+
+**StockistReturns** (`returns`): tabs **Requests** (pending `order_returns` from pharmacies), **Process** (delivered orders → return dialog), **History**, **Credits** (`credit_notes`).
+- **Approve request**: set completed; restore product `stock_quantity += qty` (`in_stock:true`); if order paid → `credit_balance +=` else `outstanding −= refund` (both non-atomic); create `credit_notes` active; notify pharmacy.
+- **Reject**: set rejected + notify.
+- **Process return** (from delivered order): per-item qty + reason → insert `order_returns` completed; restore product stock **and add returned qty to earliest-expiry batch (FIFO restock)**; if paid credit_balance+= else outstanding−=; create credit note per return; notify.
+
+**StockistCreditNotes** (`credit-notes`): list/filter credit notes.
+
+### 3.7 Bulk / Bill / Reports / Delivery / Staff
+- **BulkUploadCatalogue**: client XLSX/CSV parse (no AI); flexible header mapping; flexible expiry parse (MM/YY, MM/YYYY, DD/MM/YYYY, YYYY-MM-DD → default day 28); preview + inline edit; validation (name required, numeric mrp/sale/stock); bulk `insert` into `products` (`price=sale_price`, `in_stock=stock>0`). Template download. **No batches created.**
+- **BulkUploadPurchaseBill**: file → `documents` at `bills/{stockistId}/…` → base64 → `parse-purchase-bill` (vision) → preview/edit → **upsert by exact name** (update if exists else insert). Sets sale_price+price. **Does NOT set purchase_rate or create batches.**
+- **StockistBulkBill** (`bulk-bill`): unbilled delivered orders (excludes those in `bill_orders`), select → group by pharmacy → one `bills` per pharmacy (`BILL-<ts>-<n>`, `status:"final"`, subtotal=total_amount, no GST) + `bill_orders` links + notify pharmacy (`type:"bill"`).
+- **BillPreviewDialog**: renders "TAX INVOICE" (stockist header, Bill To, orders table, Subtotal/Discount(%/flat)/Grand Total — **no CGST/SGST**), payment/bank block, **QR to hardcoded `https://digi-swasthya-hub.lovable.app/verify-bill/{savedBillId|preview}`**. Confirm → insert `bills` (`status:"confirmed"`) + `bill_orders` + `outstanding += total` (non-atomic). Print/PDF(html2canvas→jsPDF `<BILL>.pdf`)/WhatsApp(share file or `wa.me` text). Payment status badge derived from linked orders (all paid→Paid, else On Credit).
+- **StockistManufacturerReturns** (`manufacturer-returns`): `manufacturer_returns` (via `as any`). Add: product/qty/reason. Status flow pending→shipped→credited (Mark Credited uses `window.prompt("Credit amount")`). Statuses pending/shipped/received/credited/rejected.
+- **StockistReports** (`reports`): 13 report defs (H1 monthly/annual, Schedule H, Schedule H1, HNX drugs/annual, NDPS, Narcotic, Tramadol, GST Sales, My Item, Restricted Items, TB). Month/Year/Type filters. Client-side XLSX. Filters: H*→drug_schedule startsWith "H"; is_narcotic for HNX/NDPS/narcotic; tramadol name/composition; TB keyword list (isoniazid/rifampicin/pyrazinamide/ethambutol/streptomycin). **GST report reads `bills.gst_amount`** — nothing populates it, so GST column is 0.
+- **StockistExportData** (`export`): format CSV/Excel/**PDF (stub — PDF still emits `.xlsx`)**; range today/week/month/all; data types orders/payments/products/pharmacies → multi-sheet XLSX.
+- **StockistExportCatalogue** (`export-catalogue`): products → XLSX.
+- **StockistPurchaseBillHistory** (`bill-history`): view `bills`.
+- **StockistStaffManagement/StockistStaffForm**: `delivery_staff`. Form fields name*, phone*, aadhar_number, age, police_verification_id, username*, password* (new only). **Password via `rpc("hash_password",{p_password})` with plaintext fallback** (`hashData || form.password`) → `password_hash`.
+- **StockistServiceableAreas** (`serviceable-areas`): `serviceable_areas` PINs + per-PIN `delivery_settings`.
+- **StockistDeliveryRoutes** (`delivery-routes`): multi-select → Google Maps directions URL (no optimization); templates in `delivery_route_templates`.
+- **StockistHolidays** (`holidays`): `stockist_holidays` (start/end date, reason, `allow_preorder`); notifies circle.
+- **StockistAnalytics** (`analytics`): real recharts; Stock Value by category = `Σ stock_quantity × purchase_rate`; collection rate.
+- **StockistProfileSettings/StockistBusinessDetails**: bank/UPI/PAN (used by bills & reminders); business save triggers re-verification.
+- Boilerplate: StockistMore(MenuPage), StockistNotifications, StockistSettings, StockistHelpCenter(chat-bot), StockistPrivacySecurity, StockistFindPharmacy(addToCircle seeds circle 0/0/0).
+
+---
+
+## 4. PHARMACY MODULE (dual purchase/sale mode)
+
+Mode via `usePharmacyMode` (localStorage). Purchase nav: Dashboard/Orders/Stockists/Inventory/More. Sale nav: Dashboard/customer-orders(Orders)/customer-list(Customers)/Inventory/More. Toggle in TopNav avatar popover. All keyed on `usePharmacyProfile().id`. No realtime.
+
+### 4.1 Dashboard (`PharmacyDashboard.tsx`)
+One `["pharmacyDashStats"]` query (8 parallel; `staleTime 15000`). Metrics: activeB2BOrders(`status∉{delivered,cancelled}`), **totalPurchase=Σ orders.total_amount**, pendingPayments(`payment_status≠paid`), connectedStockists(circle count), inventoryItems(count), activeCustOrders, todayCustOrders(`isToday`), **custRevenue=Σ delivered customer_orders**, lowStockCount(`min_stock_level && qty≤min`), expiringCount(`expiry≤today+30d & qty>0`), **avgOrderValue=round(custRevenue/deliveredCount)**, pendingCustPayments(`payment_status≠paid & status≠cancelled`), totalCustomers(unique customer_id). Renders **PurchaseDashboard** (alert cards linking to `?filter=low_stock`/expiry; 5 KPIs; 8 quick actions; `<ReorderSuggestions>`; recent B2B orders) vs **SaleDashboard** (7 KPIs; 8 quick actions; recent customer orders).
+
+### 4.2 Inventory (purchase side)
+- **PharmacyInventory** (`inventory`): `SharedProductCard` role pharmacy; inventory value = `Σ quantity × (purchase_rate||price)`; `?filter=low_stock|expiring` (30-day window); **Bulk Price Update** (batched 10, `window.confirm`).
+- **PharmacyInventoryForm** (`inventory/add`, `inventory/:id/edit`): full schema fields product_name*, brand(searchable), manufacturer, category(select), description, mrp, sale_price, price(forced=sale_price), quantity, min_stock_level, batch_number, expiry_date, hsn_code, gst_rate(select), drug_schedule(select), drug_type(select), composition, pack_type(select), pack_size, fssai_license, requires_prescription(switch), is_narcotic(checkbox), is_visible_to_customers(switch, default true). **AI Auto-Fill** (`autofill-product-details`, fills empty only). **Counterfeit warning** banner if name matches active alert. Gallery → `pharmacy_inventory_media` (delete-all-then-insert). `price = sale_price ?? price`.
+- **PharmacyInventoryDetail** wraps `SharedProductDetail role="pharmacy"`.
+- **PharmacyBulkImport** (`bulk-import`): select circle stockist (status active) → load their in-stock `products` → checkbox select → insert into `pharmacy_inventory` (`quantity:0`, `is_visible_to_customers:false`, chunks of 50). **This is the primary manual inventory-population path** (delivery auto-populate is stockist-side).
+- **PharmacyStockAudit** (`stock-audit`): `pharmacy_stock_audits` + direct qty updates.
+- **PharmacyExpiryManagement** (`expiry-management`): Expired/≤30/31–90/Safe buckets; Dispose (qty 0 + hide); Send Expiry Report → notifies circle stockists.
+- **PharmacyInventoryAuditLog** (`inventory-audit`): snapshot only; reads a nonexistent `selling_price`.
+
+### 4.3 B2B purchasing
+- Order status flow `pending→packed→dispatched→out_for_delivery→delivered` (+cancelled). Order number `PH<last8 ts>`.
+- **PharmacyBrowse**/**PharmacyStockists**/**PharmacyFindStockist**: approved stockists; `addToCircle` seeds `stockist_pharmacy_circle`.
+- **PharmacyStockistDetail** (`stockists/:id`): cart-based ordering. Reads circle (outstanding/credit_limit/is_blocked) + active `stockist_holidays`. `orderingBlocked = is_blocked || (activeHoliday && !allow_preorder)`. **Credit-limit enforcement**: blocks if `credit_limit>0 && outstanding+cartTotal>credit_limit`; warns >80%. Place → insert `orders` (`order_source:"platform"`, pending) + items → `update_circle_outstanding(+cartTotal)` → notify stockist. **No stock deduction on B2B purchase.** Blocked/Holiday banners; pre-order label when holiday+allow_preorder.
+- **PharmacyQuickOrder** (`orders/quick`): `parse-order-text` → **findBestStockists**: serviceable_areas by pharmacy pin → approved stockists → substring-match products, sum matched, sort cheapest → "Best Price" badge on #0; shows next delivery day from `delivery_settings.delivery_days`. Place → `order_source:"quick_order"` + `update_circle_outstanding(+total)` + notify. **No credit check here.**
+- **PharmacyOrders** (`orders`): mode-gated (purchase→`orders`, sale→`customer_orders`).
+- **PharmacyOrderDetail** (`orders/:id`): Duplicate, **Verify Received Quantities** (notifies discrepancies, no stock adjust), **Request Return** → `order_returns`, invoice PDF.
+- **PharmacyLedger** (`ledger/:stockistId`): orders − / payments + / credit_notes +.
+- **PharmacyRecurringOrders** (`recurring-orders`): `recurring_orders` (via `as any`) CRUD — stockist/frequency(weekly/biweekly/monthly)/next_order_date/items(text→JSON `{name,qty}`), toggle active, delete. **No scheduler/execution engine — rows are inert.**
+- **PharmacyReorderHistory**, **PharmacyQuickOrderHistory**.
+
+### 4.4 B2C fulfillment (sale side)
+Customer order flow `pending→confirmed→preparing→ready_for_pickup→out_for_delivery→delivered` (+cancelled).
+
+**PharmacyCustomerOrderDetail** (`customer-orders/:id`) — core B2C screen:
+- **updateStatus**: on **confirmed** → `rpc("deduct_pharmacy_inventory",{p_inventory_id:item.product_id, p_quantity})` per item. On **cancelled** (if was confirmed/preparing/ready_for_pickup) → restock by direct `pharmacy_inventory` update matched by `product_name`. On **delivered** → `calculateCommissions(orderId, pharmacyId)` + set `delivered_at`. Every transition notifies customer.
+- **Prescription gate**: "Mark as confirmed" disabled while `prescription_url` exists and `prescription_verified` false. Verify/Reject buttons set `prescription_verified` + notify.
+- **UPI verification**: when `payment_status="claimed"` or method upi (and ≠paid) → shows proof link + Verify(→paid, notify) / Reject(→rejected, notify).
+- **Item pricing** (editable when pending/confirmed): Add item (name/qty/price, recompute total), Remove (recompute), **Set Total** (manual override), **Auto-Price** (match unpriced items to `pharmacy_inventory` by name, set price+product_id, recompute), **Substitute** (`is_substitute`, `original_product_name`, recompute, notify), **Check Stock / Partial fulfillment** (`partial_items` JSON of requested vs available, notify — does not split).
+- **Assign delivery staff** (delivery orders, `pharmacy_delivery_staff` active).
+- **Mark Paid** (delivered & unpaid).
+- On delivered + items → renders **B2CBillGenerator**.
+
+**B2CBillGenerator**: "TAX INVOICE" dialog; line items + total (no tax breakdown); PDF via dynamic html2canvas+jsPDF (`Invoice-<order_number>.pdf`); **QR = `${origin}/verify-bill/customer-${order.id}`**; Share via `navigator.share`.
+
+- **PharmacyB2CBillHistory**, **PharmacyCustomerList/CustomerDetail**.
+- **PharmacyCustomerReturns** (`customer-returns`): tabs Pending/Processed on `customer_returns`. Approve & Refund: sets status approved + `refund_amount = Σ items price×qty` + notify. Reject + notify. **No inventory restock.**
+- **PharmacyCustomerOrders** (`customer-orders`).
+
+### 4.5 Doctor partnerships / commissions
+- **PharmacyDoctors** (`doctors`): `pharmacy_consultation_settings`.
+- **PharmacyDoctorPartnershipDetail** (`doctors/:id`): `doctor_pharmacy_partnerships` Accept/Reject/Deactivate; per-earning Mark Paid.
+- **PharmacyCommissions** (`commissions`, read-only), **PharmacyConsultations** (read-only).
+- Commission math in **`calculateCommissions`** (see §9).
+
+### 4.6 Ops & settings
+- **PharmacyPayments** (`payments`): tabs Payments/Credit Notes. Outstanding summary. **Record Payment to stockist** dialog: stockist(select w/ outstanding + bank/UPI preview), amount*, method(upi/bank_transfer/cash/cheque), reference_id, notes, **UPI proof upload** (method=upi) → `documents` at `upi-proofs/{pharmacyId}/…` → `createSignedUrl(30d)` → URL appended into `notes`. Inserts `payments` (`status:"pending"`, `collected_by:"pharmacy"`); `update_circle_outstanding(−amount)` (atomic); notify stockist.
+- **PharmacyReports** (`reports`): Purchase + Inventory query real data; **Schedule H/H1/NDPS produce a single placeholder row** "No matching items found in inventory".
+- **PharmacyAnalytics** (real BarChart, B2B only), **PharmacyExportData**, **PharmacyServiceableAreas**, **PharmacyDeliveryRoutes** (Google Maps URL), **PharmacyStaffManagement/StaffForm** (`pharmacy_delivery_staff`, `hash_password`), **PharmacyProfileSettings/PharmacyBusinessDetails** (3 regulatory docs → `documents` signed 1 day; saving forces `approval_status:"pending"` + notifies admins), Notifications/Settings/HelpCenter/PrivacySecurity.
+
+---
+
+## 5. CUSTOMER MODULE
+
+Identity `customer_profiles.id`. Nav: Home/Orders/Pharmacies/Rx/More. Cart via `useCart` (single-pharmacy).
+
+### 5.1 Dashboard (`CustomerDashboard.tsx`)
+Greeting + **profile-completion** prompt (`filledFields` of phone/address/city/pin_code/dob/gender; complete if ≥5, shows X/6). Widgets: Active Orders (`∉{delivered,cancelled}`), Health summary (blood_group/allergies), Reminder alert (`localStorage["medicine_reminders"]` enabled, slice3), Upcoming Consultations (`scheduled_at≥now`, limit3), Recent Orders (limit5), Recent Prescriptions (limit3). nearbyCount = `pharmacy_serviceable_areas` where `pin_code=profile.pin`. **8 QuickActions**: Search, Quick Order, Pharmacies(desc "N nearby"), Consult, Upload Rx, Wishlist, Addresses, Prescriptions.
+
+### 5.2 Browse & order
+- **CustomerPharmacies**: from `pharmacy_serviceable_areas` (same PIN first, then `estimated_hours`) ⋈ approved pharmacies + `customer_reviews` avg; shows delivery charge / free-above.
+- **CustomerPharmacyDetail** (`pharmacies/:id`): products `is_visible_to_customers && quantity>0`; search; review avg (`customer_reviews`); "Consult" if pharmacy has active `pharmacy_consultation_settings`. **Inline order placement** (divergent from Checkout): order_number `CO-<base36>-<rand>`, `payment_method` = pickup?`pay_at_store`:`cash`, **`total_amount = cart.total` raw (NO GST/fee)**; blocks if Rx items present (must use Checkout/upload) and if delivery w/o saved address. Cart footer with delivery/pickup toggle.
+- **CustomerMedicineSearch** (`search`): `pharmacy_inventory` `ilike`, `sale_price` asc, limit 30, grouped by pharmacy.
+- **CustomerCart** (`cart`): shows hardcoded "Delivery: Free" (display only).
+- **CustomerCheckout** (`checkout`) — **the real order path**: order type delivery/pickup; delivery fee from `pharmacy_profiles.delivery_fee` (0 if `total≥free_delivery_above`); **GST hardcoded 5%** `gstAmount=round(total*0.05*100)/100`; `grandTotal = total+fee+gst`. Payment cash/pay_at_store/upi. **UPI**: requires proof upload; static banner "Complete payment within 15 minutes... retry or switch to COD" (**no timer**); "Switch to Cash on Delivery" button. Prescription upload required if `hasPrescriptionItems`. Files → `documents` at `prescriptions/{customerId}/…` and `upi-proofs/{customerId}/…` (**both `createSignedUrl(86400)` = 24h**). Inserts `customer_orders` (`payment_status = upi?"claimed":"unpaid"`, plus `delivery_fee`, `gst_amount`, `delivery_address/pin`, `prescription_url`, `upi_proof_url`, notes), items, pharmacy notification. Saved-address select prefills.
+
+### 5.3 Orders
+- **CustomerOrders** (`orders`): `usePaginatedQuery(20)`.
+- **CustomerOrderDetail** (`orders/:id`): stepper `pending→confirmed→preparing→(ready_for_pickup|out_for_delivery based on order_type)→delivered`. "I've Paid" (unpaid, total>0) → `payment_status="claimed"`. Payment status card (paid/claimed/verified/rejected messages, UPI proof link). Track button + Copy Tracking Link. **Cancel** (pending/confirmed) via `CancelOrderCard`: reason select (`CANCEL_REASONS` 6 options) → set cancelled + notes; if confirmed+ → `rpc("restore_pharmacy_inventory",{p_inventory_id:product_id})` per item; notify pharmacy. **Reorder** (delivered/cancelled): clears cart, re-adds items, → /cart. **Request Return** (delivered) → `/orders/:id/return`. **Rate & Review** (delivered) → `/orders/:id/review`. **Download Invoice** (delivered) jsPDF.
+- **CustomerOrderTracking** (`orders/:id/track`): polls 15s (no realtime).
+- **CustomerReturnRequest** (`orders/:orderId/return`): only if delivered & no existing `customer_returns`. Select items (checkbox) + reason* → insert `customer_returns` (`status:"pending"`, `refund_amount=Σ price×qty`) + `customer_return_items` + notify pharmacy.
+- **CustomerReviewOrder** (`orders/:id/review`): star rating* + comment → **inserts into `reviews`** (target_type "pharmacy", target_id pharmacy_id) — but ratings elsewhere read from `customer_reviews`, so these **never surface**. Shows existing review if present.
+
+### 5.4 Prescriptions & consultations
+- **CustomerPrescriptions/CustomerPrescriptionDetail**: detail shows items (dosage/duration/qty/notes); **"Order All Items"** adds items with `price:0`, `requires_prescription:true` (pharmacy prices later) → /cart; **#136 auto-find** matching pharmacies by `pharmacy_inventory` product_name (grouped, top5) with per-pharmacy Order; Share (navigator.share/clipboard); Download PDF.
+- **CustomerPrescriptionUpload** (`upload-prescription`): select pharmacy (from `pharmacy_serviceable_areas` by pin) + file (or camera capture) → `documents` at `prescriptions/{user_id}/<ts>-<name>` (**raw path, no signed URL, NO OCR**) + insert `customer_orders` (`order_type:"prescription"`, `prescription_url=path`, notes "please review and add items").
+- **CustomerBookConsultation** (`consultations/book`): approved+`is_available` doctors; consultation type audio/video/clinic_visit; **free date/time inputs (ignores `doctor_availability`, no slot/double-book check)**; fee by type; insert `consultations` (`payment_status:"unpaid"`) + notify doctor. **Payment demo**: "I've Paid (UPI)" flips `payment_status="paid"` unverified, or "Pay Later".
+- **CustomerConsultationDetail** (`consultations/:id`): client-side **duration timer** for in_progress (`elapsed = now − scheduled_at`); Join (meeting_link), Reschedule (datetime), Cancel (reason) — both notify doctor; download summary PDF (completed); prescription card + "Order Prescription Items" (adds price:0 Rx items to cart); "Chat with Dr." → peer chat; WhatsApp.
+
+### 5.5 Other
+- **CustomerMedicineReminders** (`reminders`): **localStorage-only** (`medicine_reminders`). Add/edit/delete/toggle; frequency daily/alternate/weekly; browser Notification permission; quick-add from active prescriptions (splits times by dosage digit); **`scheduleNotification` uses `setTimeout` — only fires if delay <24h and tab stays open**.
+- **CustomerHealthProfile**, **CustomerWishlist** (`customer_wishlist` read/remove), **CustomerAddresses** (`customer_addresses`, `INDIAN_STATES`/`getCitiesForState`), **CustomerQuickOrder** (voice via `webkitSpeechRecognition` en-IN), **CustomerPastDoctors**, Notifications/Settings/Profile/Help/Privacy.
+
+---
+
+## 6. DOCTOR MODULE
+
+Nav: Dashboard/Sessions/Patients/Rx/More. Identity `doctor_profiles.id`.
+
+### 6.1 Dashboard (`DoctorDashboard.tsx`)
+`["doctorStats"]`: Today's Sessions (`isToday`), Total Patients (unique patient_id), **Total Earnings = paid consultation fees + Σ commission earnings**, Pending Sessions (`status="booked"`). Earnings breakdown card (consultation vs referral commissions + pending). Review summary (`customer_reviews` avg) + pharmacy partners count. 8 QuickActions. Today's Schedule (patient names). Upcoming Follow-ups (`follow_up_date` future).
+
+### 6.2 Consultations
+- **DoctorConsultations** (`consultations`): tabs upcoming/completed/cancelled.
+- **DoctorConsultationDetail** (`consultations/:id`): status `booked→in_progress→completed` (each notifies patient). **Meeting link manually pasted** (Meet/Zoom) + Save Notes & Link. Mark Payment Paid (#12) + notify. Reschedule(datetime)/Cancel(reason) dialogs. Write Prescription link (passes consultationId/patientId/pharmacyId). Follow-up scheduling (date+notes) when completed. Patient info card → patient detail.
+
+### 6.3 Prescriptions
+- **DoctorPrescriptionWriter** (`prescriptions/write`): loads template (if `?templateId`); **walk-in patient search** (`customer_profiles` by name/phone) when no `patientId`; per-item medicine search against target pharmacy `pharmacy_inventory` (only if pharmacyId, visible & qty>0) else free text; item fields product_name/product_id/dosage/duration/quantity/notes; general notes. Insert `prescriptions` (+ consultation_id, pharmacy_id) + `prescription_items` + notify patient.
+- **DoctorPrescriptionTemplates** (`prescription-templates`): CRUD.
+- **DoctorPrescriptions/Detail**: inline edit = destructive delete+reinsert of items.
+
+### 6.4 Availability / Earnings / Partnerships
+- **DoctorAvailability** (`availability`): 7 days × multiple slots; per-day active switch + start/end times + add/remove slots; **save = delete-all then re-insert** all active slots. **Never read by the booking flow.**
+- **DoctorEarnings** (`earnings`): **paid consultation fees only** (excludes commissions — diverges from dashboard total). Real recharts: 6-mo BarChart + type PieChart with per-type breakdown.
+- **DoctorPharmacies** (`pharmacies`): `sendRequest` inserts `doctor_pharmacy_partnerships` (`status:"pending"`, `default_commission_pct:5`).
+- **DoctorPharmacyPartnershipDetail** (`pharmacies/:id`): edit default % (onBlur → update), add/delete `doctor_commission_rules` (type product/brand/category; commission_pct + flat_amount; category from hardcoded list). Earnings summary (total + pending) from `doctor_commission_earnings`; recent earnings list.
+- **DoctorPatients/Detail**, **DoctorAnalytics** (real charts; completion rate = completed/total), Profile(avatar→**`public-assets`** bucket public URL; fees), Settings/Notifications/Help/Privacy.
+
+---
+
+## 7. ADMIN MODULE (~57 pages, `ProtectedRoute role="admin"`)
+
+Nav: Dashboard/Pharmacies/Stockists/Orders/More.
+
+### 7.1 Dashboard (`AdminDashboard.tsx`)
+One `["adminStats"]` (~16 parallel; only last 6mo for revenue/growth). **13 clickable KPIs** (Pharmacies, Stockists, B2B Orders, B2C Orders, Pending Approvals, Total/B2B/B2C Revenue, Customers, Doctors, Active Consults, Active Alerts, Active Today[DAU]). New Registrations Today + Revenue Today vs Yesterday. Pending breakdown (stockists/pharmacies/doctors). Real recharts: 6-mo revenue BarChart, B2C order-status PieChart, Top Revenue Pharmacies, Platform Growth. **System Health card hardcoded "Operational"** (pulsing dot). Recent Admin Actions from `admin_audit_log` (limit5). Note: `totalRevenue = b2bRevenue + b2cRevenue` where b2bRevenue is just last-6mo orders sum (labeled "B2B Revenue" though it's all orders).
+
+### 7.2 Approvals & users
+- **AdminStockists/AdminPharmacies/AdminDoctors**: set `approval_status` **directly** (approved/rejected). **Bulk approve/reject** = client-side loop over selected ids (no batch RPC). Select-all-pending. Pending badge.
+- **AdminUsers** (`users`): aggregates 4 profile tables into rows; tabs all/stockist/pharmacy/doctor/customer. **Suspend/Restore** toggles `approval_status` between suspended/approved (customers exempt — "Customers cannot be suspended") + notification. No true ban/delete.
+- **AdminImpersonate** (`impersonate`): **view-only** ("View as User"). Search `profiles`; fetch roles + all role profiles; display read-only card; logs `admin_audit_log` action `impersonate_view`.
+- **AdminForceReset** (`force-reset`): just `resetPasswordForEmail` (by typed email or searched user) + logs `force_password_reset`.
+- **AdminMergeAccounts** (`merge-accounts`): looks up 2 users by email; merge **re-points only `notifications` + `login_activity`** from secondary→primary; logs `merge_accounts`. Does NOT migrate orders; secondary not deleted.
+
+### 7.3 Communications, safety, oversight
+- **AdminNotifications** (`notifications`): **Broadcast** (target all/stockist/pharmacy/customer/doctor → collect user_ids from role tables, dedupe, insert `notifications type:"broadcast"` in batches of 100); **Targeted** — look up `profiles` by email → `rpc("admin_send_targeted_notification",{p_user_id,p_title,p_message})`. Mark-all-read.
+- **AdminCounterfeit** (`counterfeit`): CRUD `counterfeit_alerts` (types counterfeit/banned/spurious/nsq/recalled); add → fuzzy `ilike` match products (by name) + pharmacy_inventory → notify affected stockists/pharmacies (`type:"alert"`, dedup by user); toggle active.
+- **AdminOrderDetail** (`orders/:id`): admin status override via `rpc("admin_override_order_status",{p_order_id,p_new_status})` (only when not delivered/cancelled).
+- **AdminCustomerOrderDetail** (`customer-orders/:id`): override via `rpc("admin_override_customer_order_status")` + logs `admin_audit_log` (from→to).
+- **AdminRefunds** (`refunds`): lists cancelled `customer_orders`; state machine on `refund_status` pending→approved→processed / rejected (approve only when payment_status="paid"). Summary Pending/Approved/Total Refundable(=Σ paid cancelled totals).
+- **AdminReturns**/**AdminCommissions**: read-only.
+- **AdminMaintenanceMode** (`maintenance`): writes `platform_settings` keys `maintenance_mode`/`maintenance_message` (upsert). **Flag stored but not observed to gate the app.**
+- **AdminToSManagement** (`tos-management`): `platform_settings` ToS content.
+
+### 7.4 Config CRUD & analytics
+- `AdminDrugSchedules`, `AdminProductCategories`, `AdminSpecializations`, `AdminPharmacyCategories`, `AdminServiceableAreas` (+ `is_active`), `AdminSubscriptions` (`subscription_plans`), `AdminBanners` (`platform_banners` — **image is a URL field, no upload**).
+- `AdminAnalytics`, `AdminGeoDistribution`, `AdminApiMonitoring` (health string hardcoded), `AdminRevenueDetail`, `AdminPlatformInvoice`, `AdminSystemReport`, `AdminActiveUsers`, `AdminLoginHistory`, `AdminActivityLog`, `AdminAuditTrail`, `AdminLicenseExpiry`, `AdminReviewsManagement`, `AdminPayments`, `AdminBills`, `AdminConsultations`/Detail, `AdminDeliveryStaff`, `AdminMessages`(+`/:userId`→ChatPage), `AdminProfileSettings`, `AdminSettings`, `AdminHelpCenter`, `AdminExportData`, `AdminCustomers`/Detail, `AdminStockistDetail`/`AdminPharmacyDetail`/`AdminDoctorDetail`.
+
+### 7.5 Flowboard — AdminSystemArchitecture (`system-architecture`)
+16 tabs: overview, roles, modules, journeys, content, flow, screens, database, routes, logic, infra, dependencies, graph, validator, **ai**, export. Data from **`flowboard-data`** edge fn via 7 typed queries (sections/nodes/screens/database/routes/business-logic/infrastructure). Header: search (`/` focus), bookmarks (`localStorage["flowboard-bookmarks"]`, `b` toggle). Stats bar counts. Cross-navigation between content↔flow↔screens with temporary highlight. **ArchitectureAIView**: `buildFullArchitectureContext` serializes EVERYTHING (modules+nodes+tables+columns+FKs+RLS, RPCs, state machines, workflows, edge fns, storage, routes, screens, triggers, realtime) into markdown, then `architecture-ai` fn; renders replies via `react-markdown`; 12 suggested questions. **ExportView** exports the model.
+
+---
+
+## 8. SHARED / MESSAGING / PWA
+
+- **ChatPage** (`messages`, admin `messages/:userId`): support chat. `conversations`(by user_id) + `chat_messages`. Realtime channel `chat-${conversationId}` INSERT. User message → quick-question match (prefix/slice20) → canned `bot` reply, else `chat-bot` fn (fallback message on error). Sender types user/admin/bot. Quick-question chips.
+- **ChatListPage** (`chats`): support entry + peer chats derived from `peer_messages` (unread counts), enriched with business/pharmacy/profile names + role badge.
+- **PeerChatPage** (`chat/:peerId`): `peer_messages` (`or(and(sender,receiver)...)`), realtime channel `peer-${sortedIds}`, marks incoming read.
+- **VerifyBill** (`/verify-bill/:billId`): public; `billId="preview"` → placeholder; fetches `bills`+stockist+pharmacy; shows Bill No/Date/Status/Total + From/To. Branded "Digital Swasthya" (branding drift).
+- **PWA**: `public/manifest.json` (name "Digi Swasthya", theme #16a34a, standalone/portrait), hand-written `public/sw.js` (`digi-swasthya-v3`, network-first for `/rest//auth//functions/` + nav, waits for user, SKIP_WAITING support). Two overlapping update mechanisms.
+- **Realtime channels total = 3**: `notifications-{user.id}`, `chat-{conversationId}`, `peer-{sortedIds}`. **No realtime on orders/inventory/payments.**
+
+---
+
+## 9. MONEY / STOCK / STATE LOGIC (exact rules)
+
+### 9.1 Status vocabularies
+- **B2B `orders.status`**: pending→packed→dispatched→out_for_delivery→delivered (+cancelled, +split children `parent_order_id`). `order_source`: manual/whatsapp/platform/quick_order/split.
+- **B2C `customer_orders.status`**: pending→confirmed→preparing→ready_for_pickup→out_for_delivery→delivered (+cancelled). `order_type`: delivery/pickup/prescription/pay_at_store.
+- **payment_status**: paid/unpaid/partial/claimed/verified/rejected/failed. **refund_status**: pending/approved/rejected/processed.
+- **approval_status**: pending/approved/rejected/suspended (enum defines pending/approved/rejected only).
+- **consultations.status**: booked→in_progress→completed / cancelled.
+- **manufacturer_returns.status**: pending/shipped/received/credited/rejected.
+
+### 9.2 Stock RPCs
+`decrement_stock` (B2B create), `deduct_product_stock` (B2B packed — **double deduction** with create), `restore_product_stock` (B2B cancel if packed+), `deduct_pharmacy_inventory` (B2C confirm), `restore_pharmacy_inventory` (customer cancel confirmed+). B2B purchasing by pharmacy = **no deduction**. B2B delivery → stockist-side `autoPopulateInventory` adds to pharmacy inventory.
+
+### 9.3 Credit circle (`stockist_pharmacy_circle`)
+Fields credit_limit/outstanding/credit_balance/payment_terms_days/is_blocked/last_payment_date/notes. **Net Due = outstanding − credit_balance**. Outstanding adjusted by `rpc("update_circle_outstanding",{p_circle_id,p_delta})` (atomic) in most flows, but **non-atomic `.update()`** in `CollectPaymentDialog`, `BillPreviewDialog`, `StockistReturns` approve/process, `StockistOrderDetail` return (credit_balance branch). Credit enforcement: pharmacy-side (`PharmacyStockistDetail`, `PharmacyQuickOrder` does NOT enforce) + stockist create-order (warning-with-override).
+
+### 9.4 GST / tax
+- **Stockist bills/orders**: NO GST computed ("TAX INVOICE" cosmetic; `gst_rate`/`hsn_code` unused; GST report reads unpopulated `bills.gst_amount`).
+- **Customer Checkout**: flat **5% GST** + delivery fee → grandTotal.
+- **Customer inline order (PharmacyDetail)**: raw cart total, no GST/fee.
+- **B2C bill**: line items + sum only.
+
+### 9.5 Doctor commissions (`lib/commission-calculator.ts`)
+On B2C **delivered**: order must have `prescription_id` → prescription `doctor_id` → **active** `doctor_pharmacy_partnerships(doctor,pharmacy)`. Per item: `base = price×qty × default_commission_pct/100`. Rule precedence **product (rule_value===product_id) > brand (product_name includes rule_value, case-insensitive) > category (any category rule)**. If matched rule has `flat_amount>0` → `flat_amount×qty`; else if `commission_pct>0` → `itemAmount×pct/100`. Insert `doctor_commission_earnings` (`status:"pending"`, rounded 2dp) + notify doctor total.
+
+### 9.6 Delivery-staff collection approval chain
+Staff collects → order `delivery_payment_status="pending_approval"` + `delivery_collected_amount` → surfaces in StockistPayments Approvals → approve creates confirmed payment + marks order paid + reduces outstanding.
+
+---
+
+## 10. AI & EDGE FUNCTIONS (`supabase/functions/*`, all `verify_jwt=false` in config.toml)
+
+| Function | Model | Auth check in code | Contract |
+|---|---|---|---|
+| **parse-order-text** | `google/gemini-3-flash-preview` | Requires `Bearer` (401 else) | Body `{text, products:[{id,name}]}`. Tool `extract_order_items` → `{items:[{name,quantity,productId}]}`. 429/402 handled. |
+| **parse-purchase-bill** | `google/gemini-3-flash-preview` (vision) | **No header check** | Body `{file_base64,file_type,file_name}`. Image → image_url; else base64 substring(0,50000) into prompt. Returns `{products:[…]}` (name/brand/category(enum)/mrp/sale_price/quantity/batch_number/expiry_date/composition/pack_size). Parse error → HTTP 200 `{error, raw}`. |
+| **autofill-product-details** | `google/gemini-3-flash-preview` | Requires `Bearer` | Body `{product_name}` (min 3, 400 else). Tool `return_product_details` → brand/manufacturer/composition/drug_type(enum)/pack_type(enum)/category(enum)/drug_schedule(enum)/requires_prescription/pack_size/hsn_code/confidence/fields_filled. |
+| **chat-bot** | `google/gemini-3-flash-preview` | Requires `Bearer`; **service-role** client | Body `{message, conversation_id}`. Fuzzy-match `quick_questions` (≥2 word overlap >3 chars OR prefix slice25) → canned answer; else general prompt (<100 words). Flags `is_forwarded` if reply mentions "forward"/"admin team". 429 → busy message. |
+| **architecture-ai** | `google/gemini-2.5-flash` | None | Body `{messages, architectureContext}`. System prompt embeds context; `max_tokens 4096`. 429 → busy. |
+| **flowboard-data** | — (static) | None | `?type=` returns sections/nodes/screens/database/routes/business-logic/infrastructure (v5.0.0 static dataset: 8 sections, per-node inputs/outputs/preconditions/postconditions/internalLogic/validations/failureCases/dev-designer-qa notes/tables/edgeFunctions/priority/complexity/status/children). |
+| **seed-admin** | — | Service role | Idempotently creates admin auth user + `user_roles` admin. |
+| **seed-production-data** | — | Service role | 17-phase Jaipur/Rajasthan demo seeder (pw `12345678`). |
+
+All AI via `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`.
+
+---
+
+## 11. STORAGE BUCKETS & TTLs (inconsistent by design)
+- **`documents`** (mixed): registration docs = **public URL**; resubmissions & delivery proofs = **signed 365d/1yr**; checkout prescriptions/UPI proofs = **signed 24h**; Rx upload = **raw path (no signed URL)**; pharmacy payment proof = **signed 30d**; pharmacy business docs = **signed 1d**; purchase bills (`bills/…`) = raw upload.
+- **`product-images`** — stockist ProductForm single image (public URL).
+- **`product_media`/`pharmacy_inventory_media`** — gallery uploads.
+- **`public-assets`** — doctor avatar (public URL).
+- **`platform`** — platform logo (`platform_settings.logo_url`).
+
+---
+
+## 12. DATA MODEL (from `integrations/supabase/types.ts`, project `ggliujfrabwtodwtjnul`)
+~70 tables + 15 RPCs. Groups: identity/roles (profiles, user_roles, *_profiles, login_activity, login_attempts); catalog/inventory (products, product_batches, product_media, product_categories, pharmacy_inventory, pharmacy_inventory_media, pharmacy_categories, drug_schedules); B2B (orders, order_items, order_returns, order_status_history, delivery_staff, delivery_settings, delivery_route_templates, stockist_holidays, serviceable_areas, admin_serviceable_areas); B2C (customer_orders, customer_order_items, customer_returns, customer_return_items, customer_reviews, customer_wishlist, customer_addresses); finance (payments, payment_reminders, bills, bill_orders, credit_notes, subscription_plans); connections (stockist_pharmacy_circle, pharmacy_serviceable_areas, pharmacy_delivery_staff, pharmacy_consultation_settings); healthcare (consultations, prescriptions, prescription_items, prescription_templates, doctor_availability, doctor_specializations, doctor_pharmacy_partnerships, doctor_commission_rules, doctor_commission_earnings); compliance (counterfeit_alerts, reviews); governance/comms (admin_audit_log, notifications, messages, peer_messages, conversations, chat_messages, quick_questions, platform_settings, platform_banners).
+- **RPCs**: has_role, check_login_rate_limit, record_login_attempt, verify_staff_credentials, hash_password, decrement_stock, deduct_product_stock, restore_product_stock, deduct_pharmacy_inventory, restore_pharmacy_inventory, update_circle_outstanding, admin_override_order_status, admin_override_customer_order_status, admin_send_targeted_notification, get_flowboard_schema.
+- **Enums**: `app_role` admin/stockist/pharmacy/customer/doctor; `approval_status` pending/approved/rejected.
+- Tables referenced via `as any` NOT in generated types: `pharmacy_stock_audits`, `recurring_orders`, `manufacturer_returns`, `price_history` (dead — no writer).
+
+---
+
+## 13. KNOWN STUBS / PLACEHOLDERS / BUGS (confirmed in code)
+**Stockist**: GST entirely absent (cosmetic TAX INVOICE; GST report empty); Home "Pending Bills" keys on `status="draft"` (never written → always 0); **double stock deduction** (decrement_stock at create + deduct_product_stock at packed); `price_history` page dead; Export "PDF" emits `.xlsx`; StockTransfer & Dispose don't re-aggregate product stock; BatchManager uses **latest** batch (LIFO) for headline price; Home "Collect Payment" quick action only navigates; outstanding non-atomic in several flows; bill/order number schemes inconsistent (ORD-/SO/PH/BILL-/CN-); bill QR hardcoded `lovable.app` domain; manufacturer-return credit via `window.prompt`.
+**Pharmacy**: no realtime; B2B purchase no deduction; RecurringOrders has no scheduler; Reports Schedule H/H1/NDPS placeholder rows; InventoryAuditLog reads nonexistent `selling_price`; B2C bill no tax; **customer-return approval does NOT restock**; staff password plaintext fallback if hash_password returns null.
+**Customer**: **no OCR** on Rx upload (raw path); two divergent order paths (PharmacyDetail raw vs Checkout 5% GST+fee); GST fixed 5%; UPI "15-minute" banner static (no timer); consultation payment self-attested; booking **ignores doctor_availability** (no double-book check); reminders localStorage-only with <24h setTimeout; ReviewOrder writes `reviews` but reads from `customer_reviews` (**never surface**).
+**Doctor**: meeting links manually pasted; Earnings excludes commissions while dashboard includes them; availability save destructive & never read; default commission 5% hardcoded.
+**Admin**: Dashboard "System Health" & API-monitoring health hardcoded; Impersonate view-only; ForceReset only emails link; MergeAccounts migrates only notifications+login_activity (not orders; secondary not deleted); Returns/Commissions read-only; bulk approval client-side loop; maintenance flag stored but not enforced; banners URL-only.
+**AI/infra**: `parse-purchase-bill` skips Authorization check (all fns `verify_jwt=false`); model ids pinned (`gemini-3-flash-preview`, `gemini-2.5-flash`); two overlapping SW update mechanisms; `useVersionCheck` reports `"1.0.0"` while `constants.APP_VERSION="2.0.0"` and MenuPage footer "v1.0.0"; branding drift "Digi Swasthya" / "Digi Swasthya Hub" / "Digital Swasthya"; WhatsApp country code `91` hardcoded; delivery routing is Google Maps URL (no optimization).
+
+---
+
+*Sources read directly: `App.tsx`; all layout/hook/lib files; every registration + auth + onboarding + staff + shared page; stockist Home/Products/ProductForm/BatchManager/CreateOrder/OrderDetail/Orders/Pharmacies/PharmacyDetail/Payments/RecordPayment/Returns/ExpiryManagement/StockTransfer/BulkBill/ManufacturerReturns/Reports/ExportData/PriceHistory/StaffForm + CollectPayment/QuickBill/BillPreview/EditPharmacy/BulkUpload* dialogs; pharmacy Dashboard/CustomerOrderDetail/B2CBillGenerator/StockistDetail/QuickOrder/InventoryForm/BulkImport/Payments/Reports/CustomerReturns/RecurringOrders/ReorderSuggestions; customer Dashboard/Checkout/PharmacyDetail/OrderDetail/BookConsultation/ConsultationDetail/PrescriptionDetail/PrescriptionUpload/MedicineReminders/ReviewOrder/ReturnRequest; doctor Dashboard/ConsultationDetail/PrescriptionWriter/Availability/PharmacyPartnershipDetail/Earnings; admin Dashboard/Stockists/Notifications/Impersonate/MergeAccounts/Counterfeit/OrderDetail/CustomerOrderDetail/Refunds/ForceReset/Users/MaintenanceMode/SystemArchitecture + ArchitectureAIView; all 8 edge functions (flowboard-data structure); types.ts summary.*
+
+---
+
+---
+
+## Appendix C — greetings-pal-git (MED)
+
+> Source: `_reviews/review-greetings-pal-git.md` · Repo folder: `greetings-pal-git/`
+
+# MedOrder (`greetings-pal-git`) — Exhaustive Functional Review
+
+> **App folder:** `/Users/kshipradewat/Desktop/stockpharma/greetings-pal-git`
+> **In-product names (INCONSISTENT — see §0.3):** PWA manifest = "MedOrder - Medicine Marketplace"; landing hero = "Medicine Ordering Marketplace"; top header (`Header.tsx`) = **"MediConnect"**.
+> **Type:** Two-sided B2B pharma ordering marketplace (Stockist ↔ Pharmacy), installable PWA.
+> **Stack:** Vite + React 18 + TS · shadcn/ui (Radix) + Tailwind · React Router v6 · TanStack Query (present but barely used) · Zod (auth + edge validation) · Supabase (Auth, Postgres, Storage, Edge Functions) · Lovable AI Gateway (Gemini 2.5 Flash) · papaparse/xlsx · Recharts · vite-plugin-pwa.
+
+This document is derived by reading every file under `src/pages/**`, `src/components/**`, `src/hooks/**`, `src/lib/**`, `src/integrations/**`, all six `supabase/functions/*`, `supabase/config.toml`, and all 15 `supabase/migrations/*`. It goes materially deeper than the repo's `FEATURES.md`, and corrects/extends several of its claims (flagged inline as **[Δ vs FEATURES.md]**).
+
+---
+
+## Table of Contents
+0. Platform Overview, Roles, Global Conventions
+1. Authentication & Registration Module
+2. Layout / Navigation Shell
+3. Stockist Module (dashboard, products, add/edit, bulk-upload, custom-pricing, orders, order-detail, payments, payment-detail, delivery/dates/areas/fees, profile)
+4. Pharmacy Module (dashboard, stockists, catalogue, stockist-catalogue, smart-order, cart, checkout, orders, order-detail, profile)
+5. Smart Order engine (deep dive: parse + recommend, all 3 strategies)
+6. Bulk-Upload / OCR engine (deep dive)
+7. Money, GST, Payment, Stock, Delivery-Fee logic
+8. AI & Edge Functions (endpoints, I/O, auth)
+9. Data Model, RPCs, RLS, Storage
+10. Edge Cases, Bugs, Stubs & Hardcoded Values (consolidated)
+
+---
+
+## 0. Platform Overview, Roles, Global Conventions
+
+### 0.1 Roles (`app_role` enum = `admin | stockist | pharmacy`)
+| Role | Enum | Landing | Reachable routes | Notes |
+|---|---|---|---|---|
+| Stockist | `stockist` | `/stockist` | all `/stockist/*` | Full seller surface. |
+| Pharmacy | `pharmacy` | `/pharmacy` | all `/pharmacy/*` | Full buyer surface + Smart Order. |
+| Admin | `admin` | — | **none** | Exists in enum + RLS policies (`Admins can manage …`) but **zero routes/screens/guards**. Fully dormant. |
+
+- `useAuth.fetchUserRole` fetches the single `user_roles.role` with `.single()` → a user effectively has exactly one role.
+- Role resolution has a **5-second timeout** guard that forces `userRole=null, loading=false` if the query hangs.
+- Every page independently re-resolves its `stockists.id` / `pharmacies.id` from `user.id` (via `useStockistId`/`usePharmacyId` hooks, or inline `.select('id').eq('user_id', user.id).single()`).
+
+### 0.2 Complete route map (`src/App.tsx`)
+Public / unguarded:
+- `/` → **Register** (NOT the marketing `Index.tsx` — Index is imported but **never routed**; it is dead code). **[Δ vs FEATURES.md, which implies `/` is Register — correct — but note Index.tsx is orphaned.]**
+- `/auth/register` → Register
+- `/auth/login` → Login
+- `/install` → Install (PWA helper)
+- `*` → NotFound (logs `console.error` with attempted path)
+
+Stockist (guarded `allowedRoles={['stockist']}`):
+`/stockist`, `/stockist/products`, `/stockist/products/add`, `/stockist/products/edit/:id`, `/stockist/products/bulk-upload`, `/stockist/products/bulk-upload/custom-pricing`, `/stockist/delivery-dates`, `/stockist/orders`, `/stockist/orders/:id`, `/stockist/payments`, `/stockist/payments/:id`, `/stockist/profile`.
+
+Pharmacy (guarded `allowedRoles={['pharmacy']}`):
+`/pharmacy`, `/pharmacy/profile`, `/pharmacy/catalogue`, `/pharmacy/cart`, `/pharmacy/checkout`, `/pharmacy/orders`, `/pharmacy/orders/:id`, `/pharmacy/smart-order`, `/pharmacy/stockists`, `/pharmacy/stockists/:id`.
+
+`ProtectedRoute` behavior: spinner while `loading`; a **15s** timeout renders "Authentication is taking too long" + Retry (`window.location.reload()`); no `user` → `/auth/login`; `user` but no role → "account setup is incomplete" screen linking to `/auth/register`; wrong role → redirect to `/`.
+
+### 0.3 Branding inconsistency (three names)
+- Header link text: **"MediConnect"** (`Header.tsx` line 24).
+- `index.html`/PWA manifest: **"MedOrder"**.
+- Register/Index hero: **"Medicine Ordering Marketplace"** / "Create Account".
+These are not reconciled anywhere.
+
+### 0.4 Cross-cutting conventions
+- **Currency:** `₹` + `.toFixed(2)` everywhere; no thousands grouping.
+- **Pagination:** manual, **20/page**, `count:'exact'`, `.range(from,to)`, `created_at` desc. Products/Orders/Payments paginate; Stockists/Catalogue/StockistCatalogue load **all** rows (no pagination).
+- **Search/filter:** client-side on the currently loaded page only (so search misses rows on other pages).
+- **IDs:** UUID; tables truncate to `id.slice(0,8)+"..."`.
+- **No realtime** channels anywhere; data refetched on mount/after mutation.
+- **State:** Cart in React Context + `localStorage['cart']`; auth session in `localStorage`. TanStack Query wraps the app but pages fetch directly with `useState/useEffect`.
+- **Dates:** `date-fns` `format`.
+
+---
+
+## 1. Authentication & Registration Module
+
+### 1.1 Register (`/`, `/auth/register` — `pages/auth/Register.tsx`)
+**Content:** Card titled "Create Account" / "Register as a Stockist or Pharmacy", Pill icon. Two tabs: **Pharmacy** (default) and **Stockist**. Footer link "Already have an account? Sign in" → `/auth/login`.
+
+**Forms — both tabs identical fields**, two Zod schemas (`pharmacySchema`, `stockistSchema`, byte-for-byte identical):
+| Field | Type | Required | Validation | Default |
+|---|---|---|---|---|
+| Name (Pharmacy/Stockist Name) | text | yes (`required` + Zod) | 2–100 chars | "" |
+| Drug License | text | yes | min 1 char | "" |
+| City | text | no | optional | "" |
+| State | text | no | optional | "" |
+| Email | email | yes | valid email, ≤255 | "" |
+| Password | password | yes | **Zod min 8**, but input `minLength={6}` (looser HTML hint) | "" |
+
+**Submit flow (`handleSubmit`):**
+1. `schema.parse(formData)` (ZodError → toast first message).
+2. `supabase.auth.signUp({ email, password, options.emailRedirectTo = origin + "/" })`.
+3. If no `authData.user` → throw "User creation failed".
+4. Insert `user_roles {user_id, role}` (`pharmacy`/`stockist`). On error → `signOut()` + throw.
+5. Insert profile row into `pharmacies`/`stockists` `{user_id, name, drug_license, city, state}`. On error → **delete the `user_roles` row** + `signOut()` + throw (compensating cleanup).
+6. Success toast, `setTimeout(navigate('/pharmacy'|'/stockist'), 1000)`.
+
+**Edge case:** if Supabase email confirmation is enabled, `signUp` returns no active session → the RLS-guarded inserts in steps 4/5 (`WITH CHECK auth.uid() = user_id`) will **fail** (unauthenticated). Registration therefore silently depends on auto-confirm being on. GST/address_line/pincode are NOT collected at registration (only editable later in Profile).
+
+### 1.2 Login (`/auth/login` — `pages/auth/Login.tsx`)
+**Content:** "Welcome Back" card, Email + Password inputs (both `required`), "Sign In" button, "Forgot password?" button, "Register here" link.
+**Flow:** `signInWithPassword` → on success re-fetch `user_roles` (`.single()`); if no role → toast "Account setup incomplete", `signOut`, navigate `/auth/register`. Otherwise toast success; a `useEffect` on `userRole` routes to `/stockist` or `/pharmacy` (else `/`).
+**Forgot-password DIALOG (`AlertDialog`):** single "Email" input; `resetPasswordForEmail(resetEmail, { redirectTo: origin + '/auth/login' })`; empty email → toast error; success toast + close.
+**Note:** the routing `useEffect` depends on component-local `loading` (always false here) rather than `authLoading` — works but slightly off.
+
+### 1.3 Install (`/install` — `pages/Install.tsx`)
+Detects iOS (UA regex), standalone display-mode (already installed), and `beforeinstallprompt`. States: **already installed** (green panel), **installable + non-iOS** (native Install button → `deferredPrompt.prompt()`), **iOS** (3-step Share→Add-to-Home instructions), **fallback Android** (3-step menu instructions). Static "Benefits of Installing" list. Not linked from any nav — reachable only by URL.
+
+### 1.4 Index (`pages/Index.tsx`) — ORPHANED
+Marketing hero + two role cards (both buttons → `/auth/register`) + "Sign in here". **Not wired into the router** (`/` renders Register). Dead code.
+
+### 1.5 NotFound
+"404 / Oops! Page not found" + "Return to Home" (`<a href="/">`). Logs the bad path.
+
+---
+
+## 2. Layout / Navigation Shell
+
+- **`AppLayout`:** if logged-out → renders children bare (no chrome). If logged-in → `Header` + `<main class="pb-20 md:pb-0">` + `BottomNav`.
+- **`Header`:** sticky top bar. Left = "MediConnect" link → role home. Right = user dropdown (`User` icon) → "My Profile" (role-based path) + "Logout" (`signOut`). Returns `null` if no user.
+- **`BottomNav`:** mobile-only (`md:hidden`), fixed bottom. Hidden if no user.
+  - Stockist tabs: Home `/stockist`, Products `/stockist/products`, Orders `/stockist/orders`, Payments `/stockist/payments`, Profile `/stockist/profile`.
+  - Pharmacy tabs: Home `/pharmacy`, Stockists `/pharmacy/stockists`, Products `/pharmacy/catalogue`, Orders `/pharmacy/orders`, Cart `/pharmacy/cart`, Profile `/pharmacy/profile`.
+  - Active tab highlighted by exact `location.pathname` equality.
+- **`NavLink`:** thin compat wrapper around RouterNavLink (activeClassName/pendingClassName). Not actually used by BottomNav.
+- **`LocationInput`:** a reusable "type a city → mock lat/lon" field with a **hardcoded 10-city map** (Mumbai…Lucknow) and **Delhi as default fallback**. **It is imported by no page** — dead/stub component; the real profiles never capture lat/lon through it. Distance-based delivery fees therefore have no UI to populate coordinates.
+
+---
+
+## 3. Stockist Module
+
+### 3.1 Dashboard (`/stockist` — `StockistDashboard.tsx`)
+**KPI cards (all live):**
+- **Total Products** = `count(stockist_products where stockist_id)`; sub-line "N active" = `count(... is_active=true)`.
+- **Total Orders** = `count(orders where stockist_id)` (all-time).
+- **Revenue (This Month)** = `Σ orders.total_amount where created_at >= startOfMonth` (1st of month, 00:00 local, `.toISOString()`).
+- **Delivery Dates** — navigation card → `/stockist/delivery-dates` (static "Schedule" text).
+**Sections (conditional, only render if non-empty):**
+- **⚠️ Low Stock Alert** (amber): products with `min_stock_alert > 0` AND `stock_quantity <= min_stock_alert`, filtered client-side, top 5. Row = name + "N left (min: M)".
+- **🗓️ Expiring Soon** (red): `expiry_date` between now and +30 days, asc, limit 5. Row = name + "Expires: <localeDate>".
+**Quick Actions:** Manage Products, Set Delivery Dates. Header has a **Sign Out** button (duplicated with header dropdown logout).
+
+### 3.2 Products (`/stockist/products` — `Products.tsx`)
+**Content:** header with **Bulk Upload** + **Add Product** buttons (Add disabled until `stockistId` resolves). Filter bar: search (matches `product_name` OR `brand`), **Brand** select, **Category** select (both populated from distinct values on the *current page only*). **Saved Drafts** section (from `bulk_upload_drafts`, all rows, newest first) rendered as `DraftCard`s (only shown if any). Product grid (3-col) of `ProductCard`s. Empty state: "No products found. Add your first product to get started." Pagination controls (Prev/Next, "Page X of Y") when >1 page.
+**Actions:**
+- Edit → `/stockist/products/edit/:id`.
+- Delete → opens `AlertDialog` ("cannot be undone") → hard `DELETE` from `stockist_products`, toast, refetch.
+- Toggle Active → `Switch` flips `is_active`, toast "activated/deactivated", refetch.
+- Inline stock edit (in `ProductCard`) → refetch on save.
+- Draft Resume → `/stockist/products/bulk-upload?draft=<id>`. Draft Delete → `DELETE bulk_upload_drafts`, toast, refetch.
+
+**`ProductCard` (stockist) content:** name, brand, category badge; Switch (active); grid of MRP / Sale Price / **inline-editable Stock** (click value → number input + Save/Cancel; Save updates `stock_quantity`, toast, `onStockUpdate()`); MOQ; optional Pack/Strength/Batch/Expiry; Edit + Delete buttons.
+**`ProductTable`** exists (full columns: Name, Brand, Category, Pack Size, MRP, Sale Price, Stock, Active switch, Edit/Delete w/ AlertDialog) but **is not used by any page** (Products uses the card grid). Dead component.
+
+### 3.3 Add Product (`/stockist/products/add` — `AddProduct.tsx`)
+7 sectioned cards. Fields + defaults:
+| # | Field | Type | Default | Required |
+|---|---|---|---|---|
+| 1 | Product Name | text + **"Fetch with AI"** (Sparkles) | "" | yes (save-guard) |
+| 2 | Generic Name / Salt | text | "" | no |
+| 2 | Brand | text | "" | no |
+| 3 | Manufacturer | text | "" | no |
+| 3 | Product Type | **Select**: Tablet, Capsule, Syrup, Injection, Cream, Drops (Capitalized values) | "" | no |
+| 4 | Category | text | "" | no |
+| 4 | Pack Size | text (ph "10 tablets") | "" | no |
+| 4 | Strength | text (ph "500mg") | "" | no |
+| 5 | MRP | number step .01 | "" | no |
+| 5 | Purchase Price | number | "" | no |
+| 5 | Sale Price | number | "" | **yes** |
+| 6 | Stock Quantity | number | "" → 0 | no |
+| 6 | Min Stock Alert | number | "" → 0 | no |
+| 6 | MOQ | number | "" → **1** | no |
+| 6 | GST % | number | **"18"** | no → 18 |
+| 7 | Description | textarea (4 rows) | "" | no |
+
+**Save-guard:** name + sale_price required, `stockistId` required. Insert into `stockist_products` (numeric coercions: mrp/purchase → `parseFloat` or null; sale → `parseFloat`; stock/min → `parseInt` or 0; moq → `parseInt` or 1; gst → `parseFloat` or 18). Then toast + navigate to products list. Cancel button too.
+**"Fetch with AI":** requires non-empty name; calls `product-ai-fetch` with body `{ productName }` and reads `data.success && data.product`. **BUG:** the function returns `{ product_info: {...} }` (no `success`/`product` keys) **and** the client sends `productName` while the function validates `product_name`. So this autofill **never populates and effectively no-ops** (silently). **[Δ vs FEATURES.md which flags shape mismatch — additionally the request key is wrong here.]**
+
+### 3.4 Edit Product (`/stockist/products/edit/:id` — `EditProduct.tsx`)
+Same 7 sections, pre-filled via `select * where id=:id AND stockist_id`. Product Type Select here uses **lowercase** values (`tablet, capsule, syrup, injection, cream, drops, other`) — **inconsistent with AddProduct's Capitalized values** (so a product saved as "Tablet" won't match this Select's option, showing blank). Update writes all fields (`|| null` for optional; sale `parseFloat`; stock/min parseInt-or-0; moq parseInt-or-1; **gst parseFloat-or-0** — note default differs from Add's 18).
+**"Fetch with AI":** here sends body `{ product_name }` (correct key) and reads flat `data.generic_name/manufacturer/brand/category/pack_size/strength`. **BUG:** function returns `{ product_info: {...} }`, so all reads are `undefined` → falls back to previous values → still a no-op autofill. (Also reads `data.brand`/`pack_size`/`strength` which `product-ai-fetch` doesn't even return.)
+
+### 3.5 Bulk Upload (`/stockist/products/bulk-upload` — `BulkUpload.tsx`)
+See §6 for the full engine. Header (back), 3 tabs (**Purchase Bill / Sale Bill / Full Catalogue**), dashed drop-zone + "Select File" + (catalogue only) **Download Template**, selected-file panel + "Parse & Preview", staged Progress bar, preview (Apply Global Margin, Custom Pricing, `BulkUploadPreview` table, Save as Draft, Confirm Upload N Products). Loads a `?draft=<id>` on mount; loads `stockists.default_margin_percent` (fallback 20).
+
+### 3.6 Custom Pricing (`/stockist/products/bulk-upload/custom-pricing` — `CustomPricing.tsx`)
+Receives `items`+`mode` via **router `location.state`**. Editable table columns: **Product Name, Purchase Rate, Quantity, Sale Rate (input), Margin % (input), Profit, GST, Net Profit**, with a totals footer (Profit/GST/Net) and a 3-tile Profit Summary (Gross / GST / Net). Two-way binding:
+- Editing **Sale Rate** → `margin% = (sale-purchase)/purchase*100`; `profit=(sale-purchase)*qty`; `gst=profit*gst%/100`; `net=profit-gst`.
+- Editing **Margin %** → `sale=purchase*(1+margin/100)`; same profit/gst/net.
+Rows with no `purchase_price` are skipped (edits ignored).
+"Save & Continue" navigates back to `/stockist/products/bulk-upload` with `state:{items,mode}` + toast.
+**BUG:** `BulkUpload` only reads `?draft=` search param and never reads `location.state`, so **custom-pricing edits are lost** on return (the preview is not repopulated). **[Not in FEATURES.md]**
+
+### 3.7 Orders (`/stockist/orders` — `Orders.tsx`)
+Paginated (20) `orders` + `pharmacies:pharmacy_id(name)`, desc. Search across order id / pharmacy name / status / amount (client-side, current page). **Empty state:** "No orders yet". Table columns: **Order ID (8-char), Pharmacy, Amount ₹, Delivery Date, Status (badge), Created, Actions (View Details)** → `/stockist/orders/:id`.
+Status badge map: `paid`→secondary; `accepted/packed/out_for_delivery/delivered`→default; underscores→spaces.
+
+### 3.8 Order Detail (`/stockist/orders/:id` — `OrderDetail.tsx`) — **stockist can advance status**
+**[Δ vs FEATURES.md, which did not mention the stockist status-update control.]**
+- Loads order (+ pharmacy name/address) and `order_items`.
+- **Order Information** card: ID (full), Pharmacy, Total Amount, Delivery Date, Created.
+- **Order Status** card: a 5-node **stepper** (`paid → accepted → packed → out_for_delivery → delivered`), completed nodes filled + check icons. A **Select** to change status, whose options are `statusFlow.slice(currentIndex)` (can only move forward / stay). `disabled` when `updating` or already `delivered`. On change → `UPDATE orders.status`, toast, refetch. When delivered, shows "Order Complete" badge.
+- **Order Items** card: per-item name, "Qty × ₹price", optional "GST X%: ₹amount", line_total. Footer: **Subtotal = Σ line_total**, **Total GST = Σ gst_amount**, **Grand Total = order.total_amount**.
+
+### 3.9 Payments (`/stockist/payments` — `Payments.tsx`)
+Paginated (20) `payments` joined `orders!inner(id, stockist_id, pharmacies:pharmacy_id(name))`, filtered `orders.stockist_id = me`, desc. Loading skeletons. **Empty state:** "No payments yet". Table: **Payment ID (8), Order ID (8), Pharmacy, Amount, Status (badge: paid→default else secondary), Mode (e.g. mock), Date**. Whole row clickable → `/stockist/payments/:id`.
+
+### 3.10 Payment Detail (`/stockist/payments/:id` — `PaymentDetail.tsx`)
+Two cards: **Payment Information** (ID 8-char, Amount, Status badge, Mode `capitalize`, Payment Date, and conditionally Gateway Payment ID / Gateway Order ID) and **Associated Order** (Order ID 8, Pharmacy, Order Amount, Order Status badge, Order Date, "View Order Details" → `/stockist/orders/:id`).
+
+### 3.11 Delivery & Dates (`/stockist/delivery-dates` — `DeliveryAndDates.tsx`)
+Three tabs (default "dates"):
+- **Delivery Dates:** multi-select `Calendar` (`mode="multiple"`, `disabled = date < new Date()` — note this compares to *now* incl. time, so today is effectively disabled). Selected-dates chip list with count. **Save** = set **all** existing rows `is_active=false`, then insert selected dates as `{delivery_date: yyyy-MM-dd, is_active:true}`; toast; then `fetchDeliveryDates()`.
+  - **BUG:** `fetchDeliveryDates()` is **never called on mount** (no `useEffect`), so opening the page shows an **empty calendar even if dates exist**; existing dates only load *after* a save. Also, deactivating (not deleting) rows means dead `is_active=false` rows accumulate. **[Not in FEATURES.md]**
+- **Serviceable Areas** → `ServiceableAreasManager`.
+- **Delivery Fees** → `DeliveryRulesConfig`.
+
+**`ServiceableAreasManager`:** Add form — Pincode (text, `maxLength=6`, required) + Area Name (text, optional). Insert `stockist_serviceable_areas {pincode, area_name|null, is_active:true}`; duplicate (Postgres `23505`) → "This pincode is already added". List = active areas as removable `Badge`s (X → soft-delete `is_active=false`). Count shown. Empty state text.
+
+**`DeliveryRulesConfig`:** 5 checkbox-gated rule cards, each revealing inputs when checked:
+| Rule | Inputs | Persisted `rule_type` |
+|---|---|---|
+| Free Delivery on Profit | Min Profit Amount (₹) | `profit_amount` (`min_profit_amount`) |
+| Free Delivery on Order Amount | Min Order Amount (₹) | `order_amount` (`min_order_amount`) |
+| Free Delivery on Scheduled Dates | (toggle only) | `delivery_date` (`free_on_delivery_date=true`) |
+| Distance-Based Charges | Base Distance (km) + Charge per KM (₹) | `distance` (`base_distance_km`,`per_km_charge`) |
+| Flat Delivery Fee | Flat Fee (₹) | `flat_fee` (`flat_fee`) |
+Loads existing active rules into toggles/inputs. **Save** = `DELETE all rules for stockist` then insert enabled rules with **priority in fixed order 1..5** (Profit→Order→Date→Distance→Flat). Footer explains "First matching rule wins." Empty save = toast "All delivery rules cleared". **These rules currently affect nothing** — see §7.5.
+
+### 3.12 Stockist Profile (`/stockist/profile` — `Profile.tsx`)
+Edits `stockists` row. Fields: Business Name*, Drug License*, GST Number, Address Line 1, Address Line 2, City, State, Pincode (all plain text; `*` are visual only — **no validation enforced**, empty saves allowed). Save = `UPDATE stockists` by id, toast. `default_margin_percent`, `dispatch_latitude/longitude`, `dispatch_place_name`, `kyc_status` exist in schema but are **not editable here**.
+
+---
+
+## 4. Pharmacy Module
+
+Global cart via `useCart`/`CartProvider` (localStorage `cart`). CartItem = `{productId, stockistId, productName, stockistName, price, quantity, deliveryDate?}`.
+
+### 4.1 Dashboard (`/pharmacy` — `PharmacyDashboard.tsx`)
+**KPIs:** Total Orders (`count`), Pending Deliveries (`count orders where status != 'delivered'`), Spent (This Month) (`Σ total_amount, created_at>=startOfMonth`), **Cart** card (live `getItemCount()`, badge if >0) → `/pharmacy/cart`. **Smart Order** promo card → `/pharmacy/smart-order`. Quick Actions: Browse Products (`/pharmacy/catalogue`), Smart Order. Sign Out button.
+
+### 4.2 Browse Stockists (`/pharmacy/stockists` — `Stockists.tsx`)
+Loads all `stockists` ordered by name; for **each** stockist runs 2 extra queries (active product count + earliest active future delivery date) → N+1 query pattern. Search by name or city (client-side). `StockistCard` grid. Empty state. **`StockistCard`:** Building icon, name, city (MapPin), Products count badge, Next Delivery date (if any), "View Catalogue" button; whole card → `/pharmacy/stockists/:id`.
+
+### 4.3 Stockist Catalogue (`/pharmacy/stockists/:id` — `StockistCatalogue.tsx`)
+- Loads the stockist, its **active** products (asc by name), and earliest active future delivery date (applied to every product as `nextDeliveryDate`).
+- **Embedded "Smart Order — Paste your list" card:** textarea + "Analyze Order". `handleSmartOrder` resolves pharmacy id, calls `smart-order-parse {rawText, pharmacyId}`, then locally matches parsed names against *this stockist's* loaded products (substring both directions). Shows found count toast; lists **not-found** items in a destructive panel. **Dead code:** it also queries `alternatives` (other stockists' products) but never uses the result. This path **does not add anything to cart** and **does not call `smart-order-recommend`** (unlike the dedicated Smart Order page).
+- **Product list:** per product — name, brand, badges (Pack/Batch/Exp/Delivery), price, "Stock: N", a `QuantitySelector`, "Add to Cart".
+- **`handleAddToCart`:** qty defaults to `quantities[id] || moq || 1`; passes `stockQuantity`+`moq`+`deliveryDate` → full `useCart` validation applies here.
+
+### 4.4 Catalogue (`/pharmacy/catalogue` — `Catalogue.tsx`)
+Own sticky sub-header ("Catalogue" + Cart button w/ count badge). Tabs **Products / Stockists**.
+- **Products tab:** loads all active products + `stockists:stockist_id(id,name)`, then per-product earliest delivery date (N+1). Search matches name/brand/generic/stockist name; Category select filter. Products **grouped by lowercased product_name** into a `ProductCard` (pharmacy variant) that shows one row per stockist "variant" (stockist name, batch/exp/delivery/stock badges, price, strikethrough MRP, QuantitySelector, Add to Cart / "Out of Stock" when stock 0). Empty state per tab.
+- **Stockists tab:** same `StockistCard` grid as §4.2 (its own N+1 fetch).
+- **`handleAddToCart(variant, qty)`** passes stockQuantity(=variant.stock)+moq → validated.
+
+**`QuantitySelector`:** local qty state init `moq||1`; +/- buttons clamped to `[moq, maxStock]`; number input clamps on change; MOQ badge shown when moq>1. `onChange` reports clamped qty upward.
+
+### 4.5 Cart (`/pharmacy/cart` — `Cart.tsx`)
+- Empty state → "Your cart is empty" + Browse Products.
+- Groups items by stockist (`getItemsByStockist`). Each group card: stockist name + delivery date (from first item); each line = name, "₹price each", **qty number input (min 1)**, remove (trash) button, line subtotal.
+- Qty input `onChange` → `updateQuantity(productId, stockistId, parseInt||1)`. `updateQuantity` is **async and re-fetches** `stock_quantity, moq` to validate (moq/stock toasts); callers **don't await** it (fire-and-forget → toast may lag). `quantity<=0` removes the line.
+- **Order Summary (sticky):** Items (count = number of distinct lines, not units) with total; "Orders will be created" = number of stockist groups; **Total = Σ price*qty (PRE-GST)**; note "…split into N separate orders" if >1 group. "Proceed to Checkout" → `/pharmacy/checkout`. "Clear Cart" (AlertDialog confirm) → `clearCart()`.
+
+**`useCart.addToCart` validation (return boolean):** reject if `stockQuantity<=0` ("out of stock"); reject if merged `newQuantity < moq`; reject if `newQuantity > stockQuantity`; merges qty for existing product+stockist pair; toasts success/failure. **`getTotalAmount` = Σ price*qty (pre-GST).** `getItemCount` = Σ qty.
+
+### 4.6 Checkout (`/pharmacy/checkout` — `Checkout.tsx`)
+- On mount fetches `stockist_products(id, gst_percent)` for cart items → `productGstMap` (used for display).
+- **Order Summary card:** per stockist group — line items, **Subtotal = Σ price*qty**, **GST = Σ price*qty*gst%/100**, **Total = subtotal+gst**. **No delivery fee line.**
+- **Payment card:** grand Total Amount (recomputed = Σ (subtotal+gst) across groups). "Mock Payment Mode — no real transaction" notice. Success/Failure panels. "Pay Now" (disabled while processing or after a result). If >1 group: "N separate orders will be created".
+- **`handlePayment` flow:**
+  1. Resolve pharmacy id (missing → toast, abort).
+  2. **Pre-payment stock re-check:** fetch current `stock_quantity`; if any line `available < quantity` → toast "Insufficient stock for: <name>", abort.
+  3. `await sleep(2000)`; `success = Math.random() > 0.05` (~**95%**). Fail → red panel, toast, abort.
+  4. Build a fresh `productGstMap` from re-fetched products.
+  5. **`Promise.all` over stockist groups** — per group: insert `orders` (`status:'paid'`, `payment_status:'paid'`, `total_amount = subtotal+gst`, `delivery_date = firstItem.deliveryDate`, `payment_reference: 'MOCK-<ts>-<rand9>'`); insert `order_items[]` (snapshots `product_name_snapshot`, `price_snapshot`, `quantity`, `line_total = price*qty`, `gst_percent`, `gst_amount = line_total*gst%/100`); insert `payments` (`amount=orderTotal`, `status:'paid'`, `mode:'mock'`, `gateway_payment_id:'MOCK-PAY-<ts>'`); then per item `rpc deduct_stock(product_id, quantity_to_deduct)`.
+  6. **Manual rollback ladder** (no real DB transaction): items-fail → delete order; payment-fail → delete items+order; stock-fail → delete payments+items+order, throw.
+  7. Success → toast "created N order(s)", `clearCart()`, `setTimeout(navigate('/pharmacy/orders'), 2000)`.
+
+### 4.7 Orders (`/pharmacy/orders` — `Orders.tsx`)
+Paginated (20) `orders` + `stockists:stockist_id(name)`, desc. Search across id/stockist/status/amount. Loading skeletons; empty state ("No orders yet" + Start Shopping). Table: Order ID (8), Stockist, Amount, Delivery Date, Status badge, Created, View Details → `/pharmacy/orders/:id`. Same status-badge map as stockist.
+
+### 4.8 Order Detail (`/pharmacy/orders/:id` — `OrderDetail.tsx`)
+- Loads order (+ stockist name/address) and `order_items`.
+- **"Mark as Received" button** shown only when `status === 'out_for_delivery'` → `UPDATE orders.status='delivered'`, toast, refetch. (Allowed by RLS "Pharmacies can update own orders".)
+- **Order Information:** ID, Stockist, Total, Delivery Date, Created, **Payment Status badge**.
+- **Order Status:** read-only 5-node stepper + current-status badge (pharmacy cannot pick arbitrary status; only the "Mark as Received" shortcut).
+- **Order Items:** same layout + Subtotal/Total GST/Grand Total footer as stockist detail.
+
+### 4.9 Pharmacy Profile (`/pharmacy/profile` — `Profile.tsx`)
+Identical structure/fields to stockist profile but writes `pharmacies` (Name*, Drug License*, GST, Address 1/2, City, State, Pincode). `latitude/longitude/google_place_name` exist in schema but are **not editable here** (so pharmacy geolocation for distance fees can never be set via UI).
+
+---
+
+## 5. Smart Order Engine (deep dive) — `/pharmacy/smart-order` (`SmartOrder.tsx`)
+
+**UI flow:**
+1. Textarea (8 rows, monospace, placeholder examples) + "Analyse & Get Recommendations".
+2. `handleAnalyse`: guards non-empty text + logged-in; resolves pharmacy id; calls **`smart-order-parse {rawText, pharmacyId}`**; reads `parseData.success`, sets `parsedItems`+`sessionId`, toast "Parsed N items". Then calls **`smart-order-recommend {sessionId}`**; reads `recommendData.success`, sets `recommendations`, toast. `401` in either error message → "Session expired. Please login again."
+3. **Parsed Items** table (Product Name / Quantity).
+4. **Items Found summary:** "itemsFound / totalItemsRequested" + destructive "N not found" badge and a "Items not available" badge list.
+5. Three recommendation cards (see below), each with **Add to Cart** that maps that strategy's items into `useCart` and navigates to `/pharmacy/cart`.
+
+**`handleAddToCart(mode)`** maps:
+- `single`: `bestSingle.items[]` under `bestSingle.stockistId/stockistName`.
+- `split`: flatten `cheapestSplit.stockists[].items[]` (each item carries its own stockistId/Name).
+- `fastest`: flatten `fastestDelivery.stockists[].items[]`.
+Each mapped item = `{productId, productName, price, stockistId, stockistName, quantity}` → `addToCart(item)`.
+**BUG:** these items **omit `stockQuantity`, `moq`, `deliveryDate`**, so `addToCart`'s MOQ/stock validation is **bypassed** on this path, and cart lines will have **no delivery date** (checkout writes `delivery_date=null`). **[matches FEATURES.md]**
+
+### 5.1 `smart-order-parse` (edge fn — AI, tool-calling)
+- Validates `{rawText: non-empty string, pharmacyId: string}` (else 500 with message).
+- Gemini 2.5 Flash with a forced function tool `parse_medicine_list` → `{items:[{parsed_name, quantity}]}` (handles "x10", "20 tabs", "- 5", typos).
+- Uses **service-role** client to insert `smart_order_sessions {pharmacy_id, raw_text, status:'processing'}` then `smart_order_items[]`.
+- Returns `{success:true, sessionId, items}`. Errors → 500 `{error}`.
+- No 429/402 special-casing here (only a generic "AI parsing failed: <status>").
+
+### 5.2 `smart-order-recommend` (edge fn — pure matching, NO AI)
+- Input `{sessionId}` (missing → throw). Service-role client.
+- Loads `smart_order_items` for the session; loads **all** active `stockist_products` + `stockists!inner(id,name,city)`; loads active future `stockist_delivery_dates` (asc), building `deliveryMap` = earliest date per stockist.
+- **`fuzzyMatch`**: exact → substring (either direction) → any word-overlap (either direction).
+- Per requested item, matches products then **filters to `stock_quantity >= requested quantity`** (only available offers kept). Each match carries `price, totalPrice = price*qty, deliveryDate, batch/expiry`.
+- Builds `stockistAvailability` map accumulating per-stockist `items`, `totalCost`, `itemsAvailable`, `itemsMissing`, `daysUntilDelivery` (`getDaysUntilDelivery`: null date → **999**, else ceil(days)).
+- **Recommendation 1 — Best Single Stockist:** among stockists with `itemsAvailable>0`, sort by **most itemsAvailable, tie-break lowest totalCost**; take `[0]` (or null). UI shows border-highlighted "Recommended", delivery date, items available/missing, item list, missing-items badges, total, Add to Cart.
+- **Recommendation 2 — Cheapest Split:** for each item pick the match with **lowest totalPrice** across stockists; group chosen items by stockist (`subtotal`); `savings = bestSingle.totalCost − cheapestSplitTotal` (0 if no bestSingle). UI badge: "Save ₹X" or "Best Price"; per-stockist item breakdown; total; Add to Cart.
+- **Recommendation 3 — Fastest Delivery:** for each item pick the match with **fewest daysUntilDelivery**; group by stockist; `earliestDelivery = Math.min(...daysUntilDelivery)`. UI shows per-stockist delivery date + subtotal, "N days" badge, total, Add to Cart. Rendered only if `fastestDelivery.stockists.length > 0`.
+- `notFoundItems` = requested items with zero matches. Persists `smart_order_recommendations {session_id, result_json}` (best-effort; logs on failure). Sets session `status='completed'`. Returns `{success:true, recommendations:{bestSingle, cheapestSplit, fastestDelivery, notFoundItems, totalItemsRequested, itemsFound}}`.
+- **Edge cases:** if all matched items have null delivery dates, `earliestDelivery=999`; if `fastestDeliveryItems` empty, `Math.min()` = `Infinity` (guarded by UI length check). `itemsMissing` logic pushes an item to *every* stockist that lacks it, so a single-stockist plan lists other requested items as "missing" even if another stockist has them.
+
+---
+
+## 6. Bulk-Upload / OCR Engine (deep dive)
+
+**Modes (tabs):** `purchase | sale | catalogue`. File intake: catalogue accepts `.xlsx/.xls/.csv`; purchase/sale accept those **plus** `.jpg/.jpeg/.png/.pdf`. **Max 10 MB** (else toast). Invalid ext → toast.
+
+### 6.1 Spreadsheet path (`processExcelFile`)
+- CSV: `file.text()`, split lines, `split(',')` (naive — breaks on quoted commas), first line lowercased headers.
+- Excel: dynamic `import('xlsx')`, first sheet, `sheet_to_json({header:1})`, lowercased headers.
+- Column aliases: `stock quantity`/`quantity`; `purchase price`; `sale price`; `mrp` (default `salePrice*1.1`); `gst %`/`gst` (default 18); `brand`; `category`; `type`→product_type; `manufacturer`; `generic name`/`salt`; `pack size`; `strength`; `moq` (default 1). Row kept only if `product name` present AND `quantity>0`.
+- Matches each item against existing products by **case-insensitive exact name** → status `found` (+ `existingProductId`, `isNew:false`) else `new`.
+- Progress: 20 → 50 (parsing) → 80 (validating) → 100. Empty file / no valid rows → thrown errors surfaced as toast.
+
+### 6.2 Image/PDF path (`processImageOrPdfFile`)
+- Uploads to Storage bucket **`bills`** at `${stockistId}/${Date.now()}_${file.name}` (progress 15). Creates **signed URL (900s)** (progress 40). Calls **`extract-bill-items {imageUrl, mode}`** (progress 70).
+- Matches extracted item names to existing products by **substring (either direction)** (progress 100):
+  - **found:** use existing product's name/sale_price/gst; qty & purchase price from bill.
+  - **purchase + not found:** call **`fetch-product-info {product_name}`**; new item with `sale_price = price*(1+defaultMargin/100)`, gst 18, moq 1, `aiEnhanced=!!aiData`, status `new`. **BUG:** reads `aiData?.type` but the function returns `product_type` → product type never fills from AI; the rest (`brand`, `manufacturer`, `category`, `generic_name`, `pack_size`, `strength`) do map since the function returns those keys.
+  - **sale + not found:** status `error`, `errorMessage:'Product not found in catalogue'`.
+
+### 6.3 Margin / preview / commit
+- **`MarginSettingsModal`:** Margin % input (default = stockist default), live preview (₹100 example → sale price), "Save as my default margin" checkbox (updates `stockists.default_margin_percent`). Apply → `applyGlobalMargin(m)`.
+- **`applyGlobalMargin(m)`:** for items with purchase_price: `sale = purchase*(1+m/100)`; `profit=(sale-purchase)*qty`; `gstAmount = profit*gst%/100` (**GST modeled on profit here**); `netProfit = profit-gstAmount`; sets `margin_percent`.
+- **`BulkUploadPreview`:** summary tiles — **Ready to Upload** (`status!='error'` count), **Errors**, **AI Enhanced**, and (purchase mode) **Total Net Profit** (`Σ net_profit`). Table cols: Product Name (+ "AI" badge, + error text), Qty, and (non-sale) Purchase/Sale/**Profit(=net_profit)**, Status badge (✓ Found / + New / ✗ Error). Scrollable, sticky header.
+- **Save as Draft:** insert `bulk_upload_drafts {stockist_id, mode, items(JSON), margin_percent:defaultMargin, file_name}`; navigate to products.
+- **Confirm Upload:** filter out `status==='error'`, call **`bulk-upload-commit {stockistId, mode, items}`**; toast `Uploaded {successCount} products`; navigate.
+- **Download Template (catalogue):** CSV with headers `Product Name,Brand,Category,Type,MRP,Purchase Price,Sale Price,Stock Quantity,HSN Code,GST %,Pack Size,Strength,MOQ` + one sample row. **`HSN Code` has no matching DB column** (never persisted).
+- **`DraftCard`:** file name, mode badge (Purchase/Sale/Full Catalogue), item-count badge, saved timestamp, Resume + Delete (trash).
+
+### 6.4 `bulk-upload-commit` (edge fn — no AI, **explicit in-code JWT check**)
+- Requires `Authorization` header; verifies via service-role `auth.getUser(token)` (401 otherwise). Validates `{stockistId, mode, items[]}` (400 otherwise). **Does NOT verify the caller actually owns `stockistId`** — any authenticated user could commit to an arbitrary stockist id (service-role bypasses RLS). Security gap.
+- Per item by mode:
+  - **purchase:** `isNew` → insert new product (`mrp=mrp||sale*1.1`, `gst=gst||18`, `moq=moq||1`, `is_active:true`); else fetch current stock and **ADD** `stock_quantity += quantity`, update purchase/sale price.
+  - **sale:** requires `existingProductId` (else error "Product not found in catalogue"); **REDUCE** `stock = max(0, current − quantity)`.
+  - **catalogue:** `upsert` on conflict `(stockist_id, product_name)` with full field set (uses `item.existingProductId` as `id` when present).
+- Returns `{success:true, successCount, errorCount, errors:errors.slice(0,10)}`.
+
+---
+
+## 7. Money, GST, Payment, Stock, Delivery-Fee Logic
+
+### 7.1 Order status vocabulary
+`orders.status` CHECK = `paid | accepted | packed | out_for_delivery | delivered` (default `paid`). `payment_status` CHECK = `paid | failed` (default `paid`). `payments.status` CHECK = `paid | failed` (default `paid`); `payments.mode` default `mock`. **Stockist advances** status forward-only; **pharmacy** can only jump to `delivered` via "Mark as Received" when status is `out_for_delivery`.
+
+### 7.2 GST
+- **Checkout / order storage:** per-line `gst_amount = price*qty*gst_percent/100`; per-stockist total = subtotal + Σ gst; stored on each `order_items` row (`gst_percent`, `gst_amount`). **No CGST/SGST split.** Missing gst_percent treated as 0 at checkout.
+- **Bulk-upload margin & Custom Pricing:** GST modeled **on profit** (`profit*gst%/100`) for net-profit preview only — a different (and non-standard) GST semantics from checkout.
+
+### 7.3 Payment (mock)
+Simulated: 2s delay + `Math.random() > 0.05`. Writes real `orders`/`order_items`/`payments` rows with `MOCK-…` references. No gateway, UPI, or QR. `gateway_order_id`/`gateway_payment_id` schema columns exist; only `gateway_payment_id` gets a mock value.
+
+### 7.4 Stock
+- Checkout: `deduct_stock(product_id, quantity_to_deduct)` RPC per item (atomic per call). **NOTE:** `deduct_stock` is declared in `types.ts` (`Args {product_id, quantity_to_deduct}` → void) and called at runtime, but **no migration in the repo creates it** — it exists only in the live DB (created out-of-band). Untracked DB object.
+- Bulk-upload: direct add/reduce/upsert (see §6.4). Inline stock editor and Edit Product also write `stock_quantity` directly.
+
+### 7.5 Delivery-Fee engine (`useDeliveryFee` + `lib/distanceCalculator`) — DORMANT
+- Priority evaluation over active `stockist_delivery_rules`: (1) `profit_amount` free if `orderProfit>=min`; (2) `order_amount` free if `orderTotal>=min`; (3) `delivery_date` free if scheduled; (4) `distance` fee `= round(max(0, dist−base)*perKm, 2)`; (5) `flat_fee`. No rules → free ("No delivery charges"). Missing pharmacy/stockist coords → "Location not available" and fee 0.
+- Distance via **Haversine** (`R=6371km`, rounded 2dp) between `pharmacies.lat/lon` and `stockists.dispatch_lat/lon`.
+- **`useDeliveryFee` is imported by nobody; checkout never applies a fee and never sets `orders.delivery_fee`.** The whole fee engine + `DeliveryRulesConfig` config screen currently affect **nothing**. Coordinates also have no UI to be captured (LocationInput unused; profiles don't collect lat/lon). Effectively fully dormant.
+
+### 7.6 Revenue / spend
+Stockist Revenue and Pharmacy Spent = Σ `orders.total_amount` for current calendar month (from 1st @ 00:00 local).
+
+---
+
+## 8. AI & Edge Functions (summary table)
+All six are `verify_jwt = true` in `config.toml`; all set `Access-Control-Allow-Origin: *`. AI calls hit `https://ai.gateway.lovable.dev/v1/chat/completions` (OpenAI-compatible) with `google/gemini-2.5-flash`; **no fallback model**. `LOVABLE_API_KEY` required.
+
+| Function | AI? | Input | Output | Auth / writes |
+|---|---|---|---|---|
+| `smart-order-parse` | Yes (tool-call, forced) | `{rawText, pharmacyId}` | `{success, sessionId, items:[{parsed_name, quantity}]}` | JWT (config); **service-role** inserts session+items; no 429/402 handling |
+| `smart-order-recommend` | No | `{sessionId}` | `{success, recommendations{…}}` | JWT (config); service-role reads/writes recs, updates session |
+| `extract-bill-items` | Yes (vision) | `{imageUrl, mode}` | `{pharmacy_name, items:[{name≤200, quantity≥1, price≥0}]}` | JWT (config); no user check; handles 429/402/400 |
+| `fetch-product-info` | Yes | `{product_name}` | flat `{generic_name, brand, manufacturer, category, product_type, pack_size, strength}` (null unknown) | JWT (config); handles 429/402; regex-extracts JSON |
+| `product-ai-fetch` | Yes | `{product_name}` (≤200) | **`{ product_info: {generic_name, manufacturer, product_type, category} }`** | JWT (config); **client callers read wrong shape → no-op** (see §3.3/3.4) |
+| `bulk-upload-commit` | No | `{stockistId, mode, items}` | `{success, successCount, errorCount, errors[≤10]}` | JWT (config) **+ explicit in-code `getUser`**; service-role writes; **no stockist-ownership check** |
+
+---
+
+## 9. Data Model, RPCs, RLS, Storage
+
+**Tables (from `types.ts` + migrations, project `kefbopoxcturwiqkfgdf`):**
+- `user_roles(role app_role, user_id)` — one row/user.
+- `stockists(name, drug_license, gst, address_line1/2, city, state, pincode, default_margin_percent[def 20], dispatch_latitude/longitude, dispatch_place_name, kyc_status, user_id)`.
+- `pharmacies(name, drug_license, gst, address_line1/2, city, state, pincode, latitude, longitude, google_place_name, user_id)`.
+- `stockist_products(product_name, generic_name, brand, manufacturer, category, product_type, pack_size, strength, mrp, purchase_price, sale_price[NOT NULL], stock_quantity, min_stock_alert, moq, gst_percent[def 18], batch_number, expiry_date, description, is_active, stockist_id)`. (No `hsn_code`.)
+- `bulk_upload_drafts(mode, items JSON, margin_percent, file_name, stockist_id)` — **dropped then recreated** across migrations.
+- `orders(pharmacy_id, stockist_id, total_amount[NOT NULL], delivery_date, delivery_fee, status[CHECK], payment_status[CHECK], payment_reference)`.
+- `order_items(order_id, stockist_product_id, product_name_snapshot, price_snapshot, quantity, line_total, gst_percent[def 18], gst_amount)`.
+- `payments(order_id, amount, status[CHECK paid|failed], mode[def mock], gateway_order_id, gateway_payment_id)`.
+- `smart_order_sessions(pharmacy_id, raw_text, status)`, `smart_order_items(session_id, parsed_name, quantity)`, `smart_order_recommendations(session_id, mode, result_json JSON)`.
+- `stockist_delivery_dates(delivery_date, is_active, stockist_id)`, `stockist_delivery_rules(rule_type, priority, min_order_amount, min_profit_amount, free_on_delivery_date, base_distance_km, per_km_charge, flat_fee, is_active, stockist_id)`, `stockist_serviceable_areas(pincode, area_name, is_active, stockist_id)`.
+
+**RPCs / functions:** `has_role(_user_id uuid, _role app_role)` (SECURITY DEFINER, STABLE, `search_path=public`), `user_owns_stockist(_stockist_id text)` (SECURITY DEFINER, used by storage RLS), `deduct_stock(product_id, quantity_to_deduct)` (**declared/called but no migration defines it**), `update_updated_at_column()` trigger fn (on stockists/pharmacies/stockist_products/orders/delivery_rules/bulk_upload_drafts). Enum `app_role = [admin, stockist, pharmacy]`.
+
+**RLS (highlights):** row visibility keyed on `has_role(...)` + ownership. Pharmacies read active products; stockists manage own products; orders visible to owning pharmacy/stockist/admin; `order_items`/`payments` insert allowed to pharmacies for their own orders; "Stockists can update own orders" + "Pharmacies can update own orders" (Mark as Received). Admin blanket "manage" policies exist for every table.
+
+**Storage:** bucket **`bills`** is what the code uses (`${stockistId}/…` + 900s signed URLs). Migration `20251127145203` initially wrote an RLS policy requiring folder == `auth.uid()` (which is the *user id*, NOT the *stockist id* the code uploads under → would reject uploads), then `20251127145259` **corrected** it to `user_owns_stockist((storage.foldername(name))[1])`. A separate legacy **`ocr-bills`** bucket is created (public) then made private in earlier migrations but is **unused by the code**. There is **no explicit `CREATE bucket 'bills'`** in the migrations shown (created out-of-band). Buckets `product-images`/`prescriptions` are not used.
+
+**PWA (`vite.config.ts`):** dev host `::` port **8080**; `registerType:'autoUpdate'`; manifest name "MedOrder - Medicine Marketplace"; Workbox runtime cache: Supabase → NetworkFirst, `supabase-cache`, 50 entries, 24h.
+
+---
+
+## 10. Consolidated Edge Cases, Bugs, Stubs & Hardcoded Values
+
+**AI-autofill broken (both product forms):**
+- `AddProduct` sends `{ productName }` and reads `data.success && data.product` — `product-ai-fetch` neither validates `productName` nor returns those keys → **silent no-op**.
+- `EditProduct` sends `{ product_name }` (correct) but reads flat `data.generic_name/...` while the fn returns `{ product_info:{...} }` → **silent no-op** (and reads fields the fn doesn't return).
+- Bulk-upload purchase enrichment reads `aiData?.type` but `fetch-product-info` returns `product_type` → product type never enriched.
+
+**Data / flow bugs:**
+- **Custom Pricing edits are lost** — `BulkUpload` never reads `location.state` on return (only `?draft=`).
+- **Delivery Dates page never loads existing dates on mount** (no `useEffect` for `fetchDeliveryDates`) → empty calendar until a save happens; also soft-deactivates rows, accumulating dead `is_active=false` rows.
+- **Product Type option-value mismatch** between Add (Capitalized, no "other") and Edit (lowercase + "other") → previously saved values may not display in Edit.
+- **Smart Order → cart** omits `moq`/`stockQuantity`/`deliveryDate` → validation bypassed, orders created with `delivery_date=null`.
+- **`useCart.updateQuantity` is async but fire-and-forget** — validation toasts can lag; Cart's number input can transiently show invalid qty.
+- Client-side search/filter only sees the current 20-row page (Products/Orders/Payments); Brand/Category selects only list values from the loaded page.
+- N+1 query patterns in Stockists/Catalogue (per-stockist count + delivery-date lookups).
+- `StockistCatalogue.handleSmartOrder` has dead `alternatives` query; doesn't recommend or add to cart.
+
+**Dormant / dead / unused:**
+- **Delivery-fee engine entirely dormant** (`useDeliveryFee` never imported; checkout applies no fee; `orders.delivery_fee` never set). Config UI (`DeliveryRulesConfig`) has no runtime effect. No UI to capture lat/lon (LocationInput unused).
+- **Admin role** — enum + RLS only; no routes/screens/guards.
+- **`Index.tsx`** orphaned (not routed). **`ProductTable.tsx`** unused. **`LocationInput.tsx`** unused.
+- Legacy **`ocr-bills`** storage bucket unused; `product-images`/`prescriptions` unused.
+
+**Security / integrity:**
+- Payments are **mock** (`Math.random()>0.05`); no real gateway; **no true DB transaction** — cross-row consistency relies on best-effort client-side rollback deletes.
+- `bulk-upload-commit` verifies the JWT but **not stockist ownership** of `stockistId` (service-role bypasses RLS) → potential cross-tenant write.
+- `smart-order-parse` has no 429/402 handling (generic failure only).
+- Registration inserts assume an active session post-signUp (breaks if email confirmation is required).
+
+**Hardcoded / default values:**
+- GST default **18** (Add form, spreadsheet parse, commit inserts, order_items column default). Edit form defaults GST to **0** on save if blank (inconsistent with 18).
+- MOQ default **1**; MRP fallback **sale×1.1**; default margin **20%** (`stockists.default_margin_percent` fallback and modal seed).
+- Payment success rate **95%** (`> 0.05`); payment delay **2000ms**; post-success redirect **2000ms**; register redirect **1000ms**.
+- Signed URL TTL **900s**; file size cap **10MB**; pagination **20**; role-fetch timeout **5s**; auth-guard timeout **15s**; expiring-soon window **30 days**; low-stock/expiring lists **top 5**.
+- `getDaysUntilDelivery` null-date sentinel **999**.
+- Mock references: `MOCK-<ts>-<rand9>`, `MOCK-PAY-<ts>`.
+- `LocationInput` hardcodes 10 city coordinates + Delhi fallback.
+- Product Type list fixed to Tablet/Capsule/Syrup/Injection/Cream/Drops (+ "other" in Edit only).
+
+---
+
+*End of review. Source of truth: `src/App.tsx`; all `src/pages/**`, `src/components/**`, `src/hooks/**`, `src/lib/**`; `src/integrations/supabase/{client,types}.ts`; `supabase/functions/{smart-order-parse,smart-order-recommend,extract-bill-items,fetch-product-info,product-ai-fetch,bulk-upload-commit}/index.ts`; `supabase/config.toml`; and all 15 `supabase/migrations/*.sql`.*
+
+---
+
+---
+
+## Appendix D — stockistpayments (MR)
+
+> Source: `_reviews/review-stockistpayments.md` · Repo folder: `stockistpayments/`
+
+# PharmaMR / "Chameleon" — EXHAUSTIVE Functional Review
+
+> App path: `/Users/kshipradewat/Desktop/stockpharma/stockistpayments`
+> In-product name is inconsistent: PWA manifest = **PharmaMR**; the Layout header renders **"Chameleon MR / Chameleon Stockist / Chameleon Distributor / Chameleon Pharmacy / Chameleon Admin"**; the onboarding screen says **"Welcome to Chameleon"**; the pharmacy dashboard hero still says **"Welcome to PharmaMR Marketplace"**; the auth card shows only a **"P"** glyph. Branding is not unified.
+> Stack: Vite 5 + React 18 + TS · shadcn/ui + Tailwind · React Router v6 · TanStack Query · Supabase (Auth/Postgres/Storage/Edge Functions) · Lovable AI Gateway (`google/gemini-2.5-flash`) · PapaParse + SheetJS · Recharts · Zod · Sonner · date-fns.
+
+This review is derived directly from source. It goes deeper than the repo `FEATURES.md`, and **corrects several claims in it** (noted inline as ⚠️ CORRECTION). It is organised: Global architecture → each module → each page (Content / Flows / Forms & fields / Logic / Edge cases) → modals/components → edge functions → data model / RPCs / RLS → complete stub & bug inventory.
+
+---
+
+## 0. GLOBAL ARCHITECTURE
+
+### 0.1 Routing (`src/App.tsx`)
+All non-auth routes are wrapped in a single `ProtectedRoute` that checks **only** that a Supabase `user` exists (shows a spinner while `loading`, redirects unauthenticated users to `/auth`). It does **NOT** check role. Per-page role restriction is done by the `useRoleGuard` hook on *some* pages only.
+
+Full route table (element → notes):
+
+| Path | Element | Role guard on page? |
+|------|---------|---------------------|
+| `/auth` | `Auth` | public (redirects to `/dashboard` if already logged in) |
+| `/onboarding` | `OnboardingSelectRole` | ProtectedRoute only |
+| `/` and `/dashboard` | `DashboardRouter` | routes by role |
+| `/pharmacies` | `Pharmacies` | none (MR-intended) |
+| `/pharmacies/new` | `PharmacyForm` | none |
+| `/pharmacy/:id` | `PharmacyDetail` | none |
+| `/bills/new` | `BillForm` | none |
+| `/payments` | `Payments` | none |
+| `/profile` | `Profile` | none |
+| `/catalogue` | `Catalogue` | none (browse-all-products page) |
+| `/marketplace` | `Marketplace` | `useRoleGuard(["pharmacy"])` |
+| `/marketplace-browse` | → redirect to `/marketplace` | — |
+| `/marketplace/products` | `MarketplaceProducts` | `useRoleGuard(["pharmacy"])` |
+| `/seller/:sellerId` | `SellerDetail` | `useRoleGuard(["pharmacy"])` |
+| `/cart` | `Cart` | none (no `<Layout>`) |
+| `/checkout` | `Checkout` | none |
+| `/my-products` | `MyProducts` | `useRoleGuard(["mr","stockist","distributor"])` |
+| `/marketplace/product/new` | `ProductForm` | none |
+| `/marketplace/product/:id` | `ProductForm` | none (edit mode) |
+| `/marketplace/order/new` | `OrderForm` | none |
+| `/orders` | `Orders` | none |
+| `/notifications` | `Notifications` | none |
+| `/my-customers` | `MyCustomers` | none (Stockist/Distributor-intended) |
+| `/my-suppliers` | `MySuppliers` | `useRoleGuard(["pharmacy"])` |
+| `/analytics` | `Analytics` | none |
+| `/support` | `Support` | none |
+| `/otc-partnership` | `OTCPartnership` | none (pharmacy-intended) |
+| `/otc` | → redirect to `/otc-partnership` | — |
+| `/delivery-planner` | `DeliveryPlanner` | none (MR-intended) |
+| `/settings` | `Settings` | none |
+| `/reports` | `Reports` | none |
+| `/admin/dashboard` | `AdminDashboard` | **ProtectedRoute only — NO admin guard** |
+| `/admin/users` | `UserManagement` | ProtectedRoute only |
+| `/admin/support` | `SupportManagement` | ProtectedRoute only |
+| `/admin/role-audit` | `RoleAudit` | ProtectedRoute only |
+| `*` | `NotFound` | — |
+
+**Routed-but-orphaned / dead links (important):**
+- **`Upgrade.tsx` (Upgrade to Premium) is NOT imported or routed anywhere** — the entire ₹999 self-serve subscription-proof page is unreachable via the router.
+- **`admin/Subscriptions.tsx` is NOT routed.** `AdminDashboard` links to `/admin/subscriptions` and `/admin/subscriptions/:id` (Review buttons) — both 404. So the admin subscription approval queue is unreachable through navigation despite the dashboard advertising it.
+- `SellerDashboard` "Quick Actions" navigate to `/customers`, `/products`, `/suppliers` — none exist (correct paths are `/my-customers`, `/my-products`, `/my-suppliers`). → all 404.
+- `PharmacyDashboard` "My Suppliers" quick action navigates to `/suppliers` (dead; should be `/my-suppliers`).
+- `MyProducts` Edit button → `/marketplace/product/edit/:id` — route is `/marketplace/product/:id` (single segment), so this 3-segment path **404s**. (Contrast: `ProductDetailModal` edit → `/marketplace/product/:id` which works.)
+- `Orders` "Self-Added Pharmacies" cards navigate to `/pharmacies/:id` — route is `/pharmacy/:id` (singular); `/pharmacies/:id` is undefined → 404.
+- `BillForm` "Back to Bills" and post-submit navigate to `/bills` — no such route → 404.
+- `MySuppliers` "View Orders" → `/orders?seller=…`; `Orders` ignores the query param and only shows the *seller's* own orders (buyer orders never appear there).
+- `nav` in `Layout` links `/delivery-planner` labelled "Routes" (MR) works; `MobileNav` (separate component) links `/otc` (pharmacy) — but **MobileNav is not actually mounted anywhere** (Layout renders its own bottom nav). MobileNav is dead code.
+
+### 0.2 Auth context (`src/contexts/AuthContext.tsx`)
+Minimal: subscribes to `onAuthStateChange` + `getSession()`, exposes `{ user, session, loading }`. No role, onboarding, or timeout state. Sessions persisted to `localStorage` with `autoRefreshToken`.
+
+### 0.3 Role guard (`src/hooks/useRoleGuard.tsx`)
+`useRoleGuard(allowedRoles)` → TanStack query `["userRole", user.id]` reads `user_roles.role` via `maybeSingle()`, `staleTime` 5 min, `retry:1`. On resolve: no role → navigate `/onboarding`; role not in `allowedRoles` → toast "You don't have access to this page" + navigate `/`. Returns `{ userRole, isLoading, hasAccess }`.
+
+### 0.4 Navigation chrome (`src/components/Layout.tsx`)
+Header: logo (`Package` icon in a primary square) + role-specific brand text (Chameleon *). Center search input (pharmacy only) that navigates to `/marketplace` on focus. Right side: Support (`?`) button → `/support`; if admin, a `Shield` button → `/admin/support`; Notifications bell → `/notifications`; user dropdown (Profile / Settings / [Role Audit if admin] / Support). Bottom fixed nav (mobile only, `grid-cols-5`) is role-based:
+- pharmacy: Home, Browse(`/marketplace`), Cart, Orders, Suppliers(`/my-suppliers`)
+- mr: Home, Pharmacies, Products, Routes(`/delivery-planner`), Orders
+- stockist/distributor: Home, Products, Orders, Customers(`/my-customers`), Analytics
+- admin: Home, Users, Support, Audit, Analytics
+- fallback: Home only
+`isActiveRoute` matches sub-routes (e.g. `/pharmacies` active for `/pharmacy/*`). `userRole` fetched via `["userRole", user.id]` with `.single()` (note: `.single()` will error for role-less users, unlike guards that use `maybeSingle()`).
+
+### 0.5 Currency & tax convention
+All money via `toLocaleString("en-IN")` with `₹`. **No GST/CGST/SGST/tax is computed anywhere.** `orders.tax_amount` and `orders.discount_amount` columns exist but are never written or used by any total. All order/cart totals = `Σ price×(1−discount%/100)×qty`.
+
+---
+
+## 1. AUTHENTICATION, SIGNUP & ONBOARDING
+
+### 1.1 `/auth` — `Auth.tsx`
+Single card with four modes toggled by local state: **Login / Forgot Password / OTP Login / Signup**. Auth logo = "P". If a `user` already exists, `useEffect` redirects to `/dashboard`.
+
+**Login form** (default): fields Email (type email, required), Password (type password, required). Submit → `supabase.auth.signInWithPassword({email.trim(), password})`; success toast + navigate `/dashboard`; error toast (message or "Invalid email or password"). Footer links: "Forgot Password?", "Login with OTP", "Sign up" (sets signup mode + default role `mr`).
+
+**Forgot Password form**: Email (required). Submit → `resetPasswordForEmail(email, {redirectTo: origin + "/"})`; toast; returns to login.
+
+**OTP Login form**: Email (required). Submit → `signInWithOtp({email, options.emailRedirectTo: origin+"/"})`; toast "OTP sent…".
+
+**Signup form** — fields & validation (client-side, all via Sonner toasts):
+- **User Type** radio (`grid-cols-2`): MR / Stockist / Distributor / Pharmacy / Admin. Default `mr`.
+- **Username** (text, minLength 6, maxLength 16, required). Live availability check: `checkUsernameAvailability` queries `profiles.username` with `ilike` (case-insensitive) via `maybeSingle`; shows spinner "Checking…", green "Available", or red "Taken". Submit blocked if taken. Helper text advertises "6-16 characters, all symbols allowed". Placeholder `e.g., JITESSH3710`.
+- **Full Name** (text, required).
+- **Email** (email, required) — validated with Zod `z.string().trim().email()`.
+- **Password** (password, required, minLength 6).
+- **Phone** (tel, required) — Zod `min(10).max(15)`.
+- **Role-specific** (non-pharmacy branch renders):
+  - Business/Company Name (required; label "Company Name" for MR else "Business Name").
+  - businessType (required; label "Brand Name" for MR else "License Type"; MR placeholder "e.g., Crocin…").
+  - UPI ID (optional).
+  - Distributor also: Service Areas (optional, comma-separated cities, helper text).
+- **Pharmacy branch**: Pharmacy Name (required), Owner Name (required), Address (required). No UPI field. (`upi_id` sent as `""` for pharmacy.)
+- **Admin branch**: Admin Registration Password (required) — must literally equal **`jit@ADMIN1`** (validated client-side here AND server-side in `assign-role` AND in DB trigger `handle_new_user`).
+- **Document upload** (mandatory for **every** role incl. pharmacy): accept `.pdf,.jpg,.jpeg,.png`, max **5 MB** (checked in `handleFileChange`). Label varies: MR="Company Agreement", stockist="Stockist License", distributor="Distributor License", pharmacy="Pharmacy License (Required)".
+
+**Signup submit flow** (`handleSignup`):
+1. Client validations (username length/availability, password≥6, name+phone present, document present, MR brand present, pharmacy owner+address present, admin password==`jit@ADMIN1`, email/phone Zod).
+2. `supabase.auth.signUp({email, password, options.data: {username, name, phone, business_name, business_type, upi_id (empty for pharmacy), role, admin_password (only if admin)}})`. → DB trigger `handle_new_user` fires (inserts profile + user_roles; **default role = `pharmacy`** if metadata role missing — ⚠️ CORRECTION: `FEATURES.md` says default `stockist`; the current trigger defaults `pharmacy`).
+3. Upload document to **private `licenses`** bucket at `${authUserId}/${Date.now()}_${role}_document.ext`.
+4. `profiles.update({verification_document_url: filePath, email})` on the new user id.
+5. Call **`assign-role`** edge function (Bearer token) with role + metadata (name/phone/business_name/business_type).
+6. Toast success + navigate `/dashboard`.
+
+Edge cases: if email confirmation is required, `getSession()` may lack a token → assign-role silently skipped (caught, logged) → user lands with role from trigger or is sent to `/onboarding`. Signup button disabled when username≥6 and unavailable.
+
+### 1.2 `/onboarding` — `OnboardingSelectRole.tsx`
+Reached only when a logged-in user has no role row. Card "Welcome to Chameleon". Radio of **4 roles only** (Pharmacy [default], MR, Stockist, Distributor) — **no Admin option here**. Submit → `assign-role` edge fn with `{role, metadata:{username:`user_${id8}`, name: email-prefix}}`; success → navigate `/` (replace). No document upload in this path.
+
+### 1.3 `DashboardRouter.tsx` (`/`, `/dashboard`)
+Reads `["userRole", user.id]` via `maybeSingle`. Spinner while loading. No role → `/onboarding`. Then switch: mr/stockist/distributor → `SellerDashboard`; pharmacy → `PharmacyDashboard`; admin → `AdminDashboard`; default → `/onboarding`.
+
+---
+
+## 2. SELLER MODULE (MR / STOCKIST / DISTRIBUTOR)
+
+### 2.1 Seller Dashboard — `dashboards/SellerDashboard.tsx`
+**Content.** Header title by role ("MR Dashboard"/"Stockist Dashboard"/"Distributor Dashboard"); subtitle: MR = `Brand: {business_type} • {business_name}`, stockist = "Multi-brand inventory management", distributor = "Manage inventory & customers". Header action buttons: MR shows **Quick Bill** + **Quick Order** + **OCR Scan**; stockist/distributor show **OCR Scan** + **Bulk Upload**.
+
+**KPI cards (4):**
+1. **Total Revenue** — MR: `Σ bills.received_amount` over bills whose pharmacy.mr_id = user (inner join `pharmacies!inner(mr_id)`); stockist/distributor: `Σ orders.total_amount` where `seller_id=user AND status='delivered'`.
+2. MR = **Pending Payments** `Σ(due_amount − received_amount)` over bills with `status != 'paid'`; else = **Pending Orders** count `orders.status='pending' AND seller_id=user`.
+3. MR = **Active Pharmacies** count `pharmacies where mr_id=user`; else = **Customers** = stockistCount + buyerPharmacyCount from `seller_buyer_relationships` split by `buyer_type` ('stockist'/'pharmacy'), with subtext "X stockists, Y pharmacies".
+4. **Products Listed** = product count where `stockist_id=user AND is_active=true` (**MR additionally filters `brand_name = profile.business_type`**). Subtext: MR "{brand} only", else "{distinctBrandCount} brands".
+
+Stock metrics computed but only brandsCount surfaced: `totalStock=Σ stock_quantity`, `stockValue=Σ stock_quantity×price`, `brandsCount=distinct brand_name`.
+
+**Quick Actions card** (`h-20` buttons): MR → My Pharmacies (`/pharmacies` ✓), My Catalogue (`/products` ✗ dead), Orders (`/orders` ✓), Reminders (`/payments` ✓). Stockist/Distributor → My Customers (`/customers` ✗ dead), My Catalogue (`/products` ✗), Orders (✓), Analytics (`/analytics` ✓).
+
+**Recent Orders card**: last 5 orders `seller_id=user` joined to `pharmacies:pharmacy_id(name)` and `buyer:profiles(name,business_name)`; each row shows resolved name, date, `₹total_amount`, `StatusBadge` on `delivery_status`; click → `/orders`. Empty: "No orders yet".
+
+**ActivityFeed** component (see §8.5).
+
+Modals mounted: QuickBill+QuickOrder (MR), OCRUpload (all), BulkUpload (non-MR; `onSuccess` = `window.location.reload()`).
+
+**Logic/edge:** loading spinner while `isLoading || !userRole`. `userRole` via `.single()`.
+
+### 2.2 My Products / Catalogue — `MyProducts.tsx` (`/my-products`)
+**Role-guarded** to mr/stockist/distributor. Title "My Catalogue".
+
+**Content.** `LocationSelector` at top — **fully mock**: hardcoded locations `main` ("Main Branch, 123 Main St") and `branch2`; add/remove just toast, no persistence. **Catalogue Status card** with pulse dot + `Switch` bound to `profiles.is_catalogue_live` (default shown as `?? true`); toggling mutates `profiles.is_catalogue_live` and invalidates `["profile"]`+`["marketplace-sellers"]`; toast on/off. If MR + business_type present, a "Brand Restriction" banner: "You can only add products from {business_type}".
+
+Search input (name/brand/salt). Two Select filters:
+- **Expiry**: all / OK (>30d) / Expiring Soon (≤30d) / Expired — computed from `expiry_date` vs today (daysUntilExpiry).
+- **Stock**: all / In Stock (>10) / Low Stock (1–10) / Out of Stock (0).
+
+**Product grid cards** (hover Tooltip with purchase/sale/MRP/stock/description): title + `Info` icon, brand Badge, stock badge (`getStockBadge`: 0→"Out of Stock" destructive; ≤10→"Low Stock"; else "In Stock"), optional image, salt line, price rows (MRP, Purchase Rate, Sale Rate bold), stock+unit, batch, expiry date. Actions per card: **availability toggle** (mutates `products.is_available`, button reads "Available"/"Hidden" with Eye/EyeOff), **Edit** (→ `/marketplace/product/edit/:id` — **404 bug**), **Delete** (opens AlertDialog "Delete Product?" → `products.delete`).
+
+`canGoLive` computed (`bank_account_number && bank_ifsc_code && is_verified && products.length>0`) but **never used** in UI (dead variable — the go-live switch is not gated by it).
+
+Empty state: package icon, "No Products Yet", Add Product button.
+
+**Forms/fields:** none inline besides filters; delete confirmation AlertDialog.
+**Edge:** products query has no is_active filter here (shows all own products incl. inactive).
+
+### 2.3 Catalogue (browse-all) — `Catalogue.tsx` (`/catalogue`)
+A **separate** "Product Catalogue" page (not role-guarded) that lists **all products from all sellers** (`products where is_active=true`, joined `profiles:stockist_id(name,business_name)`). Header buttons Add Product / Scan(OCR) / Bulk. Filters panel (toggle): Category Select (10 `product_category` labels; note label "Diabetes Management" here vs "Diabetes" in ProductForm), Brand multi-checkbox (derived from data, ScrollArea), Product Form multi-checkbox (tablet/capsule/syrup/injection/drops/ointment/powder/other), **Sort By** (8 options: name asc/desc, stock high/low, price high/low, newest, oldest). Active filter count badge; Clear All. Product cards (image, name, "by {business_name}", salt, category badge, `₹sale_rate per unit`, stock/OOS, "View Details" → `ProductDetailModal`; cart icon also opens the detail modal). Reachable only by typing the URL or via OCR/Bulk modal `onSuccess` invalidations. Buyers can't delete (comment notes deletion removed).
+
+### 2.4 Product Form — `ProductForm.tsx` (`/marketplace/product/new`, `/marketplace/product/:id`)
+Edit mode when `:id` present (loads product, maps fields; `price` = `sale_rate ?? price ?? 0`).
+
+**Fields (actual):**
+- **Product Name*** (text, required) with **AI Auto-fill** button (disabled <2 chars). Calls `autocomplete-product`; on success merges brand_name, salt_name, type, uses, category, image_url, and concatenates description + storage/handling/consumption lines.
+- **Product Image** (file, image/*) — reads as DataURL preview; uploaded on submit to public **`product-images`** bucket at `${user.id}/${Date.now()}.ext`, `getPublicUrl` stored.
+- **Brand Name** — a **Select from a hardcoded list of ~50 pharma companies** (Sun Pharma, Cipla, …, "Others"). For **MR the Select is disabled/locked** and auto-set to `business_type` via effect; shows 🔒 "Brand locked to: {business_type}".
+- **Category*** — Select of 10 enum values (labels here: "Diabetes" not "Diabetes Management").
+- **Salt Name** (text), **Type** (free text, e.g. Tablet), **Uses** (textarea), **Description** (textarea).
+- **MRP** (number), **Purchase Rate** (number).
+- **Sale Price Calculator** box: margin type Select (`percent`/`amount`) + margin value. `calculateSaleRate()`: requires MRP; percent → `MRP − MRP×margin/100`; amount → `MRP − margin`; if purchase>0 and sale<purchase → clamps to purchase (toast "Adjusted"); negative → toast "Invalid Margin". Writes `sale_rate`+`price`. A separate `sale_rate` number input under it.
+- **Batch Number** (text), **Expiry Date** (date).
+- **Sale Price (Displayed)*** = `price` (number, required, "the price customers see"), **Unit** Select (strip/box/vial/bottle/tube/pack/capsule/tablet/injection/sachet), **Stock** (number).
+
+**Submit** (`handleSubmit`): requires name + price>0. Recomputes sale = `sale_rate||price`; if purchase>0 and sale<purchase → sale=purchase. Insert/Update `products` with `stockist_id=user.id`, `seller_type = distributor ? "distributor" : "stockist"` (⚠️ **MR products get `seller_type="stockist"`** — the MmarketplaceProducts "MR Only" seller-type filter will therefore never match MR products). Numeric coercions; `expiry_date || null`. Navigate `/marketplace` on success (⚠️ a seller navigating to `/marketplace` hits the pharmacy-only role guard → redirected to `/` with an access toast).
+
+**Dead data:** arrays `productForms`, `prescriptionTypes`, `storageConditions`, `therapeuticCategories`, `units`(partly) declared; several unused. `discount_percentage`, `min_order_quantity`, `max_order_quantity` columns exist but are **not** in this form (⚠️ CORRECTION to FEATURES.md which listed them as form fields).
+
+### 2.5 Orders — `Orders.tsx` (`/orders`)
+Fetches orders where `seller_id=user OR stockist_id=user` (`.or(...)`) — i.e. the **seller view only**. ⚠️ **A pharmacy (buyer) visiting `/orders` sees nothing** here because their orders carry `buyer_id`, not seller/stockist = user. (Checkout does set `seller_id=stockist_id=sellerId`, so buyer orders never surface to the buyer on this page.)
+
+**Content.** Title "Orders Management". Tabs differ by role:
+- **MR**: "Platform Orders (n)" and "Self-Added Pharmacies (m)".
+- **stockist/distributor** (& others): All / Pending / Confirmed / Packed / Shipped / Delivered (filters `delivery_status`).
+
+Order cards: order_number, buyer name (business_name/name from profiles map, falls back "Unknown"), phone, up to 3 item badges (`name × qty`) + "+n more", delivery address, total, ordered date. Click opens **Order Detail dialog**.
+
+**Self-Added Pharmacies tab (MR):** grid of `pharmacies where mr_id=user`; card shows name/owner/address, "View Details" (→ `/pharmacies/:id` **404 bug**) + inert "Send Reminder" button. Empty → Add Pharmacy (`/pharmacies/new`).
+
+**Order Detail dialog:** buyer header + status badge (`getStatusBadge`: pending/confirmed/packed/shipped/delivered/cancelled with icons), item list (image, name, qty, `₹price×qty`), delivery address, notes, tracking id, total. **Status machine buttons** (`updateDeliveryStatusMutation`):
+- pending → **Confirm Order** (→ confirmed)
+- confirmed → **Mark as Packed** (→ packed) — **decrements stock**: for each `order_items` line, `stock = max(0, stock − qty)`.
+- packed → **Generate Payment Link** (also shown for shipped/delivered) + a **Ship** sub-form (Tracking ID input, sets delivery_tracking_id, → shipped).
+- shipped → **Mark as Delivered** (→ delivered, sets `delivered_at`).
+- any non-delivered/non-cancelled → **Cancel Order** (→ cancelled).
+- delivered + MR → **Create Bill for This Order** → `/bills/new?orderId=&pharmacyId=&amount=`.
+
+**Payment Link dialog:** `handleGeneratePaymentLink` requires `sellerProfile.upi_id` (else toast). Builds `generateUPILink(upi, business_name||name, total, order_number)`. Copy link, or **Send via WhatsApp** (`wa.me/{buyer_phone digits}?text=…`, opens new tab).
+
+**Logic/edge:** `filteredOrders` logic is loose — "platform"/"all" both return all; status tabs filter by `delivery_status`. Stock decrement loops sequentially with individual selects/updates (no transaction; partial failures possible). Status update mutation invalidates seller-orders + my-products.
+
+### 2.6 Order Form — `OrderForm.tsx` (`/marketplace/order/new`)
+MR-oriented manual order creation. Fields: **Select Pharmacy*** (from `pharmacies where mr_id=user`), **Order Number** (optional; placeholder suggests `{initials}{YYYYMMDD}-001`), **Order Items** (repeatable: Product Select from all `products where is_active` showing `name - ₹price/unit`; Qty number min 1; Subtotal readout; remove). Total = `Σ qty×price` (no tax). Supports `?product=` preselect.
+
+**Submit** (`createOrderMutation`): requires pharmacy + ≥1 valid item. Order number: uses typed or RPC **`get_next_order_number(stockist_user_id=user)`** → `ORD/0001`. Inserts `orders {pharmacy_id, stockist_id=user, order_number, total_amount, status:'pending'}` (no buyer_id, no delivery_status). Handles unique-violation `23505` with friendly message. Inserts `order_items {order_id, product_id, quantity, price, subtotal}`. Does **not** decrement stock. Navigates to `/bills/new?order=&pharmacy=` on success.
+
+### 2.7 Pharmacies (MR) — `Pharmacies.tsx` (`/pharmacies`)
+Lists `pharmacies where mr_id=user`, searchable (name/owner_name/phone `ilike`). For each pharmacy computes: `totalDue = Σ(due_amount − received_amount)` over its non-paid bills; `pendingPayments` count; last order date; and a rolled-up `status` from its bills (critical > overdue > due_soon > pending > up-to-date). Sorted by status severity. Renders `PharmacyCard` (see §8.1). Empty state with "Add Your First Pharmacy". Header "Add Pharmacy" → `/pharmacies/new`.
+
+### 2.8 Pharmacy Form — `PharmacyForm.tsx` (`/pharmacies/new`)
+Fields: **Pharmacy Name*** (required), **Phone*** (tel, required), License Number, Owner Name, Email, Address (textarea). Submit → insert `pharmacies {mr_id:user, name, license_number|null, address|null, phone, email|null, owner_name|null}`; toast; navigate `/pharmacies`. No `max_credit_limit` field (defaults null → PharmacyDetail falls back to ₹100,000).
+
+### 2.9 Pharmacy Detail — `PharmacyDetail.tsx` (`/pharmacy/:id`) — richest seller screen
+**Content.** Back button. **Pharmacy Info card**: name, license, contact (phone/email/address/owner), **Credit Limit** = `pharmacy.max_credit_limit || 100000`; **utilizationPercent** = round(creditUtilization/creditLimit×100) where `creditUtilization = Σ(due_amount−received_amount)` over non-paid bills; colour ≥90 red / 80–89 yellow / <80 green. Shows **Total Outstanding** block when `totalPending>0`.
+
+**Create Bill & Send Payment Request card** (collapsible; auto-open if `?action=new-bill`):
+- Fields: **Bill Number*** (auto-filled from RPC `get_next_bill_number(mr_user_id=user)` → `MR/001`), **Bill Date*** (date, default today), **Total Amount*** (number), **Upfront Payment (%)** (0–100; live "Upfront: ₹X"), **Payment Terms (Days)** (default 7; due date auto).
+- **Live credit check**: debounced 500 ms `check_credit_limit(pharmacy_uuid, new_bill_amount)` RPC → renders warning card: ≥100 "Credit Limit Exceeded!" (🚫, red), ≥90 "High Credit Utilization" (⚠️, yellow), with utilization_percent and `₹util / ₹limit`. **Note:** this is display-only — submit is NOT blocked by the credit result (unlike `BillForm`).
+- Summary card: Total, Upfront, Payment Request Amount = total − upfront, Due Date (`calculateDueDate(billDate, terms)` formatted PPP), plus 3 promises (UPI link, WhatsApp reminder, tracked).
+
+**Submit** (`createBillWithPaymentMutation`, shows processing spinner state): computes `upfrontAmount = round(total×upfront%/100)`, `remainingAmount = total − upfront`, dueDate. Builds UPI link (for remainingAmount). Inserts `bills {pharmacy_id, bill_number, bill_date, total_amount, due_amount=remainingAmount, upfront_amount, upfront_percentage, received_amount=upfrontAmount, remaining_due_date, status:'pending', upi_payment_link, payment_terms_days}`. Then inserts `payment_requests {bill_id, requested_amount=remaining, payment_link, status:'pending'}`. Then inserts `payment_reminders {bill_id, reminder_type:'initial', sent_via:'whatsapp', message_content, status:'sent'}`. Then updates bill `reminder_count=1, last_reminder_sent=now`. ⚠️ Note: `due_amount` is stored as the *post-upfront remaining*, and `received_amount` seeded with the upfront — so "remaining" downstream = due_amount − received_amount can *understate* by the upfront (upfront already removed from due_amount but also added to received). Effectively remaining = total − 2×upfront in the bill list math. **Money bug.**
+
+**Active Bills list**: refreshed after `await update_bill_statuses()` RPC. Each bill card: `Bill #number`, `StatusBadge(status, remaining_due_date)`, bill date, **Remaining** = due_amount − received_amount, Bill Amount, Received (green), Due Date, Reminders sent. For `status pending|overdue`: **Update Payment** (opens `UpdateBillModal`) + **Send Reminder** (`sendReminderMutation`: inserts followup `payment_reminders`, increments `reminder_count`, sets `last_reminder_sent`; toast). Empty: "No bills yet…".
+
+**Realtime**: the app's **only** realtime channel — `supabase.channel("pharmacy-bills-changes")` on `postgres_changes` table `bills` filtered `pharmacy_id=eq.:id`, invalidates `["pharmacy-bills", id]`.
+
+`UpdateBillModal` (see §8.3): updates `received_amount` and optionally `status='paid'`.
+
+### 2.10 Bill Form — `BillForm.tsx` (`/bills/new`)
+Standalone bill creator (linked from Orders "Create Bill", MyCustomers "Create Bill", OrderForm redirect). Reads URL params `amount`, `pharmacyId`.
+Fields: **Select Pharmacy*** (`pharmacies where mr_id=user`, with max_credit_limit), **Bill Number*** (auto from `get_next_bill_number`), **Bill Date*** (today), **Total Amount*** (prefilled from `?amount`). "Cash Discount (CD) & Payment Terms" box: **Upfront Payment (%)** (0–100), **Remaining Payment In** Select (7/10/15/30/custom); custom → Days input + Date input.
+On pharmacy select (`handlePharmacyChange`): fetches that pharmacy's `bills where status='pending'` and computes `previous_due = Σ(due−received)`; sets `max_credit_limit`.
+Live summary card: Credit Limit, Previous Due, Current Bill, Upfront(−), **Total Due** = `previous_due + total − upfront`; if `> max_credit_limit` shows destructive styling + "exceeds credit limit by ₹X".
+**Submit**: **hard-blocks** if `dueAmount > max_credit_limit` (toast, no insert). Computes `remainingDueDate` from terms/custom. Inserts `bills {pharmacy_id, bill_number, bill_date, total_amount, due_amount = previous_due+total−upfront, status:'pending', upfront_amount, upfront_percentage, remaining_due_date, payment_terms_days}`. ⚠️ `due_amount` here **includes carried-forward previous due** (rolls prior dues into the new bill — double-counts across bills). Navigate `/bills` (**404**). Default terms here = 30 (vs 7 in PharmacyDetail/QuickBill). Note: with `max_credit_limit` defaulting to 0 for pharmacies created without a limit, any positive due exceeds the limit → bill creation blocked.
+
+### 2.11 Payments — `Payments.tsx` (`/payments`)
+Title "Payment Reminders". Header button "Create Order for Reminder" → opens `QuickOrderModal`.
+**Send Payment Reminder card**: Select Bill (from `bills where status='pending'` — **no user scoping in the query**, relies on RLS; joined `pharmacies(name,phone)`), then Amount Type toggle (Full Due / This Bill Only / Custom [amount input]). Request Amount preview. **Send WhatsApp Reminder** button → `sendReminderMutation`: builds `upi://pay?pa={upi_id}&am={amount}` (bare link, no name/note), inserts `payment_requests {bill_id, requested_amount, payment_link, status:'sent', reminder_sent_at:now}`; on `onMutate` opens `PaymentProcessModal` (simulated 2 s processing then complete). Full=due−received; "last"=total_amount; custom=input.
+**Recent Payment Requests card**: lists `payment_requests` (joined bills+pharmacies), status badge, bill#, dates, `₹requested_amount`, and **Mark Paid** button (when bill status pending) → `bills.update{status:'paid'}`.
+Modals: `PaymentProcessModal`, `QuickOrderModal`.
+⚠️ There is no server-side WhatsApp send — reminders only log rows + simulate a modal; the deep link isn't actually opened here (unlike PharmacyDetail/Orders which open `wa.me`).
+
+### 2.12 My Customers — `MyCustomers.tsx` (`/my-customers`)
+Stockist/Distributor customer book. Reads `seller_buyer_relationships where seller_id=user` joined `buyer:profiles`. For each buyer: outstanding = `Σ(due−received)` from `bills where pharmacy_id IN buyerIds` (⚠️ joins bills by `pharmacy_id` to *profile* ids — bills are keyed to `pharmacies.id`, a different table, so outstanding will typically be 0/wrong for these relationships), and last order date from `orders where seller_id=user`. Tabs: All / Pharmacies / (Stockists — distributor only). CustomerCard: name, favorite star, buyer_type badge, `WhatsAppButton`, email, Outstanding, Credit Limit + usage bar (outstanding/credit_limit), last order, **Favorite** toggle (mutates `is_favorite`), **Create Bill** → `/bills/new?pharmacy=buyer_id`. "Add Customer" → `/pharmacies/new` (MR-form). 
+
+### 2.13 My Suppliers — `MySuppliers.tsx` (`/my-suppliers`)
+**Role-guarded pharmacy**. Unique sellers from `orders where buyer_id=user` joined `seller:profiles`. Per-seller stats from `orders`: totalOrders, totalSpent, pendingPayment (`status='pending'`). Card shows `business_name || full_name` (⚠️ `full_name` doesn't exist on profiles → shows business_name or undefined), hardcoded **"4.5" rating**, inert Heart button, stats, pending badge, phone, **Browse** (`/seller/:id`) + **View Orders** (`/orders?seller=:id` — param ignored). Empty state → Browse Marketplace.
+
+### 2.14 Delivery Planner — `DeliveryPlanner.tsx` (`/delivery-planner`)
+MR route planner. Lists `pharmacies where mr_id=user` with checkboxes. **Optimize Route** requires ≥2 selected; **simulated**: `setTimeout 1500ms`, `totalDistance = random(10–59) km`, `estimatedTime = distance×2.5 min`. Renders stops in selection order (no real optimization), plus **Open in Google Maps** (`google.com/maps/dir/{addresses joined by "/"}`). Entirely demo/simulated — no maps API, no persistence.
+
+---
+
+## 3. PHARMACY (BUYER) MODULE
+
+### 3.1 Pharmacy Dashboard — `dashboards/PharmacyDashboard.tsx`
+**Content.** Hero card "Welcome to PharmaMR Marketplace" + search input (non-wired, decorative) + "Browse Marketplace" → `/marketplace`.
+**KPI cards (4):** Pending Orders (`orders where buyer_id=user AND delivery_status IN pending/confirmed/packed/shipped`), Total Spent (`Σ orders.total_amount` for buyer), Favorite Suppliers (`seller_buyer_relationships where buyer_id=user AND is_favorite`), Total Orders (count).
+**OTC Partnership Overview card** (only if `otc_inventory` rows exist for the pharmacy): Total Inventory Value = `Σ mrp×quantity_in_stock`; Items in Stock = `Σ quantity_in_stock`; **Potential Earnings (5%)** = `Σ mrp×qty×0.05` (rounded). Button → `/otc`.
+**Featured Sellers card**: `profiles where is_catalogue_live=true AND is_verified=true AND user_roles.role IN (mr,stockist,distributor)` limit 6. Card → `/seller/:id`. Empty "No sellers available".
+**Quick Actions**: Browse Marketplace, My Orders(`/orders`), My Suppliers(`/suppliers` — **dead link**).
+**ActivityFeed**.
+
+### 3.2 Marketplace (browse by seller) — `Marketplace.tsx` (`/marketplace`)
+**Role-guarded pharmacy.** Fetches `profiles` joined `user_roles!inner(role)` where role IN (mr,stockist,distributor) — ⚠️ **no is_catalogue_live/is_verified filter** (all sellers shown by default; those are opt-in filter pills). Product counts per seller from a full `products` scan (client-side tally). Header (primary banner) + search (business_name/name). View toggle: "Browse by Seller" / "Browse All Products" (`/marketplace/products`). Filter pills: All / MR / Stockist / Distributor / **Verified Only** (is_verified) / **Live Catalogue** (is_catalogue_live). Seller cards: business_name, role badge, hardcoded **4.5** rating, product count, address, Heart (favorite → upsert `seller_buyer_relationships {seller_id, buyer_id, buyer_type:'pharmacy', is_favorite:true}`), **Browse Catalogue** → `/seller/:id`. Empty state.
+⚠️ Reads `seller.user_roles?.[0]?.role` (array) whereas the join is 1-1 — role may read undefined; role pills may misbehave.
+
+### 3.3 Marketplace Products — `MarketplaceProducts.tsx` (`/marketplace/products`)
+**Role-guarded pharmacy.** Two-step fetch: `products where is_available=true` then merge `profiles(id,business_name,name)` by `stockist_id`. Filters (collapsible): search (name/brand/salt), Brand Select (derived), **Seller Type** Select (all/mr/stockist/distributor — matches `product.seller_type`; ⚠️ MR products have seller_type 'stockist', see §2.4), Seller Select (derived names), Min/Max Price (`product.price`). 
+**Seller-locked cart:** cart lines from `cart_items where buyer_id=user`; `lockedSellerId = cartItems[0]?.seller_id`. Adding a product from a different `stockist_id` → toast "Cart is locked to another seller…". Cards from the locked seller show quantity steppers (`cartMutation` upserts/deletes `cart_items {buyer_id, seller_id=stockist_id, product_id, quantity}`; qty 0 deletes). Others are `opacity-50` and Add disabled. Warning banner "Cart locked to {name}" with **Clear Cart** (`clearCartMutation` deletes all buyer cart rows). Product card: discount badge (`discount_percentage% OFF`), placeholder icon (no image shown even if present), name/brand/seller + seller_type badge, MOQ badge (if `min_order_quantity>1`), `₹price` + struck MRP, stock badge (>10 "In Stock" / "Only n left" / OOS). Floating "View Cart (n items)" → `/cart`.
+
+### 3.4 Seller Detail — `SellerDetail.tsx` (`/seller/:sellerId`)
+**Role-guarded pharmacy.** Header: seller business_name, **4.5** rating, product count, inert Heart. Search. Products = `products where stockist_id=:sellerId AND is_available=true`. Product card: discount badge, **discountedPrice = price×(1−discount/100)** shown, struck price, stock badge, add/stepper.
+⚠️ **Cart-lock NOT enforced here** — `addToCart` upserts `cart_items` with `seller_id=sellerId` regardless of what's already in the cart; and it tracks quantity in **local `cart` state** (not synced from `cart_items`), so counts don't reflect persisted cart and a pharmacy can mix sellers via this page, breaking Checkout's single-seller assumption. Floating View Cart uses local state count.
+
+### 3.5 Cart — `Cart.tsx` (`/cart`)
+⚠️ Rendered **without `<Layout>`** (no header/nav). Reads `cart_items` (joined `product:products(*)`, `seller:profiles!cart_items_seller_id_fkey(*)`). Groups by seller. Line price = `product.price×(1−discount/100)`. Per-line: image placeholder, name/brand, price+struck, Trash (qty→0 delete), qty stepper (update `cart_items.quantity`; 0 deletes). Per-seller Subtotal. Grand Total = `Σ discountedPrice×qty`. **Proceed to Checkout** → `/checkout`. Empty state → Browse Marketplace. No GST.
+
+### 3.6 Checkout — `Checkout.tsx` (`/checkout`)
+Reads cart (same join) + user profile. Fields: **Delivery Address*** (textarea, required to enable Place Order), Contact Number (disabled, from profile.phone), Order Notes (optional). Order Summary grouped by seller with subtotals; Grand Total.
+**Place Order** (`placeOrderMutation`): assumes single seller (`sellerId = cartItems[0].seller_id`). **Order number generated client-side**: `ORD/${(count of buyer's orders)+1 padded 4}` — ⚠️ not via RPC; race/duplicate-prone; also collides with seller ORD sequence namespace. Inserts `orders {order_number, buyer_id=user, seller_id=sellerId, stockist_id=sellerId, pharmacy_id=user.id, total_amount, delivery_address, notes, status:'pending', delivery_status:'pending'}`. ⚠️ `pharmacy_id` is set to the **buyer profile id**, not a `pharmacies` row — so seller-side joins to `pharmacies:pharmacy_id(name)` won't resolve. Inserts `order_items` (price = discounted, subtotal). Clears cart. Navigate `/orders`. Does **not** decrement stock (that happens at seller "packed").
+
+### 3.7 OTC Partnership — `OTCPartnership.tsx` (`/otc-partnership`)
+Uses tables accessed with `as any` (**not in generated types**): `pharmacy_otc_subscriptions`, `otc_subscription_plans`. Reads active subscription (`status='active'`, joined plan), plans (`is_active`, ordered by price), and `otc_brands` (`is_active`).
+If active subscription exists → summary view: plan name badge, Stock Value (`plan.stock_value/1000 + "k"`), Brands (`selected_brands.length`), Status Active.
+Else **3-step wizard**: 
+1. **select-plan**: grid of `OTCPlanCard` (2nd card flagged "Most Popular"). Choosing a plan → step 2.
+2. **select-brands**: checkboxes of `otc_brands` capped at `plan.max_brands`; Back / Continue (≥1).
+3. **review**: shows `₹plan.price` with "(Dummy Payment)"; **Complete Payment** → `createSubMutation` inserts `pharmacy_otc_subscriptions {pharmacy_id, plan_id, payment_amount, payment_status:'paid', selected_brands, status:'active'}`. No real payment.
+⚠️ The **`initialize-otc-inventory` edge function is never invoked** from the UI, so `otc_inventory` is never actually seeded → the Dashboard OTC card and Profile OTC card will typically show nothing even after "subscribing".
+
+---
+
+## 4. ADMIN MODULE (all behind `ProtectedRoute` only — no client role gate)
+
+### 4.1 Admin Dashboard — `dashboards/AdminDashboard.tsx` (`/admin/dashboard`, also role `admin` at `/`)
+**KPIs:** Total Users (`user_roles` count), Pending Verifications (`profiles where is_verified=false AND verification_document_url NOT null`), Subscription Requests (`subscription_requests where status='pending'`), **Revenue (Est.) = pending count × ₹999** (hardcoded).
+**Users by Role** grid (mr/stockist/distributor/pharmacy/admin).
+**Recent Subscription Requests** (5): "User ID: {id8}…", requested date, `₹amount`, **Review** button → `/admin/subscriptions/:id` (**404 — route missing**). "View All" → `/admin/subscriptions` (**404**).
+Header buttons: Manage Users (`/admin/users` ✓), Subscriptions (`/admin/subscriptions` **404**).
+**Danger Zone — Wipe All Data:** text input must equal **`DELETE ALL USERS AND DATA`** (Wipe button disabled otherwise); "Include admins" checkbox; on confirm calls `admin-wipe` edge fn. On success toast; if includeAdmins → `signOut()` + `/auth`; else `window.location.reload()`.
+
+### 4.2 User Management — `UserManagement.tsx` (`/admin/users`)
+Table of `profiles` joined `user_roles!inner(role)`, search (name/email/business_name), role filter Select. Columns: User (name/email/phone), Business (name/type), Role badge, Status (Verified/Pending), Subscription (Premium/Free from `subscription_tier`), Actions: **Verify**/**Unverify** (mutates `profiles.is_verified`). A `deleteUserMutation` exists calling `supabase.auth.admin.deleteUser` **client-side** — ⚠️ requires service-role; will fail from the browser (and no button wired to it anyway).
+
+### 4.3 Subscriptions — `admin/Subscriptions.tsx` (**not routed**)
+Tabs Pending / Approved of `subscription_requests` joined `profiles`. RequestCard: user name/email/business, UTR, requested date, `₹amount`, status badge; pending actions: **View Proof** (image modal showing `payment_proof_url` with Approve/Reject), **Reject** (reason modal → `status='rejected', rejection_reason`), **Approve** (`approveMutation`: sets `status='approved', approved_at=now`; updates the user `profiles {subscription_tier:'premium', subscription_expires_at = now+30d, subscription_payment_status:'verified'}`). Flat ₹999. **Unreachable** because no route.
+
+### 4.4 Support Management — `SupportManagement.tsx` (`/admin/support`)
+`support_tickets` joined `profiles`, search (subject/description), status filter. Ticket cards: subject, user, email, created, status badge (open/in_progress/resolved/closed) + priority badge + category. Inline **status Select** (`updateStatusMutation`; setting resolved/closed also sets `resolved_at=now`).
+
+### 4.5 Role Audit — `RoleAudit.tsx` (`/admin/role-audit`)
+`profiles` joined `user_roles!inner(role)`. Role summary cards (count + % of total). Detailed table (User w/ @username, Role, Business, Status, Subscription, Joined). **Export All Data** and **Export Summary** to **.xlsx** via SheetJS (real, working exports).
+
+---
+
+## 5. SHARED PAGES
+
+### 5.1 Profile — `Profile.tsx` (`/profile`)
+Header: avatar, name, email, verified badge. **View mode**: Name/Phone/Email/UPI, **Bank Details** (holder/masked account [all but last 4 masked]/IFSC; "Verified" badge if `payment_enabled`), stockist license link (if `stockist_license_url`). Buttons: Edit Profile, **Update Password** (dialog: current/new/confirm; verifies current via `signInWithPassword`, then `auth.updateUser({password})`; new≥6, match), **Logout** (`signOut` → `/auth`), **Delete Account** (dialog: type **`DELETE`** → `delete-my-account` edge fn → signOut → `/auth`).
+**Edit mode form**: Name*, Phone*, Email (disabled), UPI ID*, Bank holder/account/IFSC. On save (`updateProfileMutation`): validates **IFSC regex `^[A-Z]{4}0[A-Z0-9]{6}$`**; sets `payment_enabled = !!(account && ifsc && holder)`.
+**OTC Partnership card** — ⚠️ **rendered twice (duplicated block)**; shows active plan (name, stock value, brands x/max, Upgrade) or "No active OTC subscription" → Subscribe. Uses `as any` OTC tables.
+
+### 5.2 Settings — `Settings.tsx` (`/settings`)
+Tabs: General / Notifications / Payment / Security.
+- **General**: Business Name + UPI inputs (uncontrolled `defaultValue`), Language Select (English/Hindi — local state only, no persistence). Save reads inputs via `document.getElementById` and mutates `profiles {business_name, upi_id}` (the **only** working save here).
+- **Notifications**: 4 Switches (email/sms/whatsapp/push, local state) + "Save Preferences" → toast only (**no persistence**).
+- **Payment**: Default Upfront %, Default Payment Terms, Enable Cashback switch, Save button — **all inert/no handlers**.
+- **Security**: current/new/confirm password inputs + 2FA switch + "Update Password" — **inert** (the real password change lives in Profile).
+
+### 5.3 Support — `Support.tsx` (`/support`)
+Lists user's own `support_tickets`. **New Ticket** dialog: Subject*, Category Select (general/technical/billing/feature_request/bug), Priority Select (low/medium/high/urgent), Description* → inserts `support_tickets {user_id, subject, description, category, priority}` (status defaults 'open'). Ticket cards: subject, date, status/priority/category badges, resolved date. Colour helpers for status/priority. Empty state.
+
+### 5.4 Notifications — `Notifications.tsx` (`/notifications`)
+⚠️ **Hardcoded empty** — `notifications = []` (comment: "No fake notifications; integrate real data later"). Tabs All(0)/Unread(0), "You're all caught up!". No backend. `NotificationCard` and icon/time helpers exist but never render data.
+
+### 5.5 Analytics — `Analytics.tsx` (`/analytics`)
+Seller analytics from `orders where seller_id OR stockist_id = user`. KPIs: Total Revenue (`Σ total_amount` — all statuses), Total Orders, Customers (`seller_buyer_relationships` count), Top Products (count of top-5). Charts (Recharts): Revenue Trend line (last 7 days from order created_at), Orders by Status pie, Top 5 Products by Revenue bar (from `order_items` joined products, **limited to 100 items, not scoped to the user** — global sample). Bottom: `AdvancedReports` (mock) + `InventoryAlerts` fed a **hardcoded 2-item array** ("Paracetamol 500mg" low stock, "Amoxicillin 250mg" expiring).
+
+### 5.6 Reports — `Reports.tsx` (`/reports`)
+Report Type Select: **Sales / Payments / Inventory** (functional) + **Customer Performance / Route Analysis** (⚠️ selectable but render nothing — stubs). Date range via two single-date Popover calendars (default last 30 days).
+- Sales: `orders where seller_id=user` in range → Total Sales, Total Orders, Avg Order Value.
+- Payments: `bills` in range (no user scope) → Total Received, Total Pending, Collection Rate = received/(received+pending)×100.
+- Inventory: `products where stockist_id=user` → Total Products, Total Stock, Stock Value.
+**Export CSV** (real; builds CSV per type via data URI). **Export PDF** → toast "PDF export coming soon" (**stub**).
+
+### 5.7 Upgrade — `Upgrade.tsx` (**NOT routed / unreachable**)
+Premium ₹999/month pitch (features: Unlimited Customers, Catalogue Live, Advanced Analytics, Priority Support). Payment instructions: pay ₹999 to hardcoded number **9672123710** (PhonePe/GPay/UPI). Upload payment screenshot (max 5 MB → **private `licenses`** bucket at `payment-proofs/…`, then `getPublicUrl` — ⚠️ private bucket URL won't resolve) + UTR/Reference (required). Submit → `subscription_requests {user_id, amount:999, payment_proof_url, payment_utr, status:'pending'}` → `/dashboard`.
+
+---
+
+## 6. MODALS & COMPONENTS
+
+### 6.1 `PharmacyCard.tsx`
+Left border colour by credit utilization (`pending/max_credit_limit`): >80 destructive, >50 warning, else success. Shows name, owner, credit % badge, phone/email, last order (Today/Yesterday/N days ago/No orders), Pending amount, Payment Score (`payment_behavior_score`/10 — default 5.0), credit limit bar. Click → `/pharmacy/:id`.
+
+### 6.2 `QuickBillModal.tsx` (MR)
+Fields: Pharmacy Select, Order Number (optional, **unused** in insert), product **search** (`products where stockist_id=user AND is_active`, name/salt ilike, limit 10) → add items (product_id/name/qty/price=sale_rate), qty steppers, per-item remove, Total. **Submit**: `get_next_bill_number` → insert `bills {pharmacy_id, bill_number, bill_date=today, total_amount, due_amount=total, received_amount:0, status:'pending', payment_terms_days:7, remaining_due_date=today+7d}`; then **decrement stock** per item (`max(0, stock−qty)`). ⚠️ **Bill line items are NOT persisted** (no order_items/bill_items) — only the aggregate total is stored; itemisation is lost. Navigate `/pharmacy/:id`.
+
+### 6.3 `QuickOrderModal.tsx` (MR) — "Quick Order to Bill"
+Free-text order parser. Fields: Pharmacy Select, Order Number (optional, unused), **Paste Order Details** textarea. `parseOrderText`: splits on `.`/newline/comma, extracts qty from `\d+\s*N` or `qty \d+` (default 1), remainder = product name, last word guessed as brand. `handleGenerate`: for each parsed item, `products where stockist_id=user AND name ilike %name%` (limit 1); if matched adds line (price=sale_rate), **decrements stock**, accumulates total. Then `get_next_bill_number` → insert `bills {…total, due_amount=total, received_amount:0, terms 7, due today+7d}`. Shows success panel with Download (.txt bill), **WhatsApp** (`wa.me/{phone}` w/ UPI message via `generateUPILink`+`generateWhatsAppMessage`), **Copy Link** (UPI). ⚠️ Named "Order" but creates a **bill**; line items not persisted; unmatched items silently dropped.
+
+### 6.4 `UpdateBillModal.tsx`
+Shows Total Due, Already Received, Remaining. Field: Received Amount. **Update** (partial): `onUpdate(billId, currentReceived + amount, false)`. **Mark as Paid Full**: `onUpdate(billId, currentDue, true)`. In `PharmacyDetail`, `updateBillMutation` sets `received_amount` and `status='paid'` if markAsPaid. (No re-run of `update_bill_statuses`, so partial payments don't auto-recompute status until next page load.)
+
+### 6.5 `PaymentProcessModal.tsx`
+Processing/complete UI for payment reminders. ⚠️ **Hardcoded bank default**: `{name:"Kotak Mahindra Bank", accountNumber:"xxxx5414"}`. Shows single or multi-payment breakup (collapsible). Processing = 2 s simulated (driven by `Payments.tsx`). No real gateway.
+
+### 6.6 `OCRUploadModal.tsx`
+Fields: Product Image* (image/*), MRP*, Stock*, Purchase Rate*, Sale Rate*. Reads image → base64 → POSTs to `${VITE_SUPABASE_URL}/functions/v1/ocr-product-label` with Bearer session token + the 4 numbers. Displays result panel (action message, product name/brand/salt/stock/MRP). See §7.1.
+
+### 6.7 `BulkUploadModal.tsx`
+CSV (PapaParse, header row) or Excel (SheetJS first sheet). `ProductRow` cols: name, category, brand_name, salt_name, type, mrp, purchase_rate, sale_rate, stock_quantity, unit, batch_number, expiry_date, uses, description. `validateRow`: name required, sale_rate>0, stock≥0. Row-by-row insert into `products {stockist_id:user, …, category = lowercased+underscored (cast any), price=sale_rate, unit default "strip", is_active:true}`. Progress bar; summary (success/failed + up to 10 errors). **Download Template** (.xlsx with 2 sample rows). No dedupe, no brand restriction for MR.
+
+### 6.8 `ProductDetailModal.tsx`
+Read-only product view (image, name/brand, category badge, salt, type, MRP/Sale/Purchase/Stock, batch/expiry, uses, description). **Edit Product** → `/marketplace/product/:id` (works). Close.
+
+### 6.9 `StatusBadge.tsx`
+Renders bill/order status with icon+label+colour, computing days from `dueDate`:
+- paid ✓ green; due_soon ⏰ blue ("Due Today"/"Due in Nd"); critical 🚨 red pulse ("Critical (Nd overdue)"); overdue ⚠️ orange ("Overdue (Nd)"); pending ○ yellow; default ? grey ("Unknown"). Used for both bills (with dueDate) and order delivery_status (without) — order statuses like confirmed/packed/shipped/delivered fall to "Unknown".
+
+### 6.10 `ActivityFeed.tsx`
+Aggregates up to 15 recent items: orders (`seller_id OR buyer_id = user`, w/ buyer name), bills (`pharmacies.mr_id=user`, w/ pharmacy name), product updates (`stockist_id=user`, by updated_at). Sorted desc. Icon + type badge + relative time + amount/party details. Empty state.
+
+### 6.11 `OTCPlanCard.tsx`
+Plan card: name, `₹price/year`, `stock_value/1000 k`, features list, "up to N brands", "₹min–₹max margin per item", "Flat 5% commission on all sales", Choose button. "Most Popular" ribbon when `isPopular`.
+
+### 6.12 `InventoryAlerts.tsx`
+Presentational; renders passed alerts (critical/warning, low_stock/expiring_soon/slow_moving icons). In Analytics it's fed hardcoded data → not real inventory.
+
+### 6.13 `WhatsAppButton.tsx`
+Opens `wa.me/{cleanedPhone}?text={encoded message}` in new tab. Used in MyCustomers.
+
+### 6.14 `LocationSelector.tsx`
+Multi-location UI with Add dialog (name/address). In MyProducts it's fed 2 hardcoded locations and add/remove only toast → **mock/no persistence**.
+
+### 6.15 `MobileNav.tsx` — dead code
+A separate bottom-nav + "More" sheet (pharmacy: Dashboard/Browse/OTC/Orders; seller: Dashboard/Products/Orders/Customers). **Not mounted** anywhere (Layout supplies the real bottom nav). Uses query key `['user-role', id]` (different key from the rest).
+
+---
+
+## 7. AI & EDGE FUNCTIONS (`supabase/functions/*`, Deno)
+
+Both AI functions use Lovable AI Gateway `https://ai.gateway.lovable.dev/v1/chat/completions`, model **`google/gemini-2.5-flash`**, secret `LOVABLE_API_KEY`. No fallback model. CORS `*`.
+
+### 7.1 `ocr-product-label`
+Auth: **user JWT verified** (`getUser(token)`), writes with **service role**. Input `{imageBase64, mrp, stock, purchaseRate, saleRate}`.
+1. Gemini Vision extracts `{product_name, brand_name, salt_name, type, unit_info, category}` (JSON parsed via `\{[\s\S]*\}` match).
+2. Searches caller's products: `stockist_id=user AND (name ilike %product_name% OR salt_name ilike %salt_name%)` limit 1.
+3. **Match** → update `stock_quantity += stock`, overwrite purchase_rate/sale_rate/mrp, `updated_at`. Returns `action:"updated"`, message "Updated X. Stock: a → b".
+4. **No match** → 2nd Gemini call enriches `{uses, description, typical_unit, category}` (fallback object on parse fail), then insert new product `{stockist_id:user, name, brand_name, salt_name, type, category, uses, description, mrp, purchase_rate, sale_rate, stock_quantity=stock, unit=typical_unit||"strip", is_active:true}`. Returns `action:"created"`. Errors → 500 `{error}`.
+
+### 7.2 `autocomplete-product`
+Auth: **NONE (public)**. Input `{productName}` (min 2 chars → else 400). System prompt asks Gemini for `{brand_name, salt_name, type, uses, description, storage, handling, consumption, image_url, category}`. Strips ```` ```json ```` fences then `JSON.parse`. Explicit handling of gateway **429** (rate limit) and **402** (unavailable). Returns `{success, data}`. ⚠️ `image_url` is model-guessed (may be broken/hallucinated). Unauthenticated → open abuse surface.
+
+### 7.3 `assign-role`
+Auth: user JWT verified; service-role writes. Input `{role, metadata}`. If role=admin, requires `metadata.admin_password === 'jit@ADMIN1'` (else 403). Upserts `profiles` (defaults `is_catalogue_live:true, is_verified:false`, username fallback `user_{id8}`). Inserts `user_roles` only if none exists (`.single()` check). Returns `{success, role}`.
+
+### 7.4 `admin-wipe`
+Auth: user JWT verified **AND** `user_roles.role==='admin'` (else 403). Requires body `confirm === 'DELETE ALL USERS AND DATA'` (else 400). Deletes rows from 14 tables in FK-safe order: cart_items, payment_reminders, payment_requests, bills, order_items, orders, seller_buyer_relationships, pharmacies, products, store_settings, subscription_requests, support_tickets, profiles, user_roles (via `.delete().neq('id', zero-uuid)`). Then iterates `auth.admin.listUsers()` and deletes each, **skipping admins unless `include_admins`** (per-user role lookup). Returns count + warning. ⚠️ OTC tables are **not** wiped.
+
+### 7.5 `delete-my-account`
+Auth: user JWT verified; service role. Cascades deletes for the caller (nested subqueries) across cart_items (buyer/seller), payment_reminders & payment_requests (via bills of the user's pharmacies), bills (user's pharmacies), order_items & orders (buyer/seller/stockist), products (stockist), pharmacies (mr_id), seller_buyer_relationships, store_settings, subscription_requests, support_tickets, user_roles, profiles → then `auth.admin.deleteUser`. ⚠️ OTC tables not covered.
+
+### 7.6 `initialize-otc-inventory` (⚠️ never called by frontend)
+Auth: user JWT verified; service role. Idempotent (returns early if inventory exists). Seeds `otc_inventory` (qty **40** each) from a **hardcoded catalog**: Derma Co (7 items), MamaEarth (8), Himalaya (9), keyed on active `otc_brands` by name. Also inserts historical `otc_shipments` per brand (`SHIP/0001…`, status 'delivered', random past delivered_at/expected dates, total_value=Σ mrp×40). Returns stats.
+
+---
+
+## 8. BILLS, PAYMENTS, CREDIT & MONEY LOGIC (DB RPCs / triggers)
+
+### 8.1 Numbering (SECURITY DEFINER, search_path public)
+- `get_next_bill_number(mr_user_id)` → `MR/` + LPAD(max trailing-int of bill_number over bills whose pharmacy.mr_id = mr_user_id +1, 3). Format `MR/001`.
+- `get_next_order_number(stockist_user_id)` → `ORD/` + LPAD(max trailing-int over `orders where stockist_id=user` +1, 4). Format `ORD/0001`. (⚠️ Checkout bypasses this and computes its own count-based number scoped to buyer_id.)
+
+### 8.2 Bill status machine — `update_bill_statuses()` (called on PharmacyDetail load)
+Over bills with `due_amount − COALESCE(received_amount,0) > 0`:
+| Status | Condition |
+|--------|-----------|
+| `critical` | `remaining_due_date < CURRENT_DATE − 7 days` |
+| `overdue` | `CURRENT_DATE − 7d ≤ remaining_due_date < CURRENT_DATE` |
+| `due_soon` | `CURRENT_DATE ≤ remaining_due_date ≤ CURRENT_DATE + 2 days` |
+| `pending` | `remaining_due_date > CURRENT_DATE + 2 days` |
+| `paid` | `due_amount − received_amount ≤ 0` (any prior status) |
+
+`update_overdue_bills()` also exists (sets overdue where `due_date < CURRENT_DATE`) but references a `due_date` column not present in the current bills schema — effectively **dead/broken RPC**; not called by the app.
+
+### 8.3 Credit
+- `get_pharmacy_credit_utilization(pharmacy_uuid)` = `Σ(due_amount − received_amount)` over bills in status `pending/due_soon/overdue/critical`.
+- `check_credit_limit(pharmacy_uuid, new_bill_amount)` returns JSON: `utilization_percent = (current_util + new_amount)/max_credit_limit ×100`; `>=100` → `{allowed:false, reason:"Credit limit exceeded"}`; `>=90` → `{allowed:true, warning:"High credit utilization"}`; else `{allowed:true}`. (PharmacyDetail shows it but does not block; BillForm enforces its own `dueAmount > max_credit_limit` block.)
+- `pharmacies.payment_behavior_score` default 5.0, `avg_payment_days` default 0 (shown/held, never computed).
+
+### 8.4 UPI/WhatsApp (`src/lib/upi.ts`)
+- `generateUPILink(upiId, pharmacyName, amount, billNumber)` → `upi://pay?pa={upiId}&pn={sanitizedName}&am={amount}&cu=INR&tn=Bill {billNumber}`.
+- `generateWhatsAppMessage(pharmacyName, amount, billNumber, upiLink, mrName)` → prefilled reminder text incl. UPI link.
+- `calculateDueDate(billDate, terms=7)` → billDate + terms days.
+No server-side messaging anywhere; "send" = open `wa.me` and/or insert `payment_reminders`.
+
+### 8.5 `handle_new_user()` trigger
+On new `auth.users`: role from `raw_user_meta_data.role` **default `pharmacy`**; if admin, requires `admin_password == 'jit@ADMIN1'` (else raises). Inserts `profiles` (upsert on id) + `user_roles` (on conflict do nothing). Wrapped in exception handler that logs a warning and still returns NEW (so signup never blocks on profile errors). Other triggers: `update_product_updated_at`, `update_otc_inventory_timestamp`. `has_role(_user_id,_role)` RPC used by RLS policies.
+
+---
+
+## 9. REALTIME, STORAGE, RLS, PWA
+
+### 9.1 Realtime
+Only **one** channel: `pharmacy-bills-changes` (`postgres_changes` on `bills`, filtered by pharmacy_id) in PharmacyDetail. Everything else is TanStack-Query pull.
+
+### 9.2 Storage buckets
+- **`product-images`** (public): product photos, path `auth.uid()/…`, `getPublicUrl`. RLS: anyone can view; authenticated can upload; users update/delete own.
+- **`licenses`** (private): signup verification docs at `{uid}/…`; also (mis)used by `Upgrade` for `payment-proofs/…` then read via `getPublicUrl` → ⚠️ won't resolve (private bucket) — the admin Subscriptions image preview would be broken (and that page is unrouted anyway).
+
+### 9.3 RLS (key policies from migrations)
+⚠️ **CORRECTION to FEATURES.md:** the marketplace RLS policies were changed (migration `20251017184343…`, comment "Remove the is_catalogue_live requirement temporarily to see all sellers"):
+- `profiles` "Pharmacy users can view seller profiles": pharmacy can view any profile whose user_roles.role ∈ (mr,stockist,distributor) — **no is_catalogue_live check**.
+- `products` "Pharmacy users can view marketplace products": pharmacy can view any product whose seller role ∈ (mr,stockist,distributor) — **no is_catalogue_live check and no is_available check** at RLS level.
+So `is_catalogue_live` is **not** enforced by RLS; it only affects the Dashboard "Featured Sellers" query and the client-side "Live Catalogue" filter pill. Product write policies (latest, `20251108…`) require `auth.uid()=stockist_id` AND role ∈ (mr,stockist,distributor).
+`profiles.is_catalogue_live` default flipped FALSE→**TRUE** in later migrations; existing rows backfilled to true.
+
+### 9.4 PWA / client
+VitePWA autoUpdate, Workbox glob (js/css/html/ico/png/svg/woff2), 5 MB max. Manifest name/short_name = PharmaMR, theme `#ffffff`. Supabase client: localStorage persistence, autoRefreshToken; project id `uuwwnggimhvtvnislptd`.
+
+---
+
+## 10. DATA MODEL (from `src/integrations/supabase/types.ts`)
+
+**Enums:** `app_role = mr|stockist|distributor|pharmacy|admin`; `product_category = iv_antibiotics|oral_antibiotics|analgesics|antipyretics|cardiovascular|gastrointestinal|respiratory|diabetes|vitamins_supplements|other`.
+
+**Tables (Row columns):**
+- **bills**: bill_date, bill_number, created_at, due_amount, id, last_reminder_sent, next_payment_date, payment_terms_days, pharmacy_id→pharmacies, received_amount, remaining_due_date, reminder_count, status, total_amount, upfront_amount, upfront_percentage, upi_payment_link. (No `due_date` column — see broken RPC.)
+- **cart_items**: buyer_id, seller_id, product_id, quantity, id, created_at (persistent seller-locked cart).
+- **order_items**: order_id, product_id, quantity, price, subtotal, id.
+- **orders**: buyer_id, created_at, delivered_at, delivery_address, delivery_status, delivery_tracking_id, discount_amount, id, notes, order_number, pharmacy_id(→pharmacies), seller_id, seller_type, status, stockist_id(→profiles), tax_amount, total_amount.
+- **products**: batch_number, brand_name, category(enum), created_at, description, discount_percentage, expiry_date, id, image_url, is_active, is_available, max_order_quantity, min_order_quantity, mrp, name, price, purchase_rate, sale_rate, salt_name, seller_type, stock_quantity, stockist_id(→profiles), type, unit, updated_at, uses.
+- **profiles**: bank_account_holder_name, bank_account_number, bank_ifsc_code, business_name, business_type, created_at, customer_count, email, id, is_catalogue_live, is_verified, max_customers_free_tier, name, payment_enabled, phone, stockist_license_url, subscription_expires_at, subscription_payment_proof_url, subscription_payment_status, subscription_tier, upi_id, username, verification_document_url.
+- **pharmacies**: address, avg_payment_days, created_at, email, id, license_number, max_credit_limit, mr_id(→profiles), name, owner_name, payment_behavior_score, phone.
+- **seller_buyer_relationships**: buyer_id, buyer_type, created_at, credit_limit, id, is_favorite, seller_id.
+- **store_settings**: created_at, delivery_areas(text[]), id, is_accepting_orders, minimum_order_value, seller_id, store_description, store_name. (No UI writes it; wiped on admin-wipe.)
+- **subscription_requests**: amount, approved_at, approved_by, id, payment_proof_url, payment_utr, rejection_reason, requested_at, status, user_id.
+- **support_tickets**: assigned_to, category, created_at, description, id, priority, resolved_at, status, subject, updated_at, user_id.
+- **user_roles**: user_id, role(app_role), id.
+- **payment_reminders**, **payment_requests**: reminder/UPI request logs (bill_id, requested_amount, payment_link, status, reminder_history/sent_at, message_content, etc.).
+- **otc_brands** (commission_rate), **otc_inventory** (pharmacy_id, brand_id, product_name, category, mrp, quantity_in_stock, quantity_sold), **otc_shipments**, **otc_shipment_items** — present in types.
+- **NOT in generated types** (accessed via `as any`): **`pharmacy_otc_subscriptions`**, **`otc_subscription_plans`**.
+
+**View:** `product_sales_summary` (id, name, stockist_id, total_sold, order_count, days_in_inventory, last_sold_date) — defined but not read by any page.
+
+**Functions (RPC):** check_credit_limit, get_next_bill_number, get_next_order_number, get_pharmacy_credit_utilization, has_role, update_bill_statuses, update_overdue_bills.
+
+---
+
+## 11. HARDCODED VALUES / SECRETS / MAGIC STRINGS
+- Admin registration password: **`jit@ADMIN1`** (client `Auth.tsx`, `assign-role`, `handle_new_user`).
+- Admin wipe confirmation phrase: **`DELETE ALL USERS AND DATA`**; account-delete phrase: **`DELETE`**.
+- Subscription price: **₹999** flat (Upgrade, Subscriptions, AdminDashboard revenue est.); subscription grants +30 days premium.
+- OTC potential earnings / commission: flat **5%** (dashboard + plan cards); OTC seed qty **40**/item; OTC catalog brands hardcoded (Derma Co / MamaEarth / Himalaya).
+- Default credit limit fallback **₹100,000** (PharmacyDetail only; BillForm uses raw `max_credit_limit` which may be 0).
+- Payment terms defaults: 7 (PharmacyDetail/QuickBill/QuickOrder) vs 30 (BillForm).
+- Upgrade payee phone **9672123710**; PaymentProcessModal bank **"Kotak Mahindra Bank, xxxx5414"**.
+- Star ratings **4.5** hardcoded (Marketplace/SellerDetail/MySuppliers).
+- Payment score default **5.0**, avg_payment_days **0**.
+- Supabase project id `uuwwnggimhvtvnislptd`.
+- Simulated timings: DeliveryPlanner 1.5 s + random distance; Payments 2 s "processing".
+- Test credentials documented in a migration comment (jitesh_mr/stockist/distributor/pharmacy/admin, pwd `12346`).
+
+---
+
+## 12. KNOWN STUBS, PLACEHOLDERS & BUGS (consolidated)
+
+**Access control**
+- `/admin/*` guarded only by login (`ProtectedRoute`), no client role gate; real protection is RLS + edge-fn role checks. No session-timeout.
+- Several seller-facing pages (Pharmacies, PharmacyDetail, BillForm, Payments, Orders, MyCustomers, DeliveryPlanner, Catalogue, ProductForm) have **no `useRoleGuard`** — rely on data-layer RLS only.
+
+**Dead links / unreachable pages** (see §0.1): Upgrade page (no route), admin Subscriptions (no route, linked from dashboard), SellerDashboard `/customers` `/products` `/suppliers`, PharmacyDashboard `/suppliers`, MyProducts edit `/marketplace/product/edit/:id`, Orders self-added `/pharmacies/:id`, BillForm `/bills`, MobileNav component unmounted.
+
+**Money / correctness bugs**
+- PharmacyDetail bill insert stores `due_amount = total − upfront` **and** `received_amount = upfront` → downstream "remaining" = total − 2×upfront (undercount).
+- BillForm rolls `previous_due` into each new bill's `due_amount` → cross-bill double counting of prior dues.
+- Checkout order number generated client-side (`ORD/count+1`) — race/duplicate risk, separate namespace from RPC.
+- Checkout sets `pharmacy_id = buyer profile id` (not a pharmacies row) → seller-side `pharmacies:pharmacy_id(name)` join fails.
+- Pharmacy buyers see no orders on `/orders` (query only matches seller_id/stockist_id).
+- MyCustomers outstanding joins bills by profile id vs pharmacies id → typically wrong/0.
+- MR products saved with `seller_type='stockist'` → MarketplaceProducts "MR Only" filter never matches; MR marketplace products classified as stockist.
+- SellerDetail cart bypasses seller-lock and uses local (unsynced) quantity state.
+- QuickBillModal / QuickOrderModal decrement stock and create bills but **don't persist line items**.
+- `update_overdue_bills` RPC references non-existent `due_date` column (broken/unused).
+- `MySuppliers` reads `seller.full_name` (nonexistent column).
+
+**Feature stubs / mock**
+- Notifications: always empty, no backend.
+- Settings: only General save works; Notifications/Payment/Security tabs inert.
+- Reports: Customer & Route report types render nothing; PDF export = toast only (CSV works).
+- Analytics: InventoryAlerts hardcoded; top-products query global (100-item sample), revenue KPI counts all statuses.
+- AdvancedReports component: toasts only, no data.
+- DeliveryPlanner: fully simulated distances/time, no optimizer/maps API.
+- LocationSelector in MyProducts: hardcoded locations, no persistence.
+- OTC: subscription payment is a dummy insert; `pharmacy_otc_subscriptions`/`otc_subscription_plans` accessed via `as any` (absent from types); **`initialize-otc-inventory` never invoked** so inventory/earnings cards stay empty; earnings a flat 5% model.
+- PaymentProcessModal: hardcoded Kotak bank + 2 s simulated processing; reminders only log/deep-link (no messaging backend).
+- Upgrade: uploads proof to **private** `licenses` bucket then reads via `getPublicUrl` (won't resolve).
+- Profile: OTC card duplicated (rendered twice).
+- AI: single model, no fallback; `autocomplete-product` unauthenticated; may return hallucinated `image_url`.
+- Branding inconsistent (PharmaMR vs Chameleon vs "P").
+- No tax/GST anywhere despite `tax_amount`/`discount_amount` columns.
+
+---
+
+---
+
+## Appendix E — digimvplaunch (MVP)
+
+> Source: `_reviews/review-digimvplaunch.md` · Repo folder: `digimvplaunch/`
+
+# Digi Swasthya (`digimvplaunch`) — EXHAUSTIVE Functional Review
+
+> **In-product name:** Digi Swasthya ("Your Complete Healthcare Platform")
+> **Type:** Multi-role B2B pharma distribution MVP / clickable prototype — **entirely client-side, no backend, no network calls.**
+> **Stack:** Vite + React 18 + TS · shadcn/ui (Radix) + Tailwind · React Router v6 · TanStack Query (instantiated, unused) · React Hook Form + Zod (present, wizards use manual state) · Recharts · lucide-react · sonner + shadcn toaster · `lovable-tagger`.
+> **Persistence:** two `localStorage` keys — `digi-swasthya-auth` (AuthContext) and `digi-swasthya-state` (AppStateContext). No Supabase, no fetch/axios/API layer, no service worker.
+
+This document is code-derived and goes far deeper than `FEATURES.md`. It captures every role, route, page, section, table/column, KPI formula, tab, filter, flow, form field (type/validation/default/required), modal, calculation, status transition, edge case, and — critically — every stub / hardcoded value. Organized **module → page → (content / flows / forms & fields / logic / edge cases)**.
+
+---
+
+## 0. GLOBAL ARCHITECTURE & CROSS-CUTTING FACTS
+
+### 0.1 Routing (`src/App.tsx`)
+Provider tree: `QueryClientProvider > TooltipProvider > Toaster + Sonner > AuthProvider > AppStateProvider > BrowserRouter > Routes`.
+
+**Public routes (no `AppLayout`, no auth guard):**
+- `/` → `<Navigate to="/auth">`
+- `/auth` → `AuthPage` (default entry)
+- `/login` → `<Navigate to="/auth">`
+- `/signup` → `<Navigate to="/auth">`
+- `/admin-login` → `AdminLogin`
+- `/register/pharmacist` → `PharmacyRegistration`
+- `/register/stockist` → `StockistRegistration`
+- `/forgot-password` → `ForgotPassword`
+- `/reset-password` → `ResetPassword`
+- `/onboarding` → `Onboarding`
+
+**Protected routes (children of `<AppLayout>`, only guard = `isAuthenticated`):**
+- Shared: `/dashboard`, `/notifications`, `/orders/:id`, `/orders/:id/return`, `/support`
+- Admin: `/admin/approvals`, `/admin/users` (both → `ApprovalCenter`), `/admin/stockists`, `/admin/pharmacies`, `/admin/pharmacies/:id`, `/admin/orders` (`OrderList roleFilter="admin"`), `/admin/transactions`, `/admin/ledger`, `/admin/notifications` (→ `Notifications`), `/admin/commission`, `/admin/counterfeit`, `/admin/banners`, `/admin/suspensions`, `/admin/user-flow`, `/admin/stockists/:id`, `/admin/profile`, `/admin/settings`, `/admin/payments`, `/admin/analytics`
+- Stockist: `/stockist/inventory`, `/stockist/inventory/add`, `/stockist/inventory/upload`, `/stockist/inventory/bills`, `/stockist/inventory/bulk-price`, `/stockist/quick-bill`, `/stockist/inventory/:id`, `/stockist/inventory/:id/edit`, `/stockist/batches`, `/stockist/circle`, `/stockist/circle/find`, `/stockist/circle/:id`, `/stockist/orders` (`roleFilter="stockist"`), `/stockist/orders/create`, `/stockist/payments`, `/stockist/credit` (both → `StockistPayments`), `/stockist/reports`, `/stockist/analytics`, `/stockist/delivery`, `/stockist/holidays`, `/stockist/subscription`, `/stockist/profile`, `/stockist/settings` (route declared **twice**, duplicate)
+- Pharmacist: `/pharmacist/browse`, `/pharmacist/stockists`, `/pharmacist/stockists/find`, `/pharmacist/stockists/:id`, `/pharmacist/cart`, `/pharmacist/checkout`, `/pharmacist/orders` (`roleFilter="pharmacist"`), `/pharmacist/orders/quick`, `/pharmacist/payments`, `/pharmacist/addresses`, `/pharmacist/delivery-preferences`, `/pharmacist/inventory`, `/pharmacist/profile`, `/pharmacist/settings`
+- `*` → `NotFound`
+
+**No route is role-guarded.** `AppLayout` only checks `isAuthenticated` (else `<Navigate to="/login">`, which redirects to `/auth`). Any authenticated user of any role can hit any route; `Dashboard.tsx` switches on `role` to pick the home screen, and navigation menus differ, but the routes themselves are open. `PaymentsPage.tsx` exists and is fully built but is **NOT routed** (dead component — replaced by `StockistPayments`/`PharmacistPayments`).
+
+### 0.2 Roles (`src/core/roles.ts`, `types.ts`)
+- `UserRole = 'admin' | 'stockist' | 'pharmacist'`.
+- `rolePermissions` capability matrix exists (e.g. stockist `canManageInventory/canManageCircle/canManageSubscription`; pharmacist `canBrowseMedicines/canPlaceOrders`; admin `canManageUsers/canFlagCounterfeit/canManageBanners`) — **used for labels/menus only; no route enforces any flag.** `roleLabels` and `roleDescriptions` provide display strings.
+
+### 0.3 AuthContext (`src/contexts/AuthContext.tsx`)
+- Persists `{ user, role }` to `digi-swasthya-auth`.
+- `login(email, password, role)` → `setIsLoading(true)` → `await setTimeout(1200ms)` → `getUserByCredentials()`. That function returns the matching seed user for exact dummy creds, **but has a `switch` fallback that returns the role's first seed user regardless of email/password** — so login **always succeeds** for any input. "Invalid credentials" branches in AuthPage/Login/AdminLogin are dead code.
+- Dummy credentials: admin `admin@digiswasthya.in / Admin@123`, stockist `suresh@medcorp.in / Stock@123`, pharmacist `ramesh@citycare.in / Pharma@123`.
+- `logout()` clears state + storage. `setRole(role)` swaps to that role's first seed user (a demo role-switch — not surfaced in any UI I found).
+- `isAuthenticated = !!user`.
+
+### 0.4 AppStateContext (`src/contexts/AppStateContext.tsx`) — "the database" (~1050 lines)
+Single provider persisting ~29 slices to `digi-swasthya-state` via a `useEffect` on every change. Merges seed data with dynamic overrides. Exhaustive engine detail is in §11.
+
+**Persisted slices:** `cartItems, dynamicOrders, dynamicPayments, dynamicLedger, invoices, reminders, connectedStockists, orderStatusOverrides, dynamicStockists, dynamicPharmacists, userStatusOverrides, dynamicMedicines, dynamicBatches, batchQtyOverrides, counterfeitOverrides, dynamicBanners, bannerOverrides, deletedBannerIds, circleEntries, addresses, orderCounter (init 10), invoiceCounter (init 5), deliveryAreas, deliverySlots, holidays, returnRequests, creditNotes, pharmacyInventory, supportMessages`.
+
+**Default seeded-in-provider data (NOT from `/data`):** 9 `defaultCircleEntries` (`circle-001..009`), 7 `addresses` (`addr-001..007`), 3 `deliveryAreas` (`sa-001..003`; sa-003 inactive), 3 `deliverySlots` (Morning/Afternoon/Evening).
+
+### 0.5 Layout & navigation (`AppLayout`, `Navigation`)
+- **AppLayout:** desktop `TopNav` + mobile sticky header + `<Outlet>` + mobile `BottomNav` + `GlobalSearchOverlay`. Mobile header shows "Digi Swasthya" / "{role} Panel", search button, notifications bell (**static red dot always shown**), and an avatar button that **logs out** on click.
+- **BottomNav (mobile, 5 items/role):**
+  - admin: Home `/dashboard`, Pharmacies `/admin/pharmacies`, Stockists `/admin/stockists`, Orders `/admin/orders`, More `/admin/settings`
+  - stockist: Home, Products `/stockist/inventory`, Pharmacies `/stockist/circle`, Orders `/stockist/orders`, More `/stockist/settings`
+  - pharmacist: Home, Orders `/pharmacist/orders`, Stockists `/pharmacist/stockists`, Payments `/pharmacist/payments`, More `/pharmacist/settings`
+- **TopNav (desktop):** logo → `/dashboard`, horizontal nav (role-specific, wider set), search button, bell → `/admin/notifications` (admin) or `/notifications` (others) with static red dot, avatar initial, "Logout" text button.
+  - admin desktop: Dashboard, Verifications, Stockists, Pharmacies, Orders, Payments, Analytics, Transactions, Ledger, Commission
+  - stockist desktop: Dashboard, Inventory, Circle, Orders, Payments, Holidays, Reports, Analytics, Delivery
+  - pharmacist desktop: Dashboard, Stockists, Browse, Inventory, Orders, Payments, Cart
+- `NavLink.tsx` is an unused compat wrapper for RouterNavLink.
+
+### 0.6 GlobalSearch (`GlobalSearchOverlay`)
+- Full-screen overlay; Esc closes; auto-focuses input after 100ms; placeholder adapts to path (products/pharmacies/orders/anything).
+- Searches: `allInventory` by name/genericName/category (max 4), approved `allPharmacists` by pharmacyName/name (max 3), `allOrders` by orderNumber/placedBy.name (max 3). Empty query → "Start typing to search…"; no matches → "No results for …".
+- **BUG/quirk:** product click → `/stockist/inventory/{id}`, pharmacy click → `/stockist/circle/{id}` regardless of current role (pharmacist/admin land on stockist routes). Order click → `/orders/{id}` (fine).
+
+### 0.7 Notifications (`/notifications`, `/admin/notifications`)
+- Merges **dynamic** notifications from `allOrders.slice(0,5)` (title depends on status: placed→"New Order", confirmed→"Order Confirmed", delivered→"Order Delivered", else "Order {status}"; `read = status==='delivered'`) with **5 seed** notifications (`notif-001..005` from `banners.ts`).
+- Filtered by relevance: `target==='all'` OR role-target match (`stockists`/`pharmacists`) OR `target===user.id`.
+- Click a card → `markRead` (local state only, not persisted). Read cards show a check. Empty → "No notifications yet".
+
+### 0.8 Settings hub (`/{role}/settings` → `Settings.tsx`)
+- **Not a preferences screen** — a searchable navigation menu. User card (avatar initial, name, role label), search box (filters menu by label/desc), grouped menu sections, logout button, footer "Digi Swasthya v1.0.0".
+- Menu items are hardcoded per role (admin/stockist/pharmacist). Two "Help Center" items use `path: '#'` → click is a **no-op** (guarded by `item.path !== '#'`). All other items navigate.
+- Admin sections: Account (Profile), Users (Verifications, Stockists, Pharmacies, Suspensions), Finance (Payments, Transactions, Platform Ledger, Commission Setup), Analytics & Monitoring (Analytics, Counterfeit Management, User Flow), Content (Banner Management, Notifications), Preferences (Support, Help Center#).
+- Stockist sections: Account (Profile), Inventory (Products, Batch Management, Bulk Upload, Bulk Price Update, Purchase Bills), Orders & Billing (Orders, Quick Bill, Create Order, Payments), Business (Circle Pharmacies, Holidays, Reports, Analytics, Delivery Setup, Subscription), Preferences (Notifications, Support, Help Center#).
+- Pharmacist sections: Account (Profile), Orders & Billing (My Stockists, Quick Order, Browse Medicines, Cart, Orders, Payments), Management (My Inventory, Addresses, Delivery Preferences), Preferences (Notifications, Support, Help Center#).
+- **No theme toggle, no notification-preference toggles** exist despite the "Preferences" label.
+
+### 0.9 Support chat (`/support` → `SupportChat`)
+- Persists messages via `addSupportMessage`. Shows messages where `userId===me` OR `isAgent` (**agent/bot messages are visible to ALL users** — cross-user leak). Auto-scrolls to bottom.
+- Send → adds user message, then after **1500ms** appends a bot reply picked randomly from 3 canned lines (`autoReplies[Math.floor(Math.random()*…)]`). Bot posts as userRole `admin`, name "Support Bot". Empty state: "Send a message to start the conversation".
+
+### 0.10 Shared UI patterns (`src/core/ui-patterns`)
+- `StatCard` (label/value/optional change%+trend up/down/neutral icon), `StatusChip` (6 variants: success/warning/destructive/primary/accent/muted; capitalizes label), `EmptyState` (icon default PackageOpen, title, desc, optional action), `ErrorState` (unused in screens), `LoadingSkeleton` (types card/list/stat), `Banner` (dismissible, variants info/warning/success, optional CTA with ExternalLink icon), `ProfileSection` (admin/edit modes, doc grid + preview dialog whose body says "Document preview not available in prototype"), `EditProfileModal` (generic field list; `handleSave` awaits **800ms** then calls onSave — every consumer's onSave is toast-only).
+- Toasts: shadcn `use-toast` with `TOAST_LIMIT = 1`, `TOAST_REMOVE_DELAY = 1_000_000` ms.
+
+### 0.11 Cross-cutting conventions & constants
+- **GST = flat 12%** everywhere an order/tax is computed: `Math.round(subtotal * 0.12)` (Cart, Checkout, CreateOrder, QuickBill, QuickOrder, OrderDetail edit, CirclePharmacyDetail preview). No SGST/CGST split, no per-item GST%, no delivery-fee in any total.
+- **Discount = hardcoded 0** on every dynamically created order line. The `(mrp − selling)` gap is only shown visually (struck-through MRP), never in totals.
+- **lowStockThreshold = 100** (hardcoded in `allInventory` derivation and seed `inventoryItems`).
+- **Low-stock UI thresholds are inconsistent:** Browse uses batch qty `< 10`; PharmacistStockistDetail uses `< 100`; Inventory list uses `totalStock <= lowStockThreshold (100)`.
+- **Rx badge** = hardcoded heuristic `medicine.category === 'Antibiotic'` (Inventory, BrowseMedicines, PharmacyDetail).
+- **Expiry windows:** BatchManagement "Expiring Soon" ≤ 90 days; PharmacistInventory "Expiring Soon" ≤ 90 days; Inventory filter: soon ≤30d, 1-3 = 30–90d, 3-6 = 90–180d.
+- **Artificial loading delays:** 600ms skeleton on Inventory, BatchManagement, OrderList, ApprovalCenter, Transactions, PlatformLedger, CommissionSetup, Suspensions, PaymentsPage; 700ms on BrowseMedicines; 500ms on AddItem/EditProduct submit; 1000ms on OrderDetail actions; 1200ms on login/forgot/reset; 800ms in EditProfileModal.
+- **ID conventions:** `order-dyn-{n}`, `ORD-YYYYMMDD-####`, `INV-2024-###`, `inv-{n}`, `led-dyn-{ts}-{n}`, `led-pay-{ts}`, `pay-dyn-{ts}`, `rem-{ts}`, `circle-{ts}`, `addr-{ts}`, `ret-{ts}`, `cn-{ts}`, `msg-{ts}`, `hol-{ts}`, `sa-{ts}`, `slot-{ts}`, `med-dyn-{ts}`, `batch-dyn-{ts}`, `pharma-circle-{ts}`, `TXN-{ts}`, `PAY-{ts}`, `oi-*`, `pi-{orderId}-{idx}`.
+- Currency: `₹` + `toLocaleString('en-IN')`; large figures abbreviated `₹{(x/1000).toFixed(...)}K`.
+- **No real deep links:** no `wa.me`, no `upi://pay`. The only real device links are `tel:` and `navigator.clipboard` in CirclePharmacyDetail. WhatsApp "sends" are `sendReminder` records + toast + a "📱 Send via WhatsApp" button label.
+
+---
+
+## 1. SEED DATA (`src/core/data/*`)
+
+### 1.1 `users.ts`
+- **1 admin:** `admin-001` Rajesh Kumar.
+- **5 stockists** `stockist-001..005`: MedCorp (approved, standard_200, 147/200 bills, full profile incl. bank+UPI, 5 docs), PharmaTrade (approved, basic_100 89/100), LifeLine (**pending**, basic_100, no docs), VitalMeds (approved, premium_500 312/500), PharmaLink (approved, standard_200 78/200). All `businessType: sub_stockist`.
+- **6 pharmacists** `pharma-001..006`: City Care (approved, retail), HealthPlus (approved, chain, 5 branches), Wellness (**pending**, clinic, no docs), MedMax (approved, retail), Apollo (approved, chain, 12 branches), Shree Medical (approved, retail). Each has documents, address, credit prefs.
+- `pendingApprovals = [stockistUsers[2], pharmacistUsers[2]]` (exported, unused by screens).
+
+### 1.2 `inventory.ts`
+- **18 medicines** `med-001..018` across ~8 categories (Analgesic, Antibiotic, Antacid, Antidiabetic, Antihistamine, Cardiovascular, Respiratory, Thyroid) and ~10 manufacturers. Owners: med-001..008 → stockist-001, 009..012 → stockist-002, 013..014 → stockist-004, 015..018 → stockist-005.
+- **med-006 Azithromycin 500mg = counterfeit (`isCounterfeit: true`)** — the one seed flagged product; its batch `batch-007` is also `isCounterfeit: true`.
+- **19 batches** `batch-001..019`; MRP ~₹35–180, qty 80–500; batch-002 and batch-006 expire 2025-03/2025-04 (near past given "today" 2026-07 — thus **expired** and excluded from `totalStock`).
+- `inventoryItems` derived with `lowStockThreshold: 100`.
+
+### 1.3 `orders.ts` — **9 seed orders** `order-001..009`
+Mixed statuses/types; `orderType` derived from a hardcoded `circleMap` (stockist-001 ↔ pharma-001/002/004/005/006; stockist-002 ↔ pharma-001/002). Payment fields derived from seed payments. Examples: order-001 delivered ₹3384 (fully paid), order-002 confirmed ₹3852 (₹2000 partial), order-003 placed ₹9363 PLATFORM (unpaid), order-004 dispatched ₹1109 (stockist→pharmacy), order-006 confirmed ₹10117 (₹5000 partial), order-008 placed ₹1747 (unpaid). Grand totals ~₹1,109–10,117.
+
+### 1.4 `payments.ts`
+- **6 payments** `pay-001..008` (gap in numbering); methods bank_transfer/upi/cash; statuses paid/partial.
+- **15 ledger entries** `led-001..015` with running balances (DEBIT on order, CREDIT on payment).
+- `creditSummary` (outstanding ₹15,355 / overdue ₹1,109 / limit ₹50,000 / used ₹15,355 + 5 credit entries) — exported, **not consumed by any screen**.
+
+### 1.5 `banners.ts`
+- **3 banners** `ban-001` (Year-End Sale, pharmacists), `ban-002` (New Subscription Plans, stockists), `ban-003` (Platform Maintenance, all). All active.
+- **5 notifications** `notif-001..005`.
+- **5 commissionRules** `comm-001..005` (rates 4–8%).
+- **11 `circlePharmacies`** (`CirclePharmacy[]` with `customPricing`/`priceModifier`) — exported, **not used** (the app uses `CircleEntry[]` in the context instead). `priceModifier`/`customPricing` are never applied anywhere.
+
+---
+
+## 2. AUTHENTICATION, REGISTRATION & ONBOARDING
+
+### 2.1 AuthPage (`/auth`) — default entry
+- **Content:** card with animated inline SVG `MedicineIllustration`, title "Digi Swasthya" / "Your Complete Healthcare Platform", Login/Sign-Up tab toggle, role selector (**Stockist / Pharmacy only** — admin excluded), form, demo hint, "Admin Login" footer link, copyright.
+- **Role selector:** two big buttons (Stockist "Distribute to pharmacies", Pharmacy "Buy & sell medicines"). In Login mode a "Click to prefill demo" (Sparkles) link fills `dummyCredentials` for the selected role and toasts.
+- **Login form fields:** Email (type email), Password (with eye toggle), "Remember me" checkbox (**unwired**), "Forgot Password?" → `/forgot-password`. Submit: requires non-empty email+password (else inline "Please enter email and password"), calls `login(email,password,role)` → toast "Welcome back!" → `/dashboard`. (Always succeeds.)
+- **Sign-Up form fields:** Email, Password (eye), Confirm (eye). Submit validates: both filled ("Please fill in all fields"), match ("Passwords do not match"), min length 6 ("Password must be at least 6 characters"), then `navigate('/register/{role}')`. Button text "Continue to Onboarding" (misleading — goes to registration wizard, not Onboarding).
+
+### 2.2 Login.tsx (`/login` is redirected away; reachable only if routed directly)
+- Animated `DeliveryIllustration` (van driving to a pharmacy). Email + Password (eye) + Remember me (unwired) + Forgot password.
+- **Role auto-detection from email:** contains `medcorp`/`pharmatrade`/`lifeline` → stockist, else pharmacist. Then `login()`.
+- **Hidden admin gate:** tapping the logo **5×** → `/admin-login` (`handleLogoTap`).
+- "Sign Up" link → `/signup` (redirected to `/auth`).
+
+### 2.3 Signup.tsx (`/signup` is redirected away; component still exists)
+- Role picker cards (Pharmacy / Stockist) with feature bullet lists; "Continue as {role}" → `/register/{role}`; "Sign In" → `/login`.
+
+### 2.4 AdminLogin (`/admin-login`)
+- Header "Admin Access / Platform management console", Email (placeholder `admin@digiswasthya.com` — note `.com`, but real dummy is `.in`), Password (eye). Submit → `login(email,password,'admin')` → toast "Welcome back, Admin!" → `/dashboard`. "← Back to Sign In" → `/login`.
+
+### 2.5 StockistRegistration (`/register/stockist`) — **7-step wizard**
+Steps: **Business · Documents · Contact · Delivery · Rules · Financial · Review**. Header shows "Stockist" badge + "{step+1}/7"; `RegistrationProgress` bar; sticky Previous/Next/Submit footer.
+
+Validation via `REGEX` (pan `^[A-Z]{5}[0-9]{4}[A-Z]$`, phone `^\d{10}$`, email, pincode `^\d{6}$`) and `getFieldError` (also gst=15 chars, ifsc=11 chars, password ≥6). `requiredFields` per step; `validateStep` blocks Next and toasts "Please fix errors".
+
+- **Step 0 Business:** Business Name*, Business Type* (select: Sub-Stockist enabled; **Super Stockist / Distributor disabled "Coming soon"**), Years in Business* (0_1…10_plus), GST Number* (15-char), PAN Number* (regex), Drug License Number*.
+- **Step 1 Documents:** four cards. (1) Wholesale Drug License — Form 20B: License Number* + FileUpload. (2) GST Certificate: GST Number* + FileUpload. (3) Form 21B Restricted (Optional): number + FileUpload. (4) FSSAI (Optional): number + FileUpload. Required: `wholesale_drug_license`, `gst_cert_number`.
+- **Step 2 Contact:** Contact Person Name*, Phone* (tel), WhatsApp (tel), Email*, Password* (min 6). Office Address*, Google Maps Location (Office) with MapPin, "Same as office" **Switch** (copies office → warehouse address+maps), Warehouse Address (disabled when switch on), Warehouse Maps (hidden when switch on), State* (select), City*, Pincode*.
+- **Step 3 Delivery:** Delivery Days* (7 toggle chips Mon–Sun), Delivery Time Slots* (morning/afternoon/evening/full_day toggle chips), Serviceable Pincodes* (6-digit input + Add button/Enter, chips with remove X; only valid 6-digit + non-duplicate accepted), Service Radius (km, optional). NOTE: day/slot/pincode requiredness is visual only — `requiredFields[3]` is undefined, so Next does not actually validate them.
+- **Step 4 Rules:** Default Credit Limit (₹)* , Default Credit Days*, Minimum Order Quantity (₹)*, Delivery Charges card: Charge Type* (free/flat/free_above/distance) → conditional sub-fields (flat: Flat Rate; free_above: Free Above Amount + Charge Below Amount; distance: Rate per KM + Base Charge). NOTE: `requiredFields[4]` undefined → Next doesn't hard-validate these either.
+- **Step 5 Financial:** Account Holder Name*, Bank Name*, Account Number*, IFSC Code* (11-char), UPI ID (optional).
+- **Step 6 Review:** 5 `ReviewCard`s (Business, Documents+uploaded-doc thumbnails, Contact & Address, Delivery, Business Rules, Financial) each with Edit jump-links. Delivery-charge label composed via `getDeliveryChargeLabel()`. **Required T&C + Privacy checkboxes** (Submit disabled until both checked). Submit → if both accepted, opens success modal (else toast).
+- **Success modal:** "Registration Submitted!" + "verification 24–48 hours". "Start exploring now" → `handleEnterApp` = `login(formData.email || 'stockist@demo.com', 'password', 'stockist')` → `/dashboard`. "Go to Sign In instead" → `/login`.
+- **CRITICAL STUB:** the wizard **never calls `registerStockist`.** No pending account is created; the collected data is discarded; the user just enters a demo stockist session. Admin approval queues are fed only by seed data + stockist-created circle pharmacies.
+
+### 2.6 PharmacyRegistration (`/register/pharmacist`) — **5-step wizard**
+Steps: **Business · Documents · Contact · Config · Review**. "Pharmacy" badge; same progress/footer pattern. `requiredFields` are **dynamic** by pharmacy type via `getRequiredFields(pharmacyType)`.
+
+- **Step 0 Business:** dynamic hint (chain: "add locations after approval"; clinic: "simplified GST"). Pharmacy Name*, Pharmacy Type* (Retail/Chain/Clinic enabled; **Hospital disabled "Coming soon"**), Legal Entity* (proprietorship/partnership/private_limited/llp), PAN*, GST Number (optional; clinic shows "Optional for clinics" helper), **Number of Branches*** (only if type=chain), Pharmacist Name*, Registration Number*.
+- **Step 1 Documents:** Drug License card (License Number* + Expiry Date* [type=date] + FileUpload), Form 20 card (Form 20 License Number* + FileUpload), Form 21 Schedule C/C1 (Optional: number + FileUpload), **GST Certificate card (hidden entirely for clinic)** — GST Number* + GST Type* (regular/composition) + FileUpload, Pharmacist Registration Certificate (Registration Number* + FileUpload). For clinic, gst_cert_number/gst_type are not required.
+- **Step 2 Contact:** Owner/Contact Name* with "Same as pharmacist" Switch (copies pharmacist_name), Designation (optional), Phone* (tel), WhatsApp (tel), Email*, Password* (min 6), Full Address*, Landmark (optional), State*, City*, Pincode*, Google Maps Location (optional). Chain type shows an info banner.
+- **Step 3 Config:** Monthly Purchase Range* (lt_50k / 50k_2l / 2l_5l / 5l_plus), Preferred Categories* (11 chips: Antibiotics, Analgesics, Cardiovascular, Diabetes, Dermatology, Gastro, Neurology, Respiratory, Vitamins, Ayurvedic, OTC) + Select All/Deselect All toggle, Credit Required* Switch → when on: Credit Amount Needed (₹)* + Expected Credit Days* + **live credit-risk evaluation** card.
+  - **`getCreditEvaluation` logic:** maps purchase range → number (lt_50k=30000, 50k_2l=125000, 2l_5l=350000, 5l_plus=700000). `ratio = credit/purchase`, `days = parseInt(creditDays)||30`. Buckets: ratio≤0.25 & days≤15 → 2 months / **low**; ratio≤0.5 & days≤30 → 3 / **standard**; ratio≤0.75 → 4 / **moderate**; else → 5 / **high**. Card color + message vary by risk; shows "{ratio}% credit-to-purchase ratio" and "{months} months" observation. If purchase or credit missing → info prompt.
+- **Step 4 Review:** 3 ReviewCards (Business, Documents+thumbnails, Contact & Address, Business Configuration incl. computed Eval Period), T&C + Privacy checkboxes, Submit → success modal → `handleEnterApp` = `login(email || 'pharmacy@demo.com', 'password', 'pharmacist')`.
+- **CRITICAL STUB:** never calls `registerPharmacist`. Same demo-session behavior as stockist.
+
+### 2.7 Registration form components
+- **FormField:** label(+required *), Input (type text/tel/email/number/date/password), onChange(name,value), optional onBlur, helper, error. Error styling on the input.
+- **SelectField:** Radix Select; options may be `disabled` with a "disabledLabel" pill ("Coming soon").
+- **FileUploadField:** click or drag-drop; accepts `.pdf,.jpg,.jpeg,.png`; **5 MB cap — oversized files silently dropped** (early `return`, no error shown). Preview via `URL.createObjectURL`. Nothing uploaded anywhere.
+- **RegistrationProgress:** step dots + progress line; checks completed steps.
+
+### 2.8 Onboarding (`/onboarding`)
+- 3-slide animated carousel; slide set chosen by `localStorage 'onboarding_role'` (default stockist). Slides: stockist(Distribution/WhatsApp bills/Payments) or pharmacist(Order/Track/Bills). Dots, Next/Get Started, Skip. Sets `localStorage 'onboarding_seen'='true'` → `/login`. Collects nothing. **Not linked from any main flow** (registration goes straight to dashboard).
+
+### 2.9 Password recovery — **STUBS**
+- **ForgotPassword:** Email field → Submit awaits **1200ms** → `sent=true`, toast "Email Sent". Shows "reset link sent to {email}" + Back to Login. No email, no persistence.
+- **ResetPassword:** New Password + Confirm; validates min-6 + match; awaits 1200ms → done screen + toast. No persistence. (Route exists but nothing links to it.)
+
+---
+
+## 3. STOCKIST MODULE
+
+Every stockist screen scopes to `user?.id`, with `'stockist-001'` fallback in several (CreateOrder, QuickBill, CirclePharmacies, FindPharmacy, HolidayManagement).
+
+### 3.1 StockistDashboard (`/dashboard` when role=stockist)
+- **Sections:** active stockist/all Banner (CTA navigates to `ctaUrl`), Quick Actions (3×2 grid), circle-count banner (→ `/stockist/circle`), 6 KPI cards, Monthly Order Trend BarChart, Top Pharmacies by Revenue, Top Products by Sales, Recent Orders (first 5).
+- **Quick Actions (navigate-only):** Create Order `/stockist/orders/create`, Quick Bill `/stockist/quick-bill`, Collect Payment `/stockist/payments`, Add Pharmacy `/stockist/circle/find`, Bulk Upload `/stockist/inventory/upload`, Upload Bill `/stockist/inventory/bills`.
+- **KPI formulas (all real, read-only):** `stockistOrders` = orders where placedTo/placedBy = me. Pending Orders = count of status placed+confirmed. Total Products = my inventory count. Pharmacies = my circleEntries count (also the banner count). Revenue = `Σ grandTotal of delivered` shown `₹{(x/1000).toFixed(0)}K`. Outstanding = `max(0, Σ grandTotal of ALL my orders − Σ paid payments with status 'paid')` (note: sums *all* order value, not just unpaid — differs from the FIFO/outstanding math elsewhere). Stock Value = `Σ sellingPrice × quantity` over batches (includes expired).
+- **Monthly chart:** last 6 months, order **count** per month by createdAt.
+- **Top Pharmacies:** by `Σ grandTotal` of delivered orders, top 3. **Top Products:** by `Σ quantity` across all order items, top 5.
+- **Recent Orders:** first 5 `stockistOrders`, each → `/orders/{id}`; StatusChip success/destructive/primary.
+
+### 3.2 Inventory (`/stockist/inventory`)
+- Scoped to `medicine.stockistId === user.id`. 600ms skeleton.
+- **Content:** search box, Add button (→ add), Filters button (badge = active filter count), grid/list toggle, active-filter chip row, action buttons (Bulk Catalogue/Purchase Bill/Bulk Price), product grid or list.
+- **Filters dialog fields:** Categories (multi-select chips from own inventory), Brand/Manufacturer (search box + checkbox list), Expiry (all / soon <30d / 1-3 months = 30–90d / 3-6 months = 90–180d — matches if ANY batch qualifies), Stock Availability (all/in_stock/low/out; low = `totalStock <= 100 && >0`), Price Range Min/Max (against `batches[0].sellingPrice`). Apply/Reset.
+- **Card content:** image placeholder (Package icon), badges — Out of Stock (if totalStock 0), Rx (if category Antibiotic & not OOS), Flagged (Shield, if counterfeit), edit pencil (→ edit). Name, manufacturer, category pill, sellingPrice + struck MRP, "Buy: ₹{purchase} · Margin {X}%" where `margin = round(((sell−purchase)/purchase)×100)`, Stock count, earliest expiry (month/year).
+- **List row:** icon, name, manufacturer·category, price+MRP+margin, right: totalStock (orange if ≤ threshold) + batch count.
+- **Empty state** adapts (filters/search present → "Clear Filters"; else "Add Product").
+- **Stubs:** no delete. `batches[0]` used for price/margin display (multi-batch shows only first).
+
+### 3.3 AddItem (`/stockist/inventory/add`)
+- **Sections/fields:** Product Images (dead placeholder — "Image upload will be available with backend integration"). Basic: Product Name*, Brand, Manufacturer*, Category. Pricing & Inventory: MRP*, Sale Price, Purchase Rate, Stock Qty*, Min Stock Level (**default '100'**). Batch & Compliance: Batch Number*, Expiry Date* (date), Mfg Date, HSN Code, GST Rate (plain text). Regulatory: Drug Schedule, Drug Type, Composition/Salt, Pack Type, Pack Size, FSSAI License. Additional: Requires Rx checkbox, Narcotic checkbox.
+- **Validation (`validate`):** name, manufacturer, batchNumber, expiryDate required; expiry must be future; MRP numeric; salePrice ≤ MRP; stockQty numeric.
+- **Submit:** 500ms delay → `addProduct(medicine, batch)` (**real, persisted**). genericName defaults to composition||name; category defaults 'General'; sellingPrice defaults salePrice||MRP.
+- **Stubs:** `gstRate`, `fssaiLicense`, `brand`, `minStock` are **NOT passed** to addProduct (brand/gstRate/fssai/minStock discarded). `requiresRx`/`isNarcotic`/`drugSchedule`/`drugType`/`packType`/`packSize`/`composition` ARE passed to the medicine object.
+
+### 3.4 EditProduct (`/stockist/inventory/:id/edit`)
+- Same layout as AddItem, prefilled from `item` + `batches[0]`. Image placeholder present.
+- **Validation:** name/manufacturer required; if expiry set must be future; salePrice ≤ MRP; MRP numeric.
+- **Submit:** 500ms → `updateMedicine({name, manufacturer, category, genericName, hsn})` + `updateBatch(batches[0] fields: mrp, sellingPrice, purchasePrice, quantity, batchNumber, expiryDate)`.
+- **Stubs:** only edits `batches[0]` — **multi-batch products lose edits to other batches** (updateBatch updates one). Fields gstRate, packSize (default '10 Tablets'), requiresRx, isNarcotic, drugSchedule, drugType, packType, fssaiLicense, brand are shown/prefilled but **never persisted**.
+
+### 3.5 ProductDetail (`/stockist/inventory/:id`)
+- **Content:** back + Edit button (Copy/Trash icons imported but **not rendered/unwired**). Title/manufacturer/category. Total Stock card (nos, min, active-batch count). Sales History (6-month) **real** BarChart from non-cancelled orders' items for this med (units). Product Details table. Pricing table (per-batch MRP/Sale/Purchase + HSN + total stock value). Batch History list (expired rows highlighted). Counterfeit warning banner if flagged.
+- **Add Batch flow:** "Quick Add" (prefills batchNumber `BATCH-{ts36}`, qty 100, prices from batches[0]) or "Add Batch". Dialog fields: Batch Number*, Quantity*, MRP, Purchase Price, Selling Price, Mfg Date, Expiry Date*. Validation: batchNumber+quantity+expiry required, expiry future, sellingPrice ≤ MRP. Calls `addBatch` (**real**).
+
+### 3.6 BatchManagement (`/stockist/batches`)
+- Read-only, scoped to `batch.stockistId === user.id`. 600ms skeleton. Search (batch# or med name). Tabs: All / Expiring Soon (≤ **90 days**) / Counterfeit.
+- Row: icon (Shield if counterfeit), batch#, med name, qty, expiry StatusChip (Expired <0 / Expiring Soon ≤90d / Valid), MRP/Purchase/Expiry grid, counterfeit banner "Flagged by Admin" (display-only).
+
+### 3.7 CirclePharmacies (`/stockist/circle`)
+- **Content:** "My Pharmacies" + Add button (→ find). Filter tabs: **All / Outstanding / Credit / No Dues** — **Credit tab count is hardcoded 0** and its filter returns all (no distinct filter). Per-pharmacy card.
+- **Card:** Store icon, pharmacyName/name, dropdown menu (New Order → create, Create Bill → quick-bill, Send Reminder [disabled if no outstanding]), chevron → detail. 3 KPIs: Outstanding (orange), Credit (primary), Net Due (`credit − outstanding`, shown "… CR"). Bottom "Collect Payment" bar.
+- **`getCreditData`:** `outstanding = max(0, Σ grandTotal of non-cancelled pharma orders − Σ all payments for those orders)`; `credit = circle.creditLimit || 175000` (**hardcoded fallback 175000**).
+- **Collect Payment flow (FIFO):** modal fields — Amount (₹, prefilled to outstanding), Payment Mode (Cash/UPI/Bank Transfer/**Cheque**), Date (date), Notes. On confirm: builds order-dues list (remaining = grandTotal − paid, >0), loops in order applying `min(remaining, due)` via `addPayment({method, paidAt, reference: {MODE}-{ts}})`. Toast. `cheque` is cast onto the method union (persists as 'cheque' string, off-type).
+- **Send Reminder flow:** modal — Message Type toggle (Common for All / Individual — **purely visual, unused**), Message textarea (default text), Reminder Priority select (low/medium/high — **collected but not passed** to sendReminder). Confirm → `sendReminder({channel:'whatsapp'})` + toast. No real message; reminderType/priority discarded.
+
+### 3.8 CirclePharmacyDetail (`/stockist/circle/:id`)
+- **Header card:** pharmacyName/name, edit-credit pencil + credit-card icon. Phone with `tel:` link + clipboard copy (real). Address line. **Credit Usage** progress bar `usagePercent = min(100, outstanding/creditLimit×100)`; 3 stats Outstanding/Credit Limit/Available (`credit − outstanding`). "Collect Payment — ₹{outstanding}" button (if outstanding>0).
+- **Tabs:** Orders (count) / Payments (count) / Bills / Ledger.
+  - Orders: list of pharma↔stockist orders → `/orders/{id}`.
+  - Payments: payment rows (method, paidAt, reference, amount).
+  - Ledger: table Date/Description/Debit/Credit/Balance filtered to this pharmacy↔stockist pair.
+  - **Bills: static message** "Bills are generated when orders are confirmed".
+- **Outstanding orders / due dates:** `dueDate = createdAt + creditDays × 86400000`.
+- **Collect Payment modal:** Credit Limit + Outstanding stat tiles; Amount (₹) + "Full" prefill; **FIFO allocation preview** (oldest-first; each row marked "Fully covered"/"Partial" with due date); Payment Method grid (Cash 💵 / UPI 📱 / Bank Transfer 🏦 / Cheque 📝); Reference/Transaction ID. Confirm → `addPayment` per allocation. **Fidelity loss:** method mapping `bank→bank_transfer`, **`cheque→cash`** (cheque recorded as cash here, unlike CirclePharmacies which keeps 'cheque').
+- **Edit Credit modal:** Credit Limit (₹) + Credit Days → `updateCircleEntry` (real, validated >0). **Remove from Circle** → `removeCircleEntry` + toast + back (real).
+
+### 3.9 FindPharmacy (`/stockist/circle/find`)
+- **Content:** search (name/owner/pincode) + "New" button. List of approved (or `circle_only` cast) pharmacies with "In Circle" tag or "Add" button.
+- **Add-to-Circle modal:** shows pharmacy; Credit Limit (₹, default 25000), Credit Days (default 30), Notes → `addCircleEntry` (real; auto-connects stockist for that pharmacy).
+- **Create New Pharmacy modal:** "personal circle pharmacy not on platform". Fields: Pharmacy Name*, Owner Name, Phone*, City, PIN Code, GST (optional) + Credit Settings (Limit/Days). On create: builds a `PharmacistProfile` id `pharma-circle-{ts}`, **`status:'approved'`, hardcoded `state:'Maharashtra'`, `pharmacyType:'retail'`**, calls `registerPharmacist` (which forces `status:'pending'`!) then `addCircleEntry` (auto-joins circle). **Note:** because registerPharmacist overrides status to 'pending', the new circle pharmacy is stored pending, but it still appears in the circle via the circle entry. Validation: name+phone required.
+
+### 3.10 CreateOrder (`/stockist/orders/create`)
+- Single-page order for a circle pharmacy. Inventory scoped to my stockist, in-stock, non-counterfeit.
+- **Content:** "Record Offline Transaction" toggle, Select Pharmacy (search over circle), Add Items (search, max 8 shown, add/qty steppers), Selected Items list (qty steppers + **editable unit price** input), Summary (Subtotal / Tax 12% / Grand Total).
+- **Logic:** offline toggle → status `confirmed` (deducts stock immediately) else `placed`. `orderType:'CIRCLE'`, `type:'stockist'`, `paymentStatus:'pending'`, discount 0. Batch pick = **FEFO** (future expiry, qty>0, non-counterfeit, earliest expiry first). tax `round(subtotal×0.12)`, per-item tax `round(itemTotal×0.12)`. Calls `validateStock` (blocks on error toast) then `createOrder` after 1500ms. **No credit-limit check.** Toast + → `/stockist/orders`.
+
+### 3.11 QuickBill (`/stockist/quick-bill`) — WhatsApp→bill, 5-step
+Steps: Paste Message · Review Items · Select Pharmacy · Edit & Add · Confirm Bill. Progress bars.
+- **Step 0:** Textarea for WhatsApp text (placeholder sample). Parse button.
+- **Parsing (`parseWhatsAppMessage`):** split by newline; quantity via regex `/(\d+)\s*(pcs?|tabs?|strips?|boxes?|nos?|qty|x|\*)?\s*$/i` (trailing) or leading variant; default qty 1; product name = line minus qty tokens and hyphens. `fuzzyMatch` = substring on name/genericName/first-word against **my** inventory. Filters items with rawText length >1.
+- **Step 1 Review:** matched (green check) vs unmatched (amber) rows; unmatched get a `<select>` to manually map to a product; qty/price shown; remove.
+- **Step 2 Select Pharmacy:** search over circle; select → step 3.
+- **Step 3 Edit & Add:** edit qty/price per item; add more products (search my inventory). 
+- **Step 4 Confirm:** bill-for card, items table, "Grand Total" **= subtotal WITHOUT tax** (display quirk). Create → 1500ms → build order (FEFO batch, per-item tax 12%, order tax 12%), status **`confirmed`** CIRCLE, `type:'stockist'`, then `generateInvoice(order.id)`. Toast → `/stockist/orders`.
+
+### 3.12 DeliverySetup (`/stockist/delivery`) — fully wired
+- **Service Areas:** list (name, pincode, active) with Enable/Disable (`updateDeliveryArea`) + Delete (`removeDeliveryArea`). Add form: Area name + Pincode → `addDeliveryArea` (real).
+- **Delivery Slots:** list (label + start–end) + Delete. Add form: Label + Start time + End time → `addDeliverySlot` (real). Requires all fields non-empty.
+
+### 3.13 HolidayManagement (`/stockist/holidays`) — fully wired
+- Add Holiday: Date* (date), Reason (default 'Holiday'), "Accept Pre-orders" Switch → `addHoliday`. Validation: date required, must be today-or-future. Upcoming (sorted asc) + Past (last 5) sections; delete via `removeHoliday`. `preOrderEnabled` drives pharmacist-side badges only. `isStockistOnHoliday` matches **exact date === today**.
+
+### 3.14 SubscriptionPage (`/stockist/subscription`)
+- Reads current sub from `allStockists` (fallback default basic_100). 2 StatCards (Bills Used `{used}/{limit}`, Valid Until). Usage bar `usagePercent = round(billsUsed/billLimit×100)` (color ≥90 destructive / ≥70 warning / else primary), "{remaining} bills remaining".
+- 3 hardcoded plans: Basic 100 ₹999, Standard 200 ₹1999, Premium 500 ₹4999 (feature lists). Current plan shows "Current Plan" disabled; others "Upgrade".
+- **STUB:** Upgrade sets local `currentPlan` + toast only — **not persisted**.
+
+### 3.15 Reports (`/stockist/reports`)
+- Month (Jan–Dec, default March) + Year (2026/2025/2024, default 2026) selects; type chips (All/H1/HNX/GST/Sales).
+- **7 hardcoded reports** (`r1..r7`): H1 Monthly, H1 Annual, HNX Drugs, HNX Annual, GST Sales, Monthly Sales, Stock Summary — each with badge, description, lastGenerated date.
+- **STUB:** Download → toast only, no file generated.
+
+### 3.16 Analytics (`/stockist/analytics`) — **ENTIRELY MOCK**
+- Period select (This Week/Month/Quarter/Year — **inert**).
+- 4 hardcoded KPIs: Total Revenue ₹1,78,000 (+14.8% up), Total Orders 68 (+8.2% up), Active Pharmacies 24 (+4.2% up), Collection Rate 87% (−2.1% down).
+- Revenue Trend LineChart (hardcoded Oct–Mar). Order Status Distribution pie (hardcoded Delivered 45/Pending 12/Processing 8/Cancelled 3). Nothing driven by real data (contrast with StockistDashboard which is real).
+
+### 3.17 StockistProfile (`/stockist/profile`)
+- Status banner (approved/pending/other), avatar header (businessName, type badge, email, member-since).
+- Section cards (all with Edit → `EditProfileModal`): Contact (contactPerson/phone/whatsapp/email), Business (name/type/years/drugLicense/gst/pan), Regulatory Documents (doc tiles → preview dialog with fileUrl image or FileText fallback), Office & Warehouse, Delivery Setup (days/slots/pincodes/radius), Business Rules (credit limit/days/min order/delivery charge label composed), Financial (account holder/bank/account/ifsc/upi).
+- **STUB:** every section's `handleSave` = toast only — **edits discarded**. EditProfileModal fields per section are defined but not persisted.
+
+### 3.18 BulkUpload (`/stockist/inventory/upload`) — **STUB (ignores file)**
+- States: upload → validating (1500ms) → preview → confirming (2000ms) → done.
+- File input accepts .csv/.xlsx/.xls but **file is never parsed**; injects hardcoded `mockParsedData` (6 rows, 2 with errors: missing name, missing batch). Preview table (Name/Generic/Manufacturer/Batch/Qty/MRP/Status). Confirm → done screen with Added/Failed/Skipped(0) counts + error list. **Writes NOTHING to AppState.**
+
+### 3.19 PurchaseBills (`/stockist/inventory/bills`) — **STUB (ignores file)**
+- Seeded with 2 mock bills (local state). Upload → Supplier Name field + file input (**file ignored**) → Process (2000ms) injects 3 hardcoded extracted items → Review (edit qty/price per item, total recalcs) → Confirm (1500ms) → prepends a mock Bill to local list + toast "inventory updated" (**no AppState write**). List rows: view (dialog with items) + delete (local). Bill statuses processed/processing/error.
+
+### 3.20 BulkPriceUpdate (`/stockist/inventory/bulk-price`) — inline REAL, upload FAKE
+- Modes: choose → inline / upload → compare → done. Seeds `changes` from `allInventory.slice(0,6)` (batches[0] prices).
+- **Inline (REAL):** editable New MRP / New Sale per product; "Review Changes" → compare → Confirm applies `updateBatch({mrp,sellingPrice})` to **ALL batches of each changed medicine** (persisted).
+- **Upload (FAKE):** file input ignored; `handleFileUpload` fabricates new prices via `Math.random()` (MRP ×(1+rand×0.1), Sale ×(1+rand×0.08)) → compare → confirm still persists via updateBatch. So upload "works" but with random prices.
+- Done screen → View Inventory.
+
+---
+
+## 4. PHARMACIST MODULE
+
+### 4.1 PharmacistDashboard (`/dashboard` role=pharmacist)
+- Banner (first active pharmacist/all). 4 StatCards, Quick Actions (6), Active Orders (first 5, not delivered/cancelled).
+- **KPIs:** `myOrders = placedBy.id === user.id`. Pending Orders = count placed+confirmed+dispatched. Due Payments = `₹{(outstanding/1000).toFixed(1)}K` where `outstanding = max(0, Σ myOrders grandTotal − Σ payments for those orders)`. Connected Stockists = `getConnectedStockists(me).length`. Recent Purchases = delivered count. **StatCard trends hardcoded** (down/neutral/up).
+- Quick Actions: Browse, Cart (with live count badge), Quick Order, Stockists, Pay Dues (→ payments), Orders.
+
+### 4.2 FindStockist (`/pharmacist/stockists/find`)
+- Lists **approved** stockists (businessName, city, serviceAreas, product count = inventory where stockistId matches). Search by name/city. "Connect" → `connectStockist(me, id)` (real, persisted); connected ones show disabled "Connected".
+
+### 4.3 PharmacistStockists (`/pharmacist/stockists`)
+- "My Stockists" (approved + in `getConnectedStockists(me)`). Search. Card → `/pharmacist/stockists/{id}`. Per card: products count, **Outstanding = `max(0, Σ ordered − Σ paid)`** for orders between me and that stockist, holiday chip ("On Holiday (Pre-orders open)" if preOrderEnabled). Empty → Find Stockists.
+
+### 4.4 BrowseMedicines (`/pharmacist/browse`)
+- 700ms skeleton. View toggle Medicines / Stockists. Cart button with count badge.
+- **Only shows inventory of connected stockists**, filtering out counterfeit. Search by name/generic/category.
+- **Medicines cards:** Rx badge (Antibiotic), Out of Stock badge (no valid batch), **Low Stock badge (batch qty `< 10`)**, price + struck MRP, stock count, stockist name, **"Delivery by {now+2 days}" (hardcoded stub)**, Add to Cart / In Cart(qty) / Unavailable.
+- **`getBestBatch` = FIFO** (future expiry, qty>0, non-counterfeit, earliest expiry). `addToCart` sets quantity 1, uses best batch. Add validation: no valid batch → "Not Available" toast.
+- **Stockists view:** connected stockists with holiday chips.
+
+### 4.5 PharmacistStockistDetail (`/pharmacist/stockists/:id`)
+- Header (businessName, city, phone), 2 stat tiles: Outstanding = `max(0, Σ ordered − Σ paid)` over orders involving this id; Total Paid. Buttons: Order Now (→ browse), Pay Dues (→ payments).
+- Tabs: **catalog / orders / ledger**.
+  - catalog: `allInventory` (non-counterfeit, in-stock) — **NOT filtered to this stockist** (shows global catalog). Low Stock label uses **`totalStock < 100`** (inconsistent with Browse's 10). Add uses **`batches[0]`** (not FIFO).
+  - orders: orders where placedTo/placedBy = this id → `/orders/{id}`.
+  - ledger: entries whose relatedOrderId is in related orders; +green/−red.
+
+### 4.6 Cart (`/pharmacist/cart`)
+- Line list (name, batch, stockist, qty steppers, line total, remove). Summary: Subtotal / Tax 12% / Total. "Proceed to Checkout". Empty state → Browse. **Not grouped by stockist** (grouping happens at checkout).
+
+### 4.7 Checkout (`/pharmacist/checkout`)
+- Groups cart by `stockistId`; classifies each group PLATFORM vs CIRCLE via `getOrderType(me, stockistId)`.
+- **Content:** Delivery Address (select saved addresses filtered by `!organizationId || organizationId===me`; "+ Add New" dialog), **Delivery Slot** (4 hardcoded slots Morning/Afternoon/Evening/Night — **UI only, not persisted**), Items grouped by stockist with PLATFORM/CIRCLE badge, Order Notes textarea (**captured, not persisted**), Payment (Pay Now UPI / Pay Later Credit — Pay Later only if any CIRCLE group), Summary (Subtotal/Tax12%/Total).
+- **Credit check:** per CIRCLE group, `orderTotal = subtotal+12%`; `creditWarnings` = groups where `!canUseCredit` and choice is pay_later. Warning banner "Used ₹X / Limit ₹Y". Place button disabled if warnings exist or no address.
+- **Place flow (`handlePlace`):** validateStock (blocks on error). If pay_later + warnings → block. If platform orders OR pay_now → **simulated payment**: `paymentStep='paying'` (2000ms spinner "Simulating UPI payment") → `'success'` (800ms) → create (500ms). Then **one order per stockist**: `type:'pharmacy'`, orderType per group, status `confirmed` if prepaid else `placed`, paymentStatus paid/pending, discount 0. Prepaid orders also call `addPayment({method:'upi', reference:PAY-{ts}})`. `clearCart`, success screen listing order numbers.
+- **Add-address dialog fields:** Label*, Address Line*, City*, Pincode, State → `addAddress` (first one auto-default). Requires label+line1+city.
+- **Stubs:** delivery slot + order notes not passed to createOrder.
+
+### 4.8 QuickOrder (`/pharmacist/orders/quick`) — WhatsApp→order
+- "Order From" select (connected stockists — **largely ignored once items match**). Textarea (sample text provided) + "Use Sample" + "Parse Items".
+- **Parsing:** split newline; split each by hyphen/en-dash/em-dash → name + qty (`\d+` in second part, default 1); `fuzzyMatch` = substring `.find()` first match against **connected-stockist** inventory. `getBestBatch` = FIFO for the estimate/price.
+- Shows Parsed Items (matched/unmatched, stockist name), "Matched X / Y", Estimated Total (matched only), "Create Order".
+- **Create:** groups matched items by **real `medicine.stockistId`**, one **PLATFORM** order per stockist, status `placed`, unpaid, discount 0. **BUG:** order line uses `inv.batches[0]` (NOT the FIFO batch used for the estimate). Toast → `/pharmacist/orders`.
+
+### 4.9 PharmacistInventory (`/pharmacist/inventory`)
+- Read-only, from `getPharmacyInventory(me)` (auto-populated on delivery). Search + All/Expiring tabs (≤ **90 days**). Row: name, batch, qty, expiry label (Expired/Expiring Soon/Valid), MRP/Expiry/Received. Empty: "auto-populated when orders are delivered".
+
+### 4.10 Addresses (`/pharmacist/addresses`) — real CRUD
+- Add form: Label*, Address Line*, City*, Pincode → `addAddress` (first auto-default; requires label+line1+city). List (scoped `!organizationId || ===me`) with Set-Default (check icon) and Delete. Uses `setDefaultAddress` (default is per-organizationId group).
+
+### 4.11 DeliveryPreferences (`/pharmacist/delivery-preferences`) — **FULLY STUBBED**
+- Time-slot multi-select (morning/afternoon/evening; default morning+afternoon) + Delivery Instructions textarea (default text). Save → toast only. Pure local state, no AppState.
+
+### 4.12 PharmacistProfile (`/pharmacist/profile`)
+- Status banner, avatar header. Section cards: Contact (Edit), Business (Edit), Documents (no edit; preview dialog — FileText only, no image), Address (Edit), Configuration (monthly purchase/categories/credit — no edit).
+- **STUB:** edit `handleSave` = toast only, not persisted.
+
+---
+
+## 5. ORDERS, RETURNS & LIFECYCLE
+
+### 5.1 OrderList (`OrderList` with `roleFilter`)
+- 600ms skeleton. Role filter: admin=all; stockist=placedTo OR placedBy===me; pharmacist=placedBy===me. Sorted newest-first.
+- Status tabs: All (count) / placed / confirmed / dispatched / delivered / cancelled.
+- Create buttons: stockist → Quick Bill + Create Order; pharmacist → New Order (→ browse); admin → none.
+- Row: orderNumber, StatusChip, "placedBy → placedTo", grandTotal, date → `/orders/{id}`.
+
+### 5.2 OrderDetail (`/orders/:id`) — role-aware
+- **Header:** orderNumber, date, StatusChip. Parties card (From/To — flips display by order.type).
+- **Role actions (`getActions`):** admin → "Force Cancel" (if not delivered/cancelled). pharmacist → "Cancel Order" (if placed/confirmed). stockist → placed: Confirm + Cancel; confirmed: Mark as Dispatched; dispatched: Mark as Delivered. `handleAction` = 1000ms delay → `updateOrderStatus` → **auto `generateInvoice` on confirmed** → toast.
+- **Returns:** pharmacist "Request Return" button when delivered & no existing request → `/orders/:id/return`. Return Requests card lists requests; stockist sees Approve (→ `approveReturn`, mints credit note, shows "Credit Note: {id}") / Reject (→ `rejectReturn`) for pending.
+- **Invoice:** "View Invoice" (shown if invoice exists or status confirmed/dispatched/delivered) → generates if missing → dialog with from/to/order/date, items table, subtotal/discount/tax/total.
+- **Delivery Status grid:** 5 states (Pending/Confirmed/Out for Delivery/Delivered/Cancelled) with active/past/future styling.
+- **Payment section (non-admin):** Paid/Pending tiles (`pendingAmount = grandTotal − paid`); Paid/Unpaid chip; "Add Payment" dialog (Amount + "Full" prefill, Method cash/upi/bank_transfer/credit, reference `TXN-{ts}`) → `addPayment`. Admin sees read-only "View Only".
+- **Timeline:** event list from `order.timeline`.
+- **Edit Items (placed only, non-admin):** stepper qty per item; on Save recomputes per-item `tax = round(qty×unitPrice×0.12)`, subtotal, totalTax, totalDiscount(=Σ item.discount), `grandTotal = subtotal − totalDiscount + totalTax` → `updateOrderItems` (only affects **dynamic** orders in `placed`; seed orders skip — see §11). Items with qty 0 dropped.
+- **Notes:** local-only list (`orderNotes` state) — **never persisted**.
+
+### 5.3 ReturnRequest (`/orders/:id/return`)
+- Guarded to `delivered` orders (else "not eligible"). Per-item checkbox → sets return qty (default full) + reason textarea. `updateItemQty` clamps 1..ordered. Submit builds `ReturnItem[]` (reason default "No reason specified") → `createReturnRequest` (status pending). pharmacyId/stockistId derived from order.type. Toast → back to order. **No coded path applies a credit note to a later order** (only `getAvailableCreditNotes` exists; Checkout never consumes it).
+
+---
+
+## 6. PAYMENTS MODULE
+
+### 6.1 PaymentsPage.tsx — **DEAD (unrouted)**
+- Built generic payments page (tabs payments/ledger/credit); hardcodes `creditLimit = 500000`, 30-day due dates; imports `addLedgerEntry`/`roleView` unused. Not reachable via any route.
+
+### 6.2 StockistPayments (`/stockist/payments` and `/stockist/credit`)
+- Scoped to my orders. 3 StatCards: Collected (`Σ paid payments`), Outstanding (`max(0, Σ order grandTotal − collected)`), Bills (invoice count).
+- **Bank Details card:** from `user as StockistProfile` (account/bank/acct#/ifsc/upi) — **Edit button is unwired** (no handler).
+- Tabs: **payments / bills / approvals**.
+  - payments: rows (pharmacy, method, date, amount, status verified/pending).
+  - bills: from invoices matching my orders (billNo, pharmacy, amount, status paid/unpaid/draft).
+  - approvals: pending payments — **"Approve" is toast-only** (doesn't change payment status).
+- **Send Reminder:** dialog Send To (All / specific pharmacy) + Message → `sendReminder({channel:'whatsapp'})` + toast. Reminder History (last 3) shown if any.
+
+### 6.3 PharmacistPayments (`/pharmacist/payments`)
+- Groups my orders by stockist. 3 StatCards: Total Due, Paid, Stockists count.
+- Tabs: **dues / history**.
+  - dues: per-stockist Outstanding + Paid tiles; "Pay Now — ₹{outstanding}" opens modal.
+  - history: payment rows (stockist, amount, method, order, date).
+- **Pay modal:** Amount (prefilled to outstanding) + Method (UPI/Bank Transfer/Cash). `handlePay` = **FIFO** over that stockist's unpaid non-cancelled orders oldest-first, `min(remaining, due)` via `addPayment` (real). Toast.
+
+---
+
+## 7. ADMIN MODULE
+
+Recurring quirk: `ApprovalStatus` defines `'suspended'`, but nearly every "Suspend" action writes `'rejected'`. The true `'suspended'` enum is written **nowhere** (only appears as documentation in UserFlowPage and `getStatusDisplayLabel`).
+
+### 7.1 AdminDashboard (`/dashboard` role=admin)
+- Banner (first active 'all'; **CTA `onCtaClick={() => {}}` — no-op**). 4 StatCards, 3 Quick Actions, Recent Orders (first 5).
+- **KPIs:** Total GMV = `Σ grandTotal of all orders` (`₹{k}K`, **change hardcoded +12%**). Pending Approvals = pending stockists+pharmacists count. Active Users = approved stockists+pharmacists (**change hardcoded +8%**). Flagged Items = counterfeit inventory count.
+- Quick Actions: Approvals, Notify (→ notifications), Commission.
+
+### 7.2 ApprovalCenter (`/admin/approvals`, `/admin/users`)
+- 600ms skeleton. Search (name/email). Filter chips: all/pending/approved(→"Verified")/rejected/update_required(→"Update Req.").
+- Expandable rows (stockist vs pharmacist detail: email/phone; stockist → businessName/GST/DL/serviceAreas + document chips; pharmacist → pharmacyName/license/city,state).
+- **Actions (real, persisted):** Verify → `approved`, Reject → `rejected`, Request Update → `update_required` (all via `updateUserStatus`), View Details → detail page.
+
+### 7.3 StockistList (`/admin/stockists`) / PharmacyList (`/admin/pharmacies`)
+- Searchable expandable lists. Expanded: GST/DL/areas/plan (stockist) or license/address (pharmacy). Suspend toggles `rejected ↔ approved` (button label Suspend/Reinstate). View Profile → detail. (PharmacyList row header also has an inner onClick to detail with stopPropagation.)
+
+### 7.4 StockistDetail (`/admin/stockists/:id`)
+- 4 action buttons: Verify→approved, Reject→rejected, Request Update→update_required, **Suspend→rejected** (writes 'rejected', toast "Suspended"). ProfileSection cards (adminMode, read-only): Business, Regulatory Documents (with preview), Contact & Address, Delivery Setup, Business Rules, Financial.
+
+### 7.5 PharmacyDetail (`/admin/pharmacies/:id`)
+- Same 4 actions (Suspend→rejected). Tabs: Details / Inventory / Orders.
+  - Details: Business, Regulatory Documents, Contact & Address, Business Configuration.
+  - **Inventory tab BUG:** shows **global `allInventory.slice(0,10)`**, not the pharmacy's inventory. Rx badge = Antibiotic.
+  - Orders: pharma's first 10 orders → `/orders/{id}`.
+
+### 7.6 Suspensions (`/admin/suspensions`)
+- 600ms skeleton. Lists users whose status is **`rejected`** (treated as suspended). Reinstate → `approved`. Empty: "All users are active".
+
+### 7.7 CounterfeitManagement (`/admin/counterfeit`)
+- 600ms skeleton. 2 stat cards: Flagged Products (`allMedicines.filter(isCounterfeit)`), Flagged Batches (`allBatches.filter(isCounterfeit)`). Search. Med list with Flag/Unflag → `toggleCounterfeit(medId)` (**real; enforced in cart/order validation**; flagging a med also flags its batches via `allBatches` derivation). Flagged rows show "All sales restricted".
+
+### 7.8 BannerManagement (`/admin/banners`) — real CRUD
+- Create form: Title, CTA Text, Message, Target (all/stockists/pharmacists) → `addBanner` (requires title+message). List with active toggle (Eye/EyeOff → `updateBanner`) + delete (`deleteBanner`). Seed banners edited via `bannerOverrides`; deletions via `deletedBannerIds`.
+
+### 7.9 CommissionSetup (`/admin/commission`) — **NOT PERSISTED**
+- 600ms load seeds `commissionRules` into **local** state. Add rule form: Category, Rate (%), Applied To (all / specific stockist) → local add. Delete → local. **Never touches AppState; rates never applied to any order/payment.**
+
+### 7.10 AdminPayments (`/admin/payments`)
+- Payments view from all payments (from→to, amount, date, method, status verified/pending). Tabs all/verified/pending (with counts).
+- **StatCards:** Total Volume, Verified, **Commission = `Math.round(totalVolume × 0.05)` (hardcoded 5%, unrelated to CommissionSetup)**, Active Parties (unique from+to). All trends "up".
+
+### 7.11 Transactions (`/admin/transactions`)
+- 600ms skeleton. Search (reference/orderNumber). Status chips all/paid/partial/pending/overdue. Rows: order#, reference·method, amount, StatusChip, due/paid dates. Data-driven from `allPayments`.
+
+### 7.12 PlatformLedger (`/admin/ledger`)
+- 600ms skeleton. 3 StatCards: Total Debit (`Σ debit`), Total Credit (`Σ credit`), **Balance = last ledger entry's `.balance` field** (NOT recomputed; ignores `getLedgerBalance`; so it just reflects the last seed/dynamic entry's stored running balance). Table Date/Description/Party/Debit/Credit/Balance.
+
+### 7.13 AdminAnalytics (`/admin/analytics`) — **MOSTLY FAKE**
+- Period select (inert). StatCards: GMV (real `Σ grandTotal`), Orders (real count), **Users "78" (hardcoded)**, **Growth "+24%" (hardcoded)**.
+- Revenue Trend LineChart (**hardcoded** Jun–Nov). User Growth LineChart (**hardcoded** stockists/pharmacies). Order Distribution pie (**REAL** from statuses). Top Pharmacies (**REAL** by `Σ grandTotal`, top 5).
+
+### 7.14 AdminProfile (`/admin/profile`)
+- Fabricated inline `admin` object (name from user, email fallback `admin@digiswasthya.com`, phone `+91 99999 00000`, createdAt 2024-01-01). Account Details grid. Edit modal (name/email/phone) → **toast only, not persisted**.
+
+### 7.15 UserFlowPage (`/admin/user-flow`) — **STATIC DOCUMENTATION**
+- 6 tabs: Entity Relations, Lead → Order Flow, Order Lifecycle (+ Cancel Flow), Payment & Credit (Payment + Credit flows), Inventory & Batch (+ Warnings), Admin Control (+ Admin Operations). Searchable. Expandable entity/flow-step cards with Actions, "Data Operations" pseudo-DB pills (e.g. `orders.update(status)`, `ledger.insert(debit)`, `inventory.reserve`, `batches.sort(expiry)`), status chips, warnings.
+- Describes an **idealized backend the MVP does not implement** (reservation vs deduction, automated reminders, FIFO-by-expiry engine, commission-on-order, suspension access-block, refunds). It's the only place `suspended`/`flagged`/`credit`/`settled`/`completed` appear as first-class statuses.
+
+---
+
+## 8. APPSTATECONTEXT ENGINES — EXACT LOGIC (`AppStateContext.tsx`)
+
+### 8.1 Merged/derived data
+- `allOrders` = seedOrders (with `orderStatusOverrides` applied) + `dynamicOrders`.
+- `allPayments` = seedPayments + dynamicPayments. `allLedger` = seedLedger + dynamicLedger.
+- `allStockists`/`allPharmacists` = seed + dynamic, each with `userStatusOverrides` applied.
+- `allMedicines` = seed + dynamic, `isCounterfeit = counterfeitOverrides[id] ?? seed value`.
+- `allBatches` = seed + dynamic, `quantity = batchQtyOverrides[id] ?? seed`, `isCounterfeit = counterfeitOverrides[medicineId] ?? seed` (so flagging a med flags all its batches).
+- `allInventory` per medicine: `batches` = all its batches; `totalStock = Σ quantity of NON-EXPIRED batches` (expiry > now); `lowStockThreshold = 100`.
+- `allBanners` = seed (minus deletedBannerIds, with overrides) + dynamic (minus deleted).
+
+### 8.2 Cart
+- `addToCart` rejects if `existingInCart + qty > available` (batchQtyOverride-aware), if batch expired (`expiryDate <= now`), or if medicine counterfeit. Merges by `batchId + stockistId`.
+- `removeFromCart(medicineId, stockistId)`; `updateCartQty` (≤0 removes); `clearCart`.
+
+### 8.3 Stock validation & deduct/restore
+- `getAvailableStock(batchId)` = override ?? seed qty.
+- `validateStock(items)` → errors for: batch not found, insufficient stock, expired batch, counterfeit medicine. Returns `{valid, errors}`.
+- `deductStock(items)` / `restoreStock(items)` mutate `batchQtyOverrides` (clamped ≥0 on deduct).
+
+### 8.4 Orders
+- `createOrder`: id `order-dyn-{orderCounter}`, orderNumber `ORD-YYYYMMDD-{####}` (counter, padded), timeline seeded with initial status "Order placed", createdAt/updatedAt now. Prepends to dynamicOrders. **Writes a DEBIT ledger entry** for the pharmacy (`amount = grandTotal`, runningBalance = grandTotal). **If status starts `confirmed` → `deductStock`.**
+- `updateOrderStatus`: blocks if current status is delivered/cancelled (early return). Deducts stock on `placed/draft → confirmed`; restores on `confirmed/dispatched → cancelled`. For seed orders → writes to `orderStatusOverrides` (appends timeline); for dynamic → mutates the order.
+- `updateOrderItems`: **only affects dynamic orders in `placed` status**; seed orders skipped entirely (returns early). Sets items + totals + totalDue.
+
+### 8.5 Payments
+- `addPayment`: blocks on cancelled order. **Clamps amount to remaining due** (`min(amount, max(0, grandTotal − existingPaid))`; ≤0 → no-op). Computes status paid/partial. Writes payment (`pay-dyn-{ts}`) + a CREDIT ledger entry (`led-pay-{ts}`, runningBalance 0). payer/payee derived from order.type.
+
+### 8.6 Invoices & reminders
+- `generateInvoice`: one per order (`inv-{n}`, `INV-2024-{###}`, status `issued`); returns existing if present.
+- `sendReminder`: appends `PaymentReminder` (`rem-{ts}`, channel whatsapp/sms). **No real message.**
+
+### 8.7 Connections & users
+- `connectStockist`/`disconnectStockist`/`getConnectedStockists` on per-pharmacy `Record<string,string[]>` (default built from `defaultCircleEntries`).
+- `registerStockist`/`registerPharmacist` force `status:'pending'`. `updateUserStatus` writes `userStatusOverrides`.
+
+### 8.8 Inventory mutations
+- `addMedicine`, `updateMedicine` (dynamic only — **cannot edit seed medicines**), `addBatch`, `updateBatch` (dynamic only + syncs `batchQtyOverrides`), `addProduct` (med + batch), `toggleCounterfeit` (flips override, seeds from current value).
+
+### 8.9 Circle
+- `addCircleEntry` (`circle-{ts}`) + **auto-connect** stockist for the pharmacy. `removeCircleEntry`, `updateCircleEntry`.
+
+### 8.10 Addresses
+- `addAddress` (`addr-{ts}`), `updateAddress`, `deleteAddress`, `setDefaultAddress` (default is scoped per `organizationId` group).
+
+### 8.11 Order-type & credit
+- `getOrderType(pharmacyId, stockistId)` = CIRCLE iff a circleEntry links them, else PLATFORM.
+- `getCreditUsed` = `Σ max(0, grandTotal − paid)` over non-cancelled orders for that pharmacy↔stockist pair.
+- `getCreditLimit` = circle entry's creditLimit (or 0). `canUseCredit(p,s,amt)` = limit>0 && used+amt ≤ limit.
+
+### 8.12 Derived money selectors
+- `getOrderPayments/PaidAmount/RemainingAmount/PaymentStatus`. `getOutstandingForParty` and `getOutstandingBetween` = `Σ max(0, grandTotal − paid)` over non-cancelled orders. `getLedgerBalance` = `Σ (debit − credit)` (note: PlatformLedger does NOT use this).
+
+### 8.13 Delivery, holidays, returns, credit notes
+- Delivery areas/slots CRUD (persisted). Holidays add/remove; `isStockistOnHoliday`/`getStockistHolidayInfo` = exact `date === today`.
+- `createReturnRequest` (`ret-{ts}`, pending). `approveReturn`: computes `Σ unitPrice × returnQty` from order lines → mints `CreditNote` (`cn-{ts}`, applied:false) + marks request approved + `creditNoteId`. `rejectReturn`. `getAvailableCreditNotes` filters unapplied by pharmacy↔stockist — **never consumed anywhere**.
+
+### 8.14 Pharmacy inventory auto-populate
+- `useEffect` on `allOrders`: for each `delivered` order not already added, copies items into `pharmacyInventory` (`pi-{orderId}-{idx}`; medicine, batchNumber, qty, mrp, expiry, receivedAt now). One-time per order. `getPharmacyInventory(id)`.
+
+### 8.15 Support
+- `addSupportMessage` (`msg-{ts}`).
+
+---
+
+## 9. STATUS VOCABULARIES & FLOWS (`flows.ts`)
+- **OrderStatus:** draft → placed → confirmed → dispatched → delivered (+ cancelled). `orderFlow` transitions: draft→[placed,cancelled], placed→[confirmed,cancelled], confirmed→[dispatched,cancelled], dispatched→[delivered], delivered/cancelled→[] (terminal). Colors muted/primary/accent/warning/success/destructive.
+- **ApprovalStatus:** pending/approved/rejected/update_required/suspended. `approvalFlow` allows approved→[rejected,suspended], suspended→[approved], etc. `getStatusDisplayLabel`: approved→"Verified", pending→"Pending Verification", rejected→"Rejected", update_required→"Update Required", suspended→"Suspended".
+- **PaymentStatus:** pending/partial/paid/overdue (`overdue` derived only in dead PaymentsPage; never persisted per order).
+- **OrderType:** PLATFORM / CIRCLE. **Order.type:** 'pharmacy' | 'stockist' (who placed it).
+
+---
+
+## 10. WHATSAPP PARSING — SIDE-BY-SIDE
+- **QuickBill (stockist):** regex qty extraction (trailing/leading units), substring fuzzy match on own inventory, manual `<select>` remap for unmatched, FEFO batch, per-item + order tax 12%, creates **confirmed CIRCLE** order + invoice. Step-4 "Grand Total" displays subtotal without tax (created order adds 12%).
+- **QuickOrder (pharmacist):** hyphen/dash split into name+qty, substring `.find()` first-match on connected inventory, FIFO for estimate but **`batches[0]` in the actual order lines** (bug), groups by real stockist, creates **PLATFORM placed unpaid** orders.
+- Both are genuine parsers over mock inventory; neither touches any messaging API.
+
+---
+
+## 11. COMPLETE STUBS / PLACEHOLDERS / HARDCODED VALUES (checklist)
+
+**Auth/registration**
+- `login()` always succeeds (fallback seed user); "Invalid credentials" dead. 1200ms fake latency. Remember-me checkbox unwired (AuthPage + Login).
+- Both registration wizards never call `registerStockist`/`registerPharmacist` — no pending accounts created; success modal just logs into a demo session. Delivery/Rules steps (stockist) not hard-validated (requiredFields undefined for steps 3–4).
+- File uploads: client-only object URLs, 5 MB cap, oversized silently dropped, nothing uploaded.
+- ForgotPassword/ResetPassword: timer + toast only. Onboarding not linked into main flow.
+
+**Stockist**
+- Analytics: 100% hardcoded; period inert. Reports: 7 hardcoded; Download = toast. SubscriptionPage upgrade = toast (not persisted). StockistProfile save = toast (all sections discarded).
+- AddItem: image placeholder dead; brand/gstRate/fssai/minStock not persisted. EditProduct: only batches[0]; gstRate/packSize/requiresRx/isNarcotic/etc. not persisted.
+- ProductDetail: Copy/Trash icons imported but unwired.
+- BulkUpload: file ignored, mock rows, **writes nothing to AppState**. PurchaseBills: file ignored, mock extracted items, writes only to local list (no AppState). BulkPriceUpdate: **inline mode real**; upload mode fabricates prices via `Math.random()`.
+- CirclePharmacies: Credit tab count hardcoded 0; credit fallback ₹175000; Send Reminder message-type + priority collected but unused, no real message; `cheque` cast onto method union.
+- CirclePharmacyDetail: Bills tab static; `cheque→cash` mapping (fidelity loss).
+- CreateOrder: no credit-limit check.
+
+**Pharmacist**
+- DeliveryPreferences: fully stubbed (toast-only, no AppState). PharmacistProfile edit: toast-only.
+- Checkout: UPI is a simulated timer; delivery slot (4 hardcoded) + order notes not persisted; discount 0; "Delivery by +2 days" hardcoded (Browse).
+- QuickOrder: order lines use batches[0] not the FIFO batch it estimated with; "Order From" dropdown largely ignored.
+- Low-stock threshold inconsistent (Browse <10 vs StockistDetail <100 vs Inventory ≤100).
+- PharmacistStockistDetail catalog shows global inventory (not the stockist's) and uses batches[0].
+
+**Admin**
+- CommissionSetup: not persisted; rates never applied. AdminPayments commission = hardcoded 5%. AdminAnalytics: revenue/user-growth/Users/Growth hardcoded; period inert. PharmacyDetail Inventory tab shows global inventory. "Suspend" everywhere writes `rejected` (true `suspended` enum never written). AdminProfile fabricated + edit toast-only. AdminDashboard banner CTA no-op; StatCard change% hardcoded (+12/+8). UserFlowPage documents a backend that doesn't exist. PlatformLedger balance = last entry's stored balance (not recomputed).
+
+**Payments/orders**
+- StockistPayments "Approve" toast-only; bank "Edit" unwired. OrderDetail notes local-only. `PaymentsPage` unrouted, hardcodes ₹500,000 limit, unused imports. Credit notes minted on return approval but never applied to a later order.
+
+**Global**
+- No `wa.me` / `upi://pay`; only `tel:` + clipboard real. No theme/notification settings. GlobalSearch navigates to `/stockist/...` regardless of role. GST flat 12% (no SGST/CGST, no delivery fee). Discounts always 0. SupportChat bot = random canned reply after 1500ms, agent messages visible to all users. Static notification red dot always on. Duplicate `/stockist/settings` route. Seed `circlePharmacies` array, `creditSummary`, `pendingApprovals`, `ErrorState`, `getLedgerBalance`, `disconnectStockist` all exist but are unused by any live screen.
+
+---
+
+## 12. EDGE CASES & VALIDATION PATHS (summary)
+- **Stock:** add-to-cart & order creation blocked on over-stock/expired/counterfeit via `validateStock`/`addToCart` guards. Deduction on confirm, restore on cancel; delivered/cancelled orders immutable (updateOrderStatus early-returns).
+- **Payments:** clamped to remaining due (overpay impossible); cancelled orders reject payments; FIFO allocation in 3 places (CirclePharmacies, CirclePharmacyDetail, PharmacistPayments) — all skip cancelled/fully-paid orders.
+- **Credit:** Checkout blocks pay-later CIRCLE orders exceeding limit; platform groups always require prepay. `canUseCredit` false when limit 0.
+- **Registration:** per-step required-field validation + regex; oversized files silently dropped; T&C+Privacy gate submit.
+- **Expiry:** expired batches excluded from `totalStock` and FIFO/FEFO selection; flagged as Expired in batch/inventory views.
+- **Counterfeit:** flagging propagates to batches; enforced in cart/order validation ("… is flagged as counterfeit").
+- **Empty/`not found`:** OrderDetail/ProductDetail/CirclePharmacyDetail/PharmacistStockistDetail/Stockist-&Pharmacy-Detail all render "not found" fallbacks; ReturnRequest guards non-delivered orders; list screens use `EmptyState`.
+
+---
+
+---
+
+## Appendix F — digiswasthya (DSW)
+
+> Source: `_reviews/review-digiswasthya.md` · Repo folder: `digiswasthya/`
+
+# Digi Swasthya — Exhaustive Functional Review
+
+> **App:** `/Users/kshipradewat/Desktop/stockpharma/digiswasthya`
+> **Type:** Front-end-only PWA prototype. Vite 5 + React 18 + TS, shadcn/ui (Radix) + Tailwind (**Lexend** font), React Router v6, TanStack Query (mounted, unused), Recharts, react-hook-form + Zod (installed, effectively unused for validation), lucide-react, vite-plugin-pwa. **No backend, no auth, no persistence** except one `localStorage` flag.
+> This review is derived by reading `src/App.tsx`, all layouts/contexts, every `src/data/**` module, and every page + dialog under `src/pages/**` and `src/components/**`. It goes beyond the repo's `FEATURES.md`: exact fields, KPI formulas, table columns, tab labels, stub behaviors, and — importantly — a large set of **broken/dead navigation links** not documented before.
+
+---
+
+## 0. GLOBAL ARCHITECTURE
+
+### 0.1 Routing (`src/App.tsx`)
+Providers wrap everything: `QueryClientProvider` (client created, never used) → `TooltipProvider` → `<Toaster/>` (shadcn) + `<Sonner/>` (both mounted) → `BrowserRouter`. No auth guards; **every route is publicly reachable by URL**; role is purely a nav choice.
+
+Route tree:
+- `/` → `Navigate to /auth`.
+- `/auth` → `AuthPage`; `/install` → `Install`.
+- `/stockist` (`StockistLayout`): index→home; `home, pharmacies, pharmacies/:id, products, products/:id, orders, orders/:id, orders/create, bills/create, payments, analytics, notifications, documents, help, messages, reports, routes, staff, expiry, credit-notes, purchases, settings/{profile,business,security,app}, more`. `/stockist/onboarding` (standalone, outside layout).
+- `/pharmacy` (`PharmacyLayout`, purchase): index→home; `home, browse, browse/stockists, browse/stockists/:id, browse/products, browse/products/:id, cart, orders, orders/:id, orders/smart-create, checkout, payments, wishlist, notifications, messages, help, more, settings/{profile,business,security,app}`. `/pharmacy/onboarding` (standalone).
+- `/pharmacy/sale` (`<PharmacyViewProvider><PharmacySaleLayout/></PharmacyViewProvider>`): index→dashboard; `dashboard, inventory, customers, customers/:id, consults, consults/:id, consults/start, reports, more, settings/live, doctors`.
+- `/patient` (`PatientLayout`): index→dashboard; `dashboard, search, prescriptions, orders, orders/:id, wishlist, profile, more, consultations, consultations/:id, help, settings/{profile,medical,security}`. `/patient/onboarding` (standalone).
+- `/doctor` (`DoctorLayout`): index→dashboard; `dashboard, appointments, appointments/:id, patients, patients/:id, prescriptions, earnings, more, settings/{profile,availability,bank}`. `/doctor/onboarding` (standalone).
+- `/admin` (`AdminLayout`): index→dashboard; `dashboard, users, users/:id, stockists, pharmacies, doctors, patients, orders, payments, consultations, reports, settings`.
+- `*` → `NotFound` (logs `console.error`, link "Return to Home" → `/`).
+
+### 0.2 Dead / unrouted code (confirmed)
+- **Unrouted pages:** `src/pages/Index.tsx` ("Welcome to Your Blank App" — never imported), `src/pages/pharmacy/PharmacyPortal.tsx`, `src/pages/pharmacy/PharmacyProfile.tsx` (both fully built but not in the router).
+- **Orphaned dialogs (exported, imported by no page):** `pharmacy/dialogs/CheckoutDialog.tsx`, `pharmacy/dialogs/SmartOrderDialog.tsx` (a full 3-step duplicate of the `SmartOrder` page), `pharmacy/dialogs/ApplyCouponDialog.tsx`, `doctor/dialogs/WritePrescriptionDialog.tsx` (the doctor→patient prescription flow instead navigates to a non-existent route), and stockist `OCRScanDialog`, `MapRouteDialog`, `BillPreviewDialog`, `CreateReturnDialog` (all built, but no stockist page imports them — verify: not referenced in the pages read).
+- **Dead data helpers:** `unified-data-helpers.getPlatformMetrics()` and `getPatientPrescriptionVault()` (computed cross-panel metrics/vault) — imported by nothing. Many `pharmacy-mock-data` helpers exported but unused (`getStockistProducts`, `getOrdersByStatus`, `getActiveOffers`, `getWishlistedProducts`, `getCartTotal`, `getCartByStockist`).
+- **Regulatory validators never called:** `validateGST/validatePAN/validatePhone/validatePincode/validateAadhaar` and all `DocumentType.validationPattern` — defined in `regulatory-documents.ts`, invoked nowhere. No onboarding/settings form runs any validation beyond "required field present" checks in a few dialogs.
+
+### 0.3 Broken navigation links (routes that don't exist → hit `NotFound`)
+These are real dead links wired to `navigate()` in built pages:
+- **Patient TopNav** (`PatientTopNav`): bell → `/patient/notifications` (unrouted), message → `/patient/messages` (unrouted).
+- **Doctor TopNav** (`DoctorTopNav`): message → `/doctor/messages`, bell → `/doctor/notifications` (both unrouted).
+- **PatientDashboard:** "Nearby Pharmacies" View All → `/patient/pharmacies`; pharmacy cards → `/patient/pharmacies/:id` (both unrouted).
+- **PatientSearch:** product card → `/patient/medicines/:id` (unrouted).
+- **PatientPrescriptions:** card → `/patient/prescriptions/:id` (unrouted; only the list route exists).
+- **PatientProfile / PatientMore:** `/patient/settings/emergency`, `/patient/settings/notifications`, `/patient/settings/app`, `/patient/notifications`, `/patient/pharmacies` (all unrouted). Only `settings/profile`, `settings/medical`, `settings/security`, `help` resolve.
+- **DoctorMore:** `/doctor/reports`, `/doctor/notifications`, `/doctor/settings/security`, `/doctor/settings/app`, `/doctor/help` (all unrouted). Only `settings/profile`, `settings/availability`, `earnings`, `appointments` resolve. (`/doctor/settings/bank` IS routed but nothing links to it → orphaned route.)
+- **DoctorAppointmentDetail:** "Prescribe" → `/doctor/prescriptions/new?patient=…` and "View Prescription" → `/doctor/prescriptions/:id` (neither routed).
+- **PharmacyMore** (purchase): all links resolve; **note** the `TopNav` shared component is only actually used by `StockistLayout` — pharmacy/patient/doctor have their own TopNavs, so `TopNav`'s pharmacy/doctor/patient branches are effectively dead.
+
+### 0.4 Currency & date helpers
+- Stockist `formatCurrency`: `Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:0,maximumFractionDigits:2})` → `₹9,497.6`.
+- Pharmacy / patient / doctor / admin / unified `formatCurrency`: `` `₹${amount.toLocaleString('en-IN')}` `` (no decimals control).
+- `getTimeAgo` duplicated in 3 modules (stockist/pharmacy vs patient/unified differ subtly in threshold logic).
+
+### 0.5 PWA / infra
+- `vite.config.ts`: dev port **8080**, SWC React, `lovable-tagger` (dev only). VitePWA `registerType:'autoUpdate'`; manifest name "Digi Swasthya"/short "DigiSwasthya", `theme_color #4a7c94`, background `#ffffff`, standalone/portrait, icons 192/512/512-maskable. Workbox precache `js,css,html,ico,png,svg,woff2`; one runtime rule: Google Fonts stylesheets → CacheFirst (365d, 10 entries).
+- Tailwind `fontFamily.sans = ['Lexend', …]`.
+- Tests: Vitest configured; `src/test/example.test.ts` placeholder.
+
+---
+
+## 1. AUTH & ONBOARDING
+
+### 1.1 AuthPage (`/auth`, `src/pages/AuthPage.tsx`)
+- Card title "Digi Swasthya Store" / "Your Complete Healthcare Platform". Body scroll locked while mounted. Footer "© 2024 Digi Swasthya Store."
+- Tabs: **Login** (default) / **Sign Up**. Below tabs, a ghost **"Admin Login"** button with Shield icon.
+- **Login tab:** 4-role selector grid (Building2 Stockist / Building Pharmacy / User Patient / Stethoscope Doctor); hint "Click to prefill demo". Fields: Email (prefilled from `demoCredentials[role].email`), Password (prefilled, show/hide toggle). "Remember me" checkbox + "Forgot Password?" link (both inert). Submit label "Login as {Role}". `handleLogin` ignores inputs → `navigate(homeRoutes[selectedLoginRole])`. Demo-mode hint box.
+- **Sign Up tab:** 2-col role selector (icon + label + description). Fields: Email (prefill), Password + Confirm (both prefilled `Demo@123`, show/hide). Submit "Continue to Onboarding" → `navigate('/{role}/onboarding')`. No password-match validation.
+- **Admin Login** → `navigate('/admin/dashboard')`.
+- `useEffect` prefills login creds when `selectedLoginRole` changes, and signup email/passwords when `selectedRole` changes.
+- Demo creds (`src/data/demo-credentials.ts`): stockist `demo.stockist@digiswasthya.com`/`Demo@123`, pharmacy/patient/doctor similar, admin `admin@digiswasthya.com`/`Admin@123`.
+
+### 1.2 Onboarding wizards (shared behavior)
+Standalone pages (no layout, body-scroll locked, prefilled from `demo-credentials.ts`). `progress = (currentStep/steps.length)*100`. Step-icon rail. **Skip** and **Complete** both toast + `navigate` to role home. **No validation runs** (fields are free text; `DocumentUpload` only makes a local `URL.createObjectURL` preview; doc URLs default to `/placeholder.svg`).
+
+- **Stockist** (`StockistOnboarding`, 5 steps: Business·Documents·Contact·Bank·Complete). Fields: businessName, businessType, PAN (`.toUpperCase()`, maxLength 10, mono). Step2 `DocumentUpload`×4: Drug License, GST, Wholesale (3 `isRequired`, status "pending"), FSSAI (`onDocumentChange={()=>{}}` — upload discarded). Step3: phone(10), email, address(Textarea), city, state (plain Input despite `indianStates` import), pincode(6). Step4: bankName, accountNumber(mono), IFSC(upper/mono), UPI, accountHolderName. Header has Login (→/auth) + Skip. Complete → `/stockist/home`.
+- **Pharmacy** (`PharmacyOnboarding`, 5: Store·Documents·Location·Hours·Complete). Step1: storeName, ownerName, PAN(upper,10). Step2 `DocumentUpload`×4: Drug License, GST, Retail (required), Shop (discarded). Step3: phone(10),email,address,city,state,pincode(6). Step4: openTime/closeTime (`type=time`), operatingDays chips via `toggleDay` (weekDays Mon–Sun). Complete → `/pharmacy/home`.
+- **Patient** (`PatientOnboarding`, 3: Personal·Health·Address). Step1: name, phone(10), email, DOB(date), gender (Badge chips: Male/Female/Other/Prefer not to say). Step2: bloodGroup chips (from `bloodGroups`), allergies (Input), conditions (Input), emergency contact name/relation/phone. Step3: address(Textarea), city/state/pincode + live "Profile Summary" card. No documents. `handleNext` on final step calls `handleComplete` → `/patient/dashboard`. Step-2 button label is literally "Next (or Skip)".
+- **Doctor** (`DoctorOnboarding`, 5: Personal·Credentials·Specialty·Consult·Complete). Step1: name,phone(10),email. Step2: qualification, registrationCouncil, `DocumentUpload`×3 (Medical Registration w/ number, Degree cert, PAN w/ number-upper) all required. Step3: specialization (Input + `medicalSpecializations.slice(0,8)` Badge chips), experience (number 0–60), languages (`commonLanguages` toggle chips). Step4: consultationFee (number, ₹ icon), bio (Textarea), acceptsVideo/acceptsVoice Switches. Complete → `/doctor/dashboard`. **Bug:** footer references `handlePrevious`/`ArrowRight` — `handlePrevious` exists; fine. Note step-4 button "Complete Setup" advances to step 5, then "Go to Dashboard".
+
+---
+
+## 2. NAVIGATION & LAYOUT SHELLS
+
+- **`BottomNav`** — fixed 5-tab bar; active class `text-primary` (via `NavLink activeClassName`).
+- **`TopNav`** (shared; only used by StockistLayout) — brand "DS" + name/subtitle derived from route prefix via `getPortalInfo`. **Hardcoded** message badge `2`, notification badge `3`; avatar = fixed Unsplash URL. Buttons → `{base}/messages`, `{base}/notifications`, `{base}/settings/profile`.
+- **`PharmacyTopNav`** — view-aware: green (success) in Sale, purple (primary) in Purchase; label "Sale View"/"Purchase View". Badges from `getUnreadMessageCount()` (=2, sum of `messages.unreadCount`) and `getUnreadNotificationCount()` (=2). Avatar dropdown: "HealthPlus Pharmacy" + "Switch to Sale/Purchase View" (calls `switchToSale`/`switchToPurchase`), Profile Settings, Business Details.
+- **`PatientTopNav`** — brand "Patient Portal"; message→`/patient/messages` (404), bell (hardcoded `3`)→`/patient/notifications` (404); dropdown "Rahul Sharma / +91 98765 43210" → profile, orders, consultations, Logout→/auth.
+- **`DoctorTopNav`** — brand "Doctor Portal"; message (hardcoded `2`)→`/doctor/messages` (404), bell (hardcoded `5`)→`/doctor/notifications` (404); dropdown "Dr. Arun Sharma / General Physician" → profile, availability, earnings, Logout→/auth.
+- **`AdminLayout`** — desktop fixed sidebar (w-64) + mobile drawer; 11 items. **Hardcoded badges**: Stockists `3`, Pharmacies `5`, Doctors `4`. Header bell badge **hardcoded `12`**. Sidebar footer "Admin User / admin@digiswasthya.com" + Logout→/auth.
+- **Bottom-nav item sets:** Stockist `Home·Pharmacies·Products·Orders·More`; Pharmacy-Purchase `Home·Browse·Cart·Orders·More`; Pharmacy-Sale `Dashboard·Inventory·Customers·Consults·More`; Patient `Home·Search·Rx·Orders·More`; Doctor `Dashboard·Appointments·Patients·Rx·More`.
+- **PharmacyViewContext:** `ViewMode='purchase'|'sale'` default `'purchase'`; `switchToPurchase()`→`/pharmacy/home`, `switchToSale()`→`/pharmacy/sale/dashboard`. **Mounted twice** (once inside `PharmacyLayout`, once wrapping `PharmacySaleLayout` in the router) — two independent provider instances; state never carries across; switching is purely navigation.
+
+---
+
+## 3. STOCKIST MODULE
+
+Data: `src/data/stockist-mock-data.ts` — `mockAllPharmacies`(20, ph-001…020), `mockPharmacyCircle`(8 active), `mockProducts`(10), `mockIncomingOrders`(5, all status 'new'), `mockOrders`(6), `mockPayments`(5), `mockNotices`(3), `mockNotifications`(5). `mockPharmacies = getCirclePharmacies()` (8). Key helpers: `getLowStockProducts` (`stockQuantity <= minStock` → returns prod-002,004,007,009 = 4 items), `getActiveOrders` (status not delivered/cancelled), `getDeliveredOrders`, `getNewIncomingOrders`, `getPendingPayments` (status 'pending' → pay-001,003 = 2), `getTotalOutstanding` (Σ `p.outstanding` across all 20 = large), `getTotalCredits` (Σ creditBalance), `getTodaysRevenue` (today-filtered → 0 at runtime).
+
+### 3.1 Home (`/stockist/home` — `StockistHome`)
+- **GuidedTour** auto-shows after 500ms unless `localStorage['stockist_tour_completed']` set (the app's only real persistence). Tour = 5 steps (Quick Actions, Financial Summary, Payment Approvals, Bottom Navigation, Profile & Settings), progress dots, Skip/Back/Next, "Get Started" on last; completing/skipping sets the localStorage flag.
+- **New Orders banner** (if `newIncomingOrders.length>0`): pulsing bell, "{n} New Order(s) Waiting", whole card → `/stockist/orders`.
+- **Incoming Orders section**: first 2 `IncomingOrderCard` with onAccept/onDecline/onView → open AcceptOrderDialog/DeclineOrderDialog.
+- **KPI cards (2):** Financial (Outstanding=`getTotalOutstanding()` red, Credits=`getTotalCredits()` green, **Today's Collection = `45000` hardcoded** bold); Operations (Active Orders=`activeOrders.length`, Out for Delivery=`activeOrders.filter(status==='out-for-delivery').length`, Pending Approvals badge=`pendingPayments.length`).
+- **Quick Actions (4):** Record Order→`/stockist/orders/create`; Generate Bill→`QuickBillDialog`; Collect→`/stockist/payments`; Routes→`/stockist/routes`.
+- **Payment Approvals** (if pending): first 2 `PaymentApprovalCard`; all callbacks open `PaymentApprovalDialog` (approve/reject/hold all **toast-only**).
+- **Today's Deliveries** (if any out-for-delivery): up to 3 order rows → `/stockist/orders/:id`.
+- **Low Stock Alert** (if any): first 3 → `/stockist/products/:id`.
+
+### 3.2 Pharmacies (`/stockist/pharmacies` — `StockistPharmacies`)
+- Sticky search (name/ownerName/phone) + "Find" button (→`SearchPharmacyDialog`).
+- Tabs: **Circle** (`My Circle (8)`) / **All** (`All (20)`). All-tab shows only helper text + "Search All Pharmacies" button + two count cards (In Circle 8 / Total 20) — **no list**.
+- Circle filter chips w/ live counts: all / outstanding (`outstandingBalance>0`) / credit (`creditBalance>0`) / no-dues (`netDue = outstandingBalance - creditBalance <= 0`).
+- `PharmacyCard` per pharmacy with onView→detail, onEdit→EditPharmacyDialog, onQuickOrder→QuickOrderDialog, onQuickBill→QuickBillDialog, onDelete→ConfirmDeleteDialog. Empty state via `EmptyState`.
+- ConfirmDelete `onConfirm` = toast only (array unchanged).
+
+### 3.3 Pharmacy Detail (`/stockist/pharmacies/:id` — `PharmacyDetail`)
+- `getPharmacyById`; if none → EmptyState "Pharmacy not found".
+- Contact card: phone + Copy (clipboard, wired), Call (`tel:` wired); address + Open Map (`maps.google.com`, wired).
+- Credit Usage: `creditUsage = outstandingBalance/creditLimit*100`, Progress bar (`>80` destructive, `>60` warning, else success), clamped `Math.min(...,100)`. Grid: Outstanding / Credit / Net Due (`netDue=outstandingBalance-creditBalance`, shows abs + " CR" if negative).
+- "Collect Payment" button (if outstanding>0) → CollectPaymentDialog. Quick Actions: Record Order→create, Generate Bill→QuickBillDialog.
+- Tabs: **Orders** (filtered `mockOrders` by pharmacyId, `OrderCard`s), **Payments** (filtered `mockPayments`, method badge + StatusBadge), **Ledger** (**page-local hardcoded `mockLedgerEntries` (5 rows)**, columns Date/Description/Debit/Credit/Balance — unrelated to the pharmacy).
+- Danger zone "Remove from Circle" → ConfirmDelete → `handleRemoveFromCircle` = toast + navigate (stub).
+
+### 3.4 Products (`/stockist/products` — `StockistProducts`)
+- 2×2 Quick Actions cards: Scan Product (ScanProductDialog), Bulk Upload (BulkUploadDialog), **AI Enhance** (`handleAIEnhance` = two staggered `setTimeout` toasts — stub), Add Items Quick (AddProductDialog).
+- Collapsible **Low Stock Alert** (default collapsed; count badge; horizontal chips → detail). Collapsible **Top Selling** (`topSellingProducts = mockProducts.slice(0,4)` — first four, NOT the `isTopSelling` helper; images from 4 hardcoded Unsplash `medImages` cycled by index).
+- Sticky search (name/brand/manufacturer) + two Selects: **Stock filter** (all/in-stock/low-stock/out-of-stock) and **Sort** (name→localeCompare, price→salePrice desc, stock→qty asc, expiry→date asc — all real).
+- `getStockStatus`: 0→out-of-stock; `<=minStock`→low-stock; else in-stock. `isExpiringSoon = expiryDate <= now+90d`.
+- Product grid cards: image (cycled), StatusBadge, edit dropdown (View/Edit/Add Stock), MRP strike + salePrice, stock, expiry Badge (warning if soon else success), Edit/+Stock buttons.
+
+### 3.5 Product Detail (`/stockist/products/:id` — `ProductDetail`)
+- `getProductById`; else EmptyState. `margin = ((mrp-salePrice)/mrp*100).toFixed(1)`.
+- **`regulatoryInfo` derived from category** (Antibiotics→schedule "H", Vitamins→"OTC", else "H1"; drugType "Allopathic"; composition = first two words of name; **packSize hardcoded "10 tablets"**; fssaiLicense only for Vitamins = "10720066000123"; requiresPrescription = category not Vitamins/OTC). This ignores the product's own `drugSchedule/composition/rxRequired` fields in the data.
+- Cards: Pricing (MRP/Sale/Margin), Stock Info (Current/Min + "Add Stock Now" if not in-stock), Regulatory Info, Batch Details (batchNumber, expiry Badge, HSN, GST rate = real `product.gstRate`), Manufacturer, **Sales History LineChart = 6 hardcoded weekly points** (`salesHistoryData` W1–W6). Images = 2 hardcoded URLs. Dialogs: AddStock, EditProduct.
+
+### 3.6 Orders (`/stockist/orders` — `StockistOrders`)
+- Sticky search (orderNumber/pharmacyName) + "Record" dropdown → only "Record Order (Phone/Walk-in)" → `/stockist/orders/create`.
+- Tabs w/ live counts + icons: **new** (`getNewIncomingOrders` = 5; badge pulses), **active** (`getActiveOrders`), **delivered**, **all** (`mockOrders.length`=6). New tab renders `IncomingOrderCard`s (Accept/Decline dialogs → toast-only). Others render `OrderCard`s → detail / UpdateStatus / SharePaymentLink. Each tab has its own EmptyState.
+
+### 3.7 Order Detail (`/stockist/orders/:id` — `OrderDetail`)
+- `getOrderById` + `getPharmacyById`; else EmptyState. Header shows orderNumber + StatusBadge (from local `currentStatus`) + created datetime; Print (`window.print()` + toast), Share (→SharePaymentLinkDialog), Edit (→EditOrderItemsDialog).
+- Pharmacy card (name/owner/phone/address, View→detail).
+- **Order Items + totals:** `subtotal = Σ(rate*quantity)`; **`gstAmount = subtotal*0.18` (hardcoded 18%, ignores per-product gstRate of 5/12)**; Total shows `order.totalAmount` (the mock's pre-computed value, which used per-product GST — so displayed subtotal+GST(18%) will NOT equal displayed Total).
+- Payment card: `paidAmount = Σ approved payments`, `pendingAmount = totalAmount - paidAmount`, paid/pending tiles, payment history rows, "Add Payment" (if pending) → AddPaymentDialog.
+- **Delivery Status:** 6-option RadioGroup (pending/confirmed/processing/out-for-delivery/delivered/cancelled) with icons/colors. `isTerminalStatus` (delivered/cancelled) disables the other options. `handleStatusChange` = local state + toast (no persistence). "cancelled" shows a note.
+
+### 3.8 Create Order (`/stockist/orders/create` — `CreateOrder`) — "AI Parsing"
+- Select pharmacy (`mockPharmacies` = circle 8). Paste textarea (badge "AI Parsing" w/ Sparkles — cosmetic). `handleParseOrder`: split lines, regex `/^(.+?)\s+(\d+)\s*$/`, fuzzy substring match against `mockProducts`. Each ParsedItem: matched product (rate=salePrice) or unmatched (rate 0, with a "Match product…" Select). Editable qty (recomputes amount), remove.
+- Status badges: {matched} Matched / {unmatched} Unmatched. Fixed bottom summary (shown when matched>0): `subtotal = Σ matched amount`; **`gst = subtotal*0.18`**; `total = subtotal+gst`. `handleCreateOrder` (needs pharmacy + ≥1 matched) = toast + `navigate('/stockist/orders')` (no persistence).
+
+### 3.9 Create Bill (`/stockist/bills/create` — `CreateBill`)
+- 3 stages: select → preview → success. Select pharmacy (mockPharmacies) → unpaid orders (`paymentStatus !== 'paid'`) with checkboxes + Select/Deselect All; discount (percent|fixed). Totals use **real per-order fields**: `selectedOrdersTotal = Σ totalAmount`, `selectedOrdersGst = Σ gstAmount`, `selectedOrdersSubtotal = Σ subtotal`; `discountAmount` = %·total or fixed; `finalAmount = total - discount`. `billNumber = BILL-${Date.now().slice(-8)}`.
+- Preview: printable bill (header GSTIN **hardcoded `27AABCU9603R1ZM`**, "MedKart Distribution"). Success: share options.
+- Actions: **`handleShareWhatsApp` opens a real `wa.me` URL (wired)**. Print/Download/CopyLink = toast/clipboard stubs.
+
+### 3.10 Payments (`/stockist/payments` — `StockistPayments`)
+- KPI card (3): Outstanding=`getTotalOutstanding()`, Pending=`getPendingPayments().length`, **Received = Σ approved payment amounts** (labeled "Received", uses ` approvedThisMonth`).
+- Sticky search (pharmacyName/orderNumber) + "Send Reminder" (→SendReminderDialog) + pharmacy filter Select.
+- Tabs: **Outstanding** (`mockOrders` where `paymentStatus !== 'paid'`; per-row `pendingAmount = totalAmount - paidAmount`; "Remind" toast-only), **Pending Approvals** (`mockPayments` status 'pending'; View Screenshot; **Approve/Hold/Reject all toast-only**, incl. quick-approve), **All Payments** (all filtered payments read-only).
+
+### 3.11 Analytics (`/stockist/analytics` — `StockistAnalytics`)
+- Date-range Select (today/week/month/quarter/year) — **does nothing**.
+- KPIs: Total Revenue = `Σ delivered totalAmount` (real); Total Orders = `mockOrders.length` (real); Active Pharmacies = `mockPharmacies.length` (real); **Collection Rate = `(totalRevenue/(totalRevenue*1.2))*100 = 83.3%` (meaningless)**. Growth deltas **hardcoded** (+12.5% / +8.3% / +2 / −2.1%).
+- Charts: `revenueData` (6-mo hardcoded LineChart), `orderStatusData` (hardcoded pie 45/12/8/3), `categoryData` (hardcoded bar). Top Pharmacies (real: top 5 by Σ order value), Top Products (real: `isTopSelling` sorted by salesCount, top 5).
+
+### 3.12 Operational pages (page-local mock arrays; writes are stubs unless noted)
+| Page | Route | Data | Status vocab | Key logic / notes |
+|---|---|---|---|---|
+| **Credit Notes** | `/stockist/credit-notes` | local `mockCreditNotes`(3) | pending/approved/processed/rejected | Summary: total, pending count, processed count, `totalPending=Σ pending totalAmount`. New/Approve/Reject toast-only. |
+| **Delivery Routes** | `/stockist/routes` | local `mockRoutes`(3) + `mockPharmacies` stops | planned/in-progress/completed | "Today's Routes" = date `=== '2026-01-27'` (hardcoded); past routes else. Call staff (`tel:`) wired; Create Route toast. Per-stop completed via `index < completedCount`. |
+| **Expiry Mgmt** | `/stockist/expiry` | `mockProducts` computed | expired/≤30/≤60/≤90 buckets | `getDaysToExpiry`; filter pills 30/60/90/180d; `totalValue = Σ(salePrice*stockQuantity)` for filtered; Return toast; Write-off (only if daysToExpiry≤0) toast. |
+| **Purchase Orders** | `/stockist/purchases` | local `mockPurchaseOrders`(4) | draft/ordered/partial/received/cancelled | `pendingValue = Σ (ordered+partial) totalAmount`; Receive Stock / Send to Supplier / Create toast. |
+| **Staff Mgmt** | `/stockist/staff` | local `mockStaff`(4) | active/on-leave/inactive | 3 stat cards; Call (`tel:`) wired; Add/Edit toast. |
+| **Reports** | `/stockist/reports` | local `reportTypes`(6) | h1/hnx/gst/sales | Month/Year/Type Selects; Download = `setTimeout(2000)` toast (simulated); per-report type Badge. |
+| **Documents** | `/stockist/documents` | local `useState(mockDocuments)`(4) | license/gst/invoice/other | Category chips; **Upload (via UploadDocumentDialog) & Delete mutate local state (real)**; Download/View stubs (DocumentPreviewDialog is a placeholder viewer). |
+| **Notifications** | `/stockist/notifications` | local `useState`(5) | order/payment/alert/system | Filter chips; **mark-read / mark-all / delete real (local)**; Settings panel (4 Switches, local); ₹ amounts hardcoded in messages. |
+| **Messages** | `/stockist/messages` | local `mockTickets`(3) + chat | open/pending/resolved | Ticket list + chat view; **send message real (local)**; bot auto-reply after 1.5s from random `adminResponses`(7); typing indicator. |
+| **Help** | `/stockist/help` | local `faqs`(8) + `tutorials`(4) | — | Search filters FAQs (question+answer); Accordion; Chat/Call/Email/Tutorial/FeatureRequest all toast. |
+
+### 3.13 More (`/stockist/more` — `StockistMore`)
+- Profile card (`defaultStockistData` businessName/type/phone). Menu sections: Account (Profile, Business Details), Operations (Delivery Routes, Staff, Returns & Credits, Expiry, Purchase Orders), Finance (Payments **badge "3" hardcoded**, Analytics), Communication (Notifications **badge "5" hardcoded**, Support Chat toast), Documents & Security (Documents, Privacy & Security), Reports (Export Data→ExportDialog, Regulatory Reports), Preferences (App Settings, Help Center, **"Replay Welcome Tour"** = `localStorage.removeItem('stockist_tour_completed')` + toast — real). Logout→toast+/auth. Version "Digi Swasthya v1.0.0".
+
+### 3.14 Settings
+- **ProfileSettings:** photo (upload = "coming soon" toast). `ownerName` computed oddly as `accountHolderName.split(" ")[0] + " Kumar"` (→ "Rajesh Kumar"). Business info (name, ownerName). Contact info via `VerificationInput` for email & phone (both start "verified"; changing value resets to "unverified"; **OTP verify accepts ANY 6-digit code**). Alternate phone, WhatsApp Business number. Save = toast (validates required present). Change Password (current/new/confirm, show/hide, requires match + ≥8 chars) = toast.
+- **BusinessSettings:** Business info + `DocumentUpload`×4 (all `verificationStatus="verified"`, compact) + address + bank details. Save = toast.
+- **SecuritySettings:** 2FA Switch (toast), Phone card (**hardcoded `+91 98765 43210` Verified**) + Change Phone dialog (10-digit check → send OTP → verify requires 6 digits → toast). Login Notifications switch. Active Sessions from local `mockSessions`(4) — logout-session/logout-all mutate local array (real). Login History local `loginHistory`(5) (success/blocked). Delete Account dialog → toast.
+- **AppSettings:** Theme (light/dark/system buttons; `handleThemeChange` = toast with comment "In a real app, you'd apply the theme here" — **inert**). Language (7 options) & Currency (INR/USD) Selects (local). Notifications (push/email/sms/sound/vibration Switches). Data & Sync (autoSync/wifi-only/offline Switches + "Sync Now" `setTimeout` toast). Default Views (dashboard/order-sort/items-per-page Selects). **Storage: `cacheSize=12.5`, `totalStorage=50` hardcoded**; Clear Cache sets cache to 0.2 + toast. Reset All Settings (local). Version "v1.0.0 (Build 2026.01.27)".
+
+### 3.15 Stockist dialogs (all in `src/components/stockist/dialogs/`) — fields & submit
+- **AddProductDialog:** imageUrl, name*, brand*, manufacturer, category*(Select: Analgesics/Antibiotics/Gastrointestinal/Antihistamines/Antidiabetic/Cardiovascular/Vitamins/Other), mrp*, salePrice*, stockQuantity, minStock, batchNumber, expiryDate(date), hsnCode, gstRate(Select 0/5/12/18/28, default 12), drugSchedule(None/H/H1/X/G/J), drugType(Allopathy/Ayurvedic/Homeopathy/Unani), composition, packSize, fssaiLicense, requiresPrescription/isNarcotic checkboxes. Submit requires name/brand/category/mrp/salePrice → toast + reset.
+- **EditProductDialog:** prefilled from product; categories list here differs (Tablets/Capsules/Syrups/Injections/Topical/Drops/Other); regulatory fields default blank (not read from product). Submit requires name/mrp/salePrice → toast.
+- **AddStockDialog:** quantity* (>0), batchNumber, expiryDate, purchasePrice; shows current stock + computed new level. Toast.
+- **QuickBillDialog:** same 3-stage bill flow as CreateBill page (select/preview/success), optional `pharmacyId` prefill. WhatsApp share wired; others stub.
+- **QuickOrderDialog:** same regex paste-parse flow as CreateOrder page (GST 18%). Create = toast + reset.
+- **CollectPaymentDialog:** amount* (>0), quick-amount buttons (25%/50%/Full of outstanding), method (cash/upi/bank/cheque), reference. "Record Payment" = toast.
+- **PaymentApprovalDialog:** review mode (approvalAmount editable, notes) vs reject mode (reason* required). Calls `onApprove/onReject/onHold` (parent toasts).
+- **SearchPharmacyDialog:** live search across `mockAllPharmacies` (name/owner/phone, slice 10); "In Circle" badge via `isInCircle`; Add (if not in circle) → onAddToCircle.
+- **AddToCircleDialog:** creditLimit (default 50000), paymentTerms (cod/7/15/30days), preferredDay (Mon–Sat/Any), notes. Toast.
+- **EditPharmacyDialog:** name*, ownerName*, phone*, email, address, gstNumber(upper), drugLicense(upper), creditLimit. Toast.
+- **AcceptOrderDialog:** editable per-item quantities (recomputes amount + `gstAmount*0.12`), delivery date (default tomorrow, min today). Accept → onAccept + toast.
+- **DeclineOrderDialog:** reason RadioGroup (out_of_stock/credit_limit/delivery_area/minimum_order/other) + custom message. Decline → onDecline + toast.
+- **UpdateStatusDialog:** current-status display + new-status RadioGroup (earlier statuses disabled unless 'cancelled') + note. Update disabled if unchanged → toast.
+- **SharePaymentLinkDialog:** shows `paymentLink = pay.digiswasthya.com/{id}` (readonly) + Copy (clipboard) + QR placeholder + WhatsApp (`wa.me` real) + Email (`mailto:` real).
+- **EditOrderItemsDialog:** editable qty/rate per item, remove, add product Select; `New Total = Σ qty*rate` with delta vs original. Save (≥1 item) → toast.
+- **ExportDialog:** format radios (csv/excel/pdf, default excel), date range (today/week/month/all), data-type checkboxes (Orders✓, Payments✓, Products, Pharmacies). Export = `setTimeout(1500)` toast (simulated).
+- **SendReminderDialog:** 5-step (select→customize→message→sending→complete). Select pharmacies with `outstandingBalance>0`; per-pharmacy amount option (25/50/100/custom%) + early-payment-discount toggle+%; message mode common vs individual; priority (high/medium/low); `simulateSending` progress via setInterval; final "WhatsApp messages sent" (simulated). `calculateTotalRequested` sums per-pharmacy %.
+- **ScanProductDialog:** camera placeholder; Scan (`setTimeout(1500)` returns a random product) or manual barcode/HSN search; stock adjust +/−; Update Stock = toast. (Simulated OCR/scan.)
+- **BulkUploadDialog:** 5-stage (upload→extracting→preview→importing→complete) w/ drag-drop; `mockParsedData`(5 rows, one invalid) shown in editable table (Name/Brand/Price/Stock); inline edit re-validates; Import = simulated progress; Done = toast.
+- **UploadDocumentDialog:** file drop (sets `"document.pdf"` on click — fake), documentName* required, documentType (license/gst/invoice/other). `onUpload(name,type)` → parent adds to local docs.
+- **DocumentPreviewDialog:** type-specific placeholder preview (image/pdf/excel); Open/Print/Share/Download all toast.
+- **ViewScreenshotDialog:** placeholder image + zoom controls (0.5–2×); Download = `console.log`.
+- **ConfirmDeleteDialog:** generic AlertDialog; supports custom title/description/confirmLabel or itemType presets (pharmacy/product/order); `onConfirm` or fallback toast.
+- **CreateReturnDialog** (orphaned): 3-step (select delivered order → select items+qty+reason → review+notes) → "Submit Credit Note" toast. Reasons: damaged/expired/wrong_product/quality_issue/excess_quantity/customer_return/other.
+- **MapRouteDialog** (orphaned): aggregates out-for-delivery/processing orders into stops; map placeholder; Optimize (toast), Copy Route (clipboard), Open Maps (`maps.google.com` real), Start Navigation (toast). `estimatedTime = stops*15min`.
+- **BillPreviewDialog** (orphaned): printable bill from passed orders; `window.print()` wired; Share/Download toast. GSTIN hardcoded.
+
+---
+
+## 4. PHARMACY — PURCHASE VIEW
+
+Data: `src/data/pharmacy-mock-data.ts` — `stockists`(8, STK001–008), `products`(15, PROD001–015 each with `stockistPrices[]`), `cartItems`(5), `pharmacyOrders`(6, PO001–006), `offers`(7), `paymentHistory`(4), `messages`(3), `notifications`(4), `savedAddresses`(2), `categories`(14). "Best price" computed inline everywhere via `stockistPrices.reduce(min)`.
+
+### 4.1 Home (`/pharmacy/home` — `PharmacyHome`)
+- Read-only search bar → `/pharmacy/browse`.
+- Quick Actions: Smart Order→`/pharmacy/orders/smart-create`; Compare→ComparePricesDialog; Reorder→ReorderDialog; Offers→ViewOffersDialog.
+- **KPI row all hardcoded** (`kpiData`): Total Spent ₹2,45,000, Savings ₹18,500, Active Orders 3, Delivered 24.
+- Active Orders: `getActiveOrders().slice(0,3)` → detail. Your Stockists: `getFavoriteStockists().slice(0,3)` → detail. Active Offers: `offers.slice(0,3)`.
+
+### 4.2 Browse (`/pharmacy/browse` — `PharmacyBrowse`)
+- Search Enter → `/pharmacy/browse/products?q=`. Two cards (Browse Stockists `{stockists.length}` / Browse Products `{products.length}+`). Categories grid (`categories.slice(0,8)` → `?category=`). Top Rated Stockists (`rating>=4.5`, slice 3). Popular Products (`products.slice(0,4)`, best price inline).
+
+### 4.3 Stockists list (`/pharmacy/browse/stockists` — `PharmacyStockists`)
+- **Not integrated:** page-local hardcoded 4-item `stockists` array (id 1–4, NOT the shared `stockists`). Search Input decorative; cards not clickable. Columns: name, location, rating, deliveryTime, discount, minOrder.
+
+### 4.4 Stockist Detail (`/pharmacy/browse/stockists/:id` — `PharmacyStockistDetail`)
+- Real `stockists.find`. Header (rating/reviews, favorite toggle toast-only), quick info grid, stats (maxDiscount, minOrder, free/paid delivery). Actions Contact (ContactStockistDialog) / Start Order (→cart). Active Offers list. Tabs: Products (`products.filter(stockistPrices.some(sp.stockistId===id))`; per-product price = that stockist's price; Add → AddToCartDialog) / **Reviews ("Reviews coming soon")**.
+
+### 4.5 Products (`/pharmacy/browse/products` — `PharmacyProducts`)
+- Reads `?category`/`?q`. Sticky search + category chips (`categories.slice(0,6)` + All). `localProducts` state; wishlist toggle local + toast. `getBestPrice` inline; `savings = mrp - bestPrice.price` (computed, not rendered). Cards: 💊 placeholder, Rx badge, category, best price + discount badge, Add→AddToCartDialog, "{n} stockists".
+
+### 4.6 Product Detail (`/pharmacy/browse/products/:id` — `PharmacyProductDetail`)
+- Real `products.find`; else "Product not found". Best-price block ("You save ₹{savings}") + Add→AddToCartDialog. Price comparison list per stockist (`isBest = price===bestPrice.price`; In/Out of stock; Add disabled if !inStock). Product Details (composition, description).
+
+### 4.7 Cart (`/pharmacy/cart` — `PharmacyCart`)
+- **Not integrated:** page-local hardcoded 3-item array. `total = Σ price*qty`. Clear All, qty +/−, Place Order — **all no-ops** (no handlers). Fixed bottom Total + "Place Order".
+
+### 4.8 Checkout (`/pharmacy/checkout` — `Checkout`)
+- Reads shared `cartItems`(5). **`subtotal = Σ price*qty`; `gst = subtotal*0.18`; `deliveryFee = 0` (shown "FREE"); `total = subtotal+gst+deliveryFee`.** 3 steps (Review→Payment→Success). Step1: delivery address (hardcoded "City Pharmacy…"), order items, expected delivery (hardcoded). Step2: payment RadioGroup (upi/credit/cod/card) + coupon input (decorative "Apply"). Place Order = toast + step 3. Success shows **hardcoded `#ORD-2025-0042`**, "2 stockists", total. Track Order→orders; Continue Shopping→home.
+
+### 4.9 Smart Order (`/pharmacy/orders/smart-create` — `SmartOrder`) — simulated AI
+- 3 steps. Step1: textarea → "Process with AI" = `setTimeout(1500)` then regex parse (qty regex `/(\d+)\s*(strips?|tablets?|bottles?|boxes?)?/i`, match product by first-word or brand substring). Step2: matched/unmatched list with per-item best price. Step3: 3 recommendations — `cheapest.total = Σ bestPrice*qty`, stockistCount = unique matched stockists; **`quickest.total = round(base*1.1)`, stockistCount `1`; `best_value.total = round(base*1.05)`, stockistCount `2`** (placeholder multipliers). Add to Cart = toast + `/pharmacy/cart`.
+
+### 4.10 Orders (`/pharmacy/orders` — `PharmacyOrders`)
+- **Not integrated:** page-local hardcoded 3 orders. Tabs all/active/delivered/cancelled — **only "All" renders**; others show placeholder text ("Filter shows … orders"). Cards not clickable. Search decorative.
+
+### 4.11 Order Detail (`/pharmacy/orders/:id` — `PharmacyOrderDetail`)
+- Real `pharmacyOrders.find`; else "Order not found". `statusSteps`(6: placed/confirmed/processing/shipped/out_for_delivery/delivered). Timeline shows first 4 steps; progress bar `width = Math.min(currentStep/3*100,100)%`. Order items + price breakdown from real order fields (subtotal, deliveryFee "Free" if 0, discount, total). Payment (method + status badge), delivery address. Actions gated: Rate (delivered & !rating)→RateStockistDialog; Report Issue (delivered)→ReportIssueDialog; Contact (non-terminal)→ContactStockistDialog. TrackOrderDialog available.
+
+### 4.12 Payments / Wishlist / Notifications / Messages / Help / More
+- **Payments** (`/pharmacy/payments`): `paymentHistory`(4); search + tabs all/success/pending/failed; read-only; status icon+color map.
+- **Wishlist** (`/pharmacy/wishlist`): `products.filter(isWishlisted)` into local state (5 wishlisted in data); remove local+toast; Add to Cart→AddToCartDialog; empty state.
+- **Notifications** (`/pharmacy/notifications`): `notifications`(4) local state; mark-read/mark-all/delete real; type→icon (order/offer/price_drop/delivery); clicking navigates to `actionUrl` (some point to `/pharmacy/orders/PO…`, `/pharmacy/browse/...`).
+- **Messages** (`/pharmacy/messages`): `messages`(3) list → chat view showing single `lastMessage`; **send button has no handler** (disabled unless text; does nothing on click).
+- **Help** (`/pharmacy/help`): 4 FAQ categories (Orders/Payments/Returns/Account) with Accordion; search filters q+a (real); Call/Email/Chat cards decorative.
+- **More** (`/pharmacy/more`): profile "HealthPlus Pharmacy"; sections Account, Shopping (Wishlist **badge "4"**), Communication (Notifications **"2"**, Messages **"3"**), Support, Preferences (App Settings, **"Switch to Sale View"** = `switchToSale` wired). Logout→toast+/auth. Version "DigiSwasthya v1.0.0".
+- **Settings (profile/business/security/app):** mirror stockist settings pattern (form local state, saves toast-only). (Routed; per FEATURES the dark-mode toggle is inert — consistent with stockist AppSettings.)
+
+### 4.13 Purchase dialogs (`src/components/pharmacy/dialogs/`)
+- **AddToCartDialog:** qty +/−, `total = bestPrice.price*qty`; Add = toast + reset.
+- **ComparePricesDialog:** **placeholder** — search input + "Search for a product to compare prices" text; no results ever.
+- **ReorderDialog:** delivered orders (slice 5); Reorder = toast.
+- **ViewOffersDialog:** read-only list of all `offers`(7) with code badges.
+- **ContactStockistDialog:** message textarea; Send = toast.
+- **RateStockistDialog:** 1–5 star selector + review textarea; Submit (rating>0) = toast.
+- **ReportIssueDialog:** issue type Select (wrong/damaged/missing/late/other) + description; Submit = toast.
+- **TrackOrderDialog:** 5-step tracker (placed→delivered) highlighting current; shows ETA.
+- **Orphaned:** CheckoutDialog (place order toast→/pharmacy/orders), SmartOrderDialog (full duplicate of SmartOrder page), ApplyCouponDialog (code input → onApply).
+
+---
+
+## 5. PHARMACY — SALE VIEW
+
+Data: `src/data/pharmacy-sale-mock-data.ts` — `patients`(5, PAT001–005), `doctors`(4, DOC001–004; DOC003 unavailable), `consultations`(4, CON001–004; CON004 pending), `saleOrders`(3), `inventoryItems`(7; PROD010 offline), `liveSettings`. **Date caveat:** all `createdAt`/`lastVisit` are dated 2025-01-xx, so "today" helpers (`getTodaySalesTotal`, `getTodayOrdersCount`) resolve to **0 / ₹0** at runtime; `getPendingConsultations` (status pending|in_progress) = 1 (CON004).
+
+### 5.1 Dashboard (`/pharmacy/sale/dashboard` — `SaleDashboard`)
+- Greeting by hour. Quick Actions: Go Live→GoLiveDialog; New Sale→SaleOrderDialog; Consult→`/pharmacy/sale/consults/start`; Reports→`/pharmacy/sale/reports`.
+- Live status card: local `isLive` (init from `liveSettings.isLive`=true); Switch toggles state + toast; shows `getLiveInventoryCount()` (=6 live), radius, delivery, hours.
+- Today's Stats (3): Sales=`getTodaySalesTotal()` (₹0 runtime), Orders=`getTodayOrdersCount()` (0), Consults=`getPendingConsultations().length` (1).
+- Pending Consultations list → detail. Active Deliveries = `getActiveSaleOrders().slice(0,3)` → customer detail.
+
+### 5.2 Inventory (`/pharmacy/sale/inventory` — `SaleInventory`)
+- `inventoryItems` local state. Stats: Products Live (`filter isLive`) / Offline. Search + filter chips (all/live/offline) + decorative Filter button. Per-item live Switch = state + toast. **Add Product FAB = "coming soon" toast (stub).**
+
+### 5.3 Customers (`/pharmacy/sale/customers` — `SaleCustomers`)
+- Stats: Total = `patients.length` (5); **Visited Today** = `patients.filter(lastVisit === today ISO)` → 0 at runtime. Search (name/phone). Cards show order count (`saleOrders` filter), consults, totalPurchases → customer detail. FAB → RecordPatientDialog.
+
+### 5.4 Customer Detail (`/pharmacy/sale/customers/:id` — `CustomerDetail`)
+- `patients.find`; else "Customer not found". Profile, 3 stats (orders/consults/total), Order History (`saleOrders` filter), Consultation History (`consultations` filter → consult detail). **Call / New Order buttons = no-op (no handlers).**
+
+### 5.5 Consultations (`/pharmacy/sale/consults` — `SaleConsultations`)
+- Stats: Pending (`getPendingConsultations`) / Completed (`getCompletedConsultations`). Tabs Pending/Completed. Card: patient, status badge, doctor, video/voice badge, duration, fee, symptom chips → detail. FAB → StartConsultationDialog.
+
+### 5.6 Consultation Detail (`/pharmacy/sale/consults/:id` — `ConsultationDetail`)
+- `consultations.find`; else not-found. Status card (type video/voice), Patient/Doctor cards, Symptoms chips, Prescribed Medicines (name/dosage/duration/qty), Doctor's Notes. **Download Prescription (completed only) = toast (stub).**
+
+### 5.7 Start Consultation (`/pharmacy/sale/consults/start` — `StartConsultation`)
+- 4 steps (patient details / select doctor / connect / in-progress). Step1: **voice-record button** = `setTimeout(3000)` → sets `patientName="Recorded Patient"`, `symptoms="Fever, headache, body pain"` (simulated); manual name/phone/symptoms. Step2: `getAvailableDoctors()` cards. Step3: summary + call type (voice/video). Connect → toast + step 4 (In Progress). End Call → toast + `/pharmacy/sale/consults`.
+
+### 5.8 Reports (`/pharmacy/sale/reports` — `SaleReports`)
+- **Period selector (today/week/month) is cosmetic (does not filter).** `totalSales = Σ saleOrders.total` (not period-filtered); `totalConsultFees = Σ completed consult fees`; totalOrders = `saleOrders.length`; uniqueCustomers = `patients.length`. 4 download cards (Sales/Consultation/Customer/Inventory) all toast. Recent Prescriptions (completed consults slice 3) w/ per-item Download toast.
+
+### 5.9 More / Live Settings / Doctor Connect
+- **More** (`/pharmacy/sale/more`): profile "Sale View Active"; sections Sale Settings (Live Settings; Delivery Settings → also `/settings/live`), Doctors (Find Doctors), Reports, Account, Support (**"Switch to Purchase View"** = `switchToPurchase` wired). Logout→toast+/auth.
+- **Live Settings** (`/pharmacy/sale/settings/live`): `liveSettings` local state — isLive Switch, deliveryEnabled Switch, radius Slider (1–15km), minimumOrder (number), deliveryFee (number, "Set to 0 for free"), operating hours start/end (time). Save = toast (not persisted).
+- **Doctor Connect** (`/pharmacy/sale/doctors`): filter available/all + search; Voice/Video Connect buttons (disabled if !available) → toast only (no real call).
+
+### 5.10 Sale dialogs (`dialogs/sale/`)
+- **SaleOrderDialog** (most functional): customer name/phone; product search over `inventoryItems.filter(isLive && stock>0 && match)`; real local cart (add/±/remove), `total = Σ price*qty`; Complete Sale (cart>0) = toast + reset (no persist).
+- **GoLiveDialog:** isLive/deliveryEnabled Switches + radius Slider (1–15); Save = toast.
+- **RecordPatientDialog:** voice sim (`setTimeout(3000)` → name/phone), manual name*/phone*/age/address; Save (name+phone required) = toast.
+- **StartConsultationDialog:** 3-step (details w/ voice sim / select doctor / call type); Connect = toast + reset.
+
+---
+
+## 6. PATIENT MODULE
+
+Data: `src/data/patient-mock-data.ts` — generated `mockPatients`(100), `mockPatientOrders`(200), `mockPatientPrescriptions`(150), `mockPatientConsultations`(100), `mockNearbyPharmacies`(50). Generated order math: `deliveryFee = subtotal>=500 ? 0 : 40`; `discount = i%3===0 ? floor(subtotal*0.1) : 0`; `total = subtotal + deliveryFee - discount`. Consult `fee = 300 + (i%5)*100`. `getActiveOrders` (placed/confirmed/processing/out_for_delivery). Patient uses `getLiveInventoryForPatients` from `unified-data-helpers` (random price jitter → non-deterministic prices).
+
+### 6.1 Dashboard (`/patient/dashboard` — `PatientDashboard`)
+- Greeting "Hello, Rahul! 👋". Read-only search → `/patient/search`.
+- **KPI row all hardcoded** (`kpiData`): Active Orders 3, Prescriptions 5, Wishlist 12, Refill Due 2. Quick Actions: Upload Prescription→UploadPrescriptionDialog, Book Consultation→BookConsultationDialog, Wishlist→`/patient/wishlist`.
+- Recent Orders = `getActiveOrders().slice(0,3)` → `/patient/orders/:id`. Nearby Pharmacies = `getNearbyPharmaciesForPatient(5).slice(0,3)` → **`/patient/pharmacies/:id` (404)**; View All → **`/patient/pharmacies` (404)**. **Refill Reminders fully hardcoded** (Metformin 3d/City Pharmacy, Amlodipine 5d/Health Plus). Book Consultation CTA.
+
+### 6.2 Search (`/patient/search` — `PatientSearch`)
+- `getLiveInventoryForPatients(10)`. Category chips from live products. `getLowestPrice = Math.min(...pharmacyPrices.map(price))` (fallback MRP); `discount = round(((mrp-lowest)/mrp)*100)`; nearest = sort by distance. Cards → **`/patient/medicines/:id` (404)**. **Add to Cart = toast; Filter button no-op.** Clear filters wired.
+
+### 6.3 Prescriptions (`/patient/prescriptions` — `PatientPrescriptions`)
+- "Prescription Vault"; `mockPatientPrescriptions.slice(0,20)`. Search (doctorName/diagnosis) + status pills (all/active/partially_ordered/ordered/expired). Quick stats (active/pending/expired counts). Cards (doctor, status badge, Uploaded badge, diagnosis, medicines preview, dates) → **`/patient/prescriptions/:id` (404)**. "Order" (active only) → `/patient/search` (no real ordering). Upload→UploadPrescriptionDialog.
+
+### 6.4 Orders (`/patient/orders` — `PatientOrders`)
+- `mockPatientOrders.slice(0,30)`. Search + tabs all/processing/out_for_delivery/delivered. Cards → `/patient/orders/:id`.
+
+### 6.5 Order Detail (`/patient/orders/:id` — `PatientOrderDetail`)
+- **Fully hardcoded local `mockOrder` (ORD-P-001); ignores `useParams().id`.** Timeline (5 steps, 4 completed), pharmacy card (Call toast), items, payment summary (subtotal 205 / delivery 30 / discount −20 / total 215), Contact/Rate = toast stubs.
+
+### 6.6 Consultations (`/patient/consultations` — `PatientConsultations`)
+- **Local hardcoded 4-item `mockConsultations` (CONS-001…004), NOT `mockPatientConsultations`(100).** Search + tabs all/scheduled(Upcoming)/completed. Status badges completed/scheduled/cancelled. Cards → `/patient/consultations/:id`. **"Book New" (header) and empty-state "Book Consultation" have no handlers.**
+
+### 6.7 Consultation Detail (`/patient/consultations/:id` — `PatientConsultationDetail`)
+- **Fully hardcoded local `mockConsultation` (CONS-001); ignores id.** Doctor card, schedule, symptoms/diagnosis/notes, Prescription (3 medicines + advice list + follow-up), payment. Download/Rate = toast; Order Medicines → `/patient/search`.
+
+### 6.8 Wishlist (`/patient/wishlist` — `PatientWishlist`)
+- **Fully hardcoded 2 items (Vitamin D3, Omega-3).** "Add to Cart" and delete buttons have **no handlers**.
+
+### 6.9 Profile / More / Help
+- **Profile** (`/patient/profile`): hardcoded patient (Rahul Sharma, O+, allergies Penicillin/Dust, Hypertension). Health summary counts. Menu links to settings (several 404 — see §0.3). Logout→toast+/auth.
+- **More** (`/patient/more`): profile "Rahul Sharma, B+". Health Alerts card → prescriptions. Menu w/ badges (Orders "2", Notifications "3"); several 404 links. Logout→/auth.
+- **Help** (`/patient/help`): 6 collapsible FAQ categories; **search input is NOT wired to filter** (state set but unused); Chat/Call/Email = toast.
+
+### 6.10 Settings
+- **ProfileSettings** (`/patient/settings/profile`): hardcoded form (name/email/phone/DOB/gender Select/address/city/state/pincode); photo toast; Save = toast + back.
+- **MedicalSettings** (`/patient/settings/medical`): bloodGroup Select; allergies/conditions/currentMedications chip lists with **real local add/remove**; Save = toast + back.
+- **SecuritySettings** (`/patient/settings/security`): change password (match check only) = toast; 2FA & Biometric Switches (toast/local); Active Sessions (1 hardcoded "Current Device"); Log Out All (no handler); Delete Account = toast. (Note: file appends a stray `import { Badge }` at the bottom.)
+
+### 6.11 Patient dialogs
+- **BookConsultationDialog:** 3-step (select doctor = `mockDoctors.filter(active).slice(0,10)` → details → confirm). Type video/voice; symptoms* required; preferred time Select (now/morning/afternoon/evening). `handleConfirmBooking` = toast only (no scheduling).
+- **UploadPrescriptionDialog:** file input (Browse real; Camera decorative) + notes; Upload requires file → `await setTimeout(1500)` → success toast. **No OCR / no real upload.** "How it works" claims AI extraction (not implemented).
+
+---
+
+## 7. DOCTOR MODULE
+
+Data: `src/data/doctor-mock-data.ts` — `mockDoctors`(60, first 10 explicit + 50 generated; every 20th 'pending'), `mockAppointments`(23; apt-001 scheduled/apt-002 completed/apt-003 in_progress + 20 generated cycling scheduled/completed/cancelled), `mockPrescriptions`(16), `mockDoctorEarnings`(31; earn-001 + 30 generated), `mockDoctorPatients`(50). `getTotalEarnings = Σ netAmount`; `getPendingEarnings = Σ netAmount where status==='pending'`; `getTodaysAppointments` (real date → empty at runtime); `getPendingAppointments` (status scheduled).
+
+### 7.1 Dashboard (`/doctor/dashboard` — `DoctorDashboard`)
+- Greeting "…, Dr. Sharma!" + "You have {pending} appointments today". "Start Consult"→appointments.
+- KPIs: Today=`getTodaysAppointments().length` (0 runtime), Pending=`getPendingAppointments().length`, Earnings=`getTotalEarnings()`, **Patients = hardcoded "50"**.
+- Quick Actions (Start Consult/Patients/Prescriptions/Earnings). Earnings summary (total + pending withdraw; **"+12% this week" hardcoded**). Upcoming Appointments (`mockAppointments.slice(0,4)`) → detail. Recent Earnings (slice 3).
+
+### 7.2 Appointments (`/doctor/appointments` — `DoctorAppointments`)
+- Search (patientName) + tabs w/ counts: all/scheduled(Upcoming)/in_progress(Active)/completed(Done). Cards (patient, age/gender, via pharmacy, status badge, symptom chips, datetime, type). **Start (scheduled) = `handleStartCall` toast only**; View → detail.
+
+### 7.3 Appointment Detail (`/doctor/appointments/:id` — `DoctorAppointmentDetail`)
+- Real `mockAppointments.find`; else not-found. Patient info, schedule, symptoms/notes. If scheduled: **Start Call (toast) + Prescribe → `/doctor/prescriptions/new?patient=:id` (404)**. If completed + prescriptionId: View Prescription → `/doctor/prescriptions/:id` (404).
+
+### 7.4 Patients (`/doctor/patients` — `DoctorPatients`)
+- `mockDoctorPatients`(50). Search (name/phone). Stats: Total=50, This Week=`lastVisit > now-7d`, Total Visits=`Σ totalVisits`. Cards (age/gender/bloodGroup, phone, last visit, visits, allergy/condition badges) → detail.
+
+### 7.5 Patient Detail (`/doctor/patients/:id` — `DoctorPatientDetail`)
+- Real lookups (patient + `mockAppointments.filter(patientId)` + `mockPrescriptions.filter(patientId)`). Start Consult = toast; **Call = no-op**. Medical info, recent appointments (slice 3), prescriptions (slice 3).
+
+### 7.6 Prescriptions (`/doctor/prescriptions` — `DoctorPrescriptions`)
+- `mockPrescriptions`(16). Search (patientName/diagnosis). Stats: Total, With Follow-ups (`followUpDate` truthy). Cards (patient, diagnosis, medicine preview, created date, follow-up badge). Download = toast. (No status field on doctor Prescription interface.)
+
+### 7.7 Earnings (`/doctor/earnings` — `DoctorEarnings`)
+- Summary: Total=`getTotalEarnings()` (+12% hardcoded), Pending=`getPendingEarnings()` + Withdraw (disabled if 0) = toast. **"This Month" block hardcoded** (23 consults / ₹8,500 earned / ₹850 fee). Tabs all/paid/pending. Earning rows (net, fee, platformFee, status).
+
+### 7.8 More / Settings / Dialog
+- **More** (`/doctor/more`): profile "Dr. Arun Sharma". Sections Account (Profile, Availability), Finance (Earnings, **Tax Reports→`/doctor/reports` 404**), Communication (Notifications **"5"**→404, Consultation History→appointments), Settings (**Security→404, App→404, Help→404**). Logout→/auth.
+- **ProfileSettings** (`/doctor/settings/profile`): hardcoded form — name/email/phone, specialization Select(8), qualification, regNumber, experience, languages, bio, consultationFee, clinic address. Save = toast + back.
+- **AvailabilitySettings** (`/doctor/settings/availability`): consultationDuration Select (10/15/20/30, default 15), bufferTime Select (0/5/10/15, default 5); weekly schedule (Mon–Sun) with per-day enable Switch + add/remove/edit time slots — **real local mutation**. Save = toast + back.
+- **BankSettings** (`/doctor/settings/bank`): **routed but not linked from anywhere**. "Available ₹12,500 / Pending ₹3,200" hardcoded; Withdraw no-op. Bank fields (holder/account/confirm/IFSC/type Select/bankName/branch) + UPI; Save (match check) = toast. Weekly Payouts info.
+- **WritePrescriptionDialog** (orphaned; not imported by any page): diagnosis* + dynamic medicine cards (name Select from `commonMedicines`(8), dosage/frequency/duration/instructions Selects), add/remove (min 1), general instructions, follow-up Select. Submit (diagnosis + medicine[0].name) = toast only. Because the "Prescribe" button navigates to a non-existent route instead of opening this dialog, **the doctor→patient prescription creation flow is effectively unimplemented**.
+
+---
+
+## 8. ADMIN MODULE
+
+Data: `src/data/admin-mock-data.ts` — `platformStats` (hardcoded: totalUsers 235, stockists 20, pharmacies 55, doctors 60, patients 100, activeUsers 180, totalOrders 2450, totalRevenue 4,850,000, todayOrders 45, todayRevenue 125,000, pendingVerifications 12, activeConsultations 8), `mockAdminUsers`(235: 20 stk + 55 pharm + 60 doc + 100 pat), `mockVerificationRequests`(15; first 3 explicit + 12 generated, all pending), `mockPlatformOrders`(100), `mockPlatformTransactions`(150), `mockConsultationLogs`(50). **`getPlatformMetrics()` (computed) unused.**
+
+### 8.1 Dashboard (`/admin/dashboard` — `AdminDashboard`)
+- User Stats KPI (from `platformStats`). Revenue AreaChart (local hardcoded `revenueData` 7-day), User Distribution PieChart (local hardcoded 100/55/60/20). Quick stats: Total Revenue (**+15% hardcoded**), Today's Orders + revenue, Active Consultations→consultations. Pending Verifications (`mockVerificationRequests.filter(pending)` — only computed value; slice 4; **"Review" buttons no-op**). Recent Orders (`getRecentOrders(5)`).
+
+### 8.2 Users (`/admin/users` — `AdminUsers`)
+- `mockAdminUsers`. Search (name/email). Tabs all/stockist/pharmacy/doctor/patient with live counts; list `slice(0,20)` ("Showing 20 of N"). Status badge (active/pending/suspended/rejected) + verificationStatus. Dropdown: View Details→`/admin/users/:id`, and status-gated Approve/Suspend/Reactivate = **`handleAction` toast only**.
+
+### 8.3 User Detail (`/admin/users/:id` — `AdminUserDetail`)
+- Reads **local `mockUsers` keyed only by `"stockist-1" | "pharmacy-1" | "doctor-1"`**. Since list pages pass ids like `stk-003`, `pharm-001`, `doc-002`, `PAT-001`, `STK-001` etc., **almost every navigation renders "User Not Found."** Where resolved: user overview + Documents tab (per-doc Approve/Reject/Approve-All mutate local state, reset on reload; Reject requires reason via dialog; doc preview dialog shows `/placeholder.svg`) + Details tab (role-specific business/professional fields).
+
+### 8.4 Orders / Payments / Consultations (read-only)
+- **Orders** (`/admin/orders`): `mockPlatformOrders`; search (orderNumber/buyerName); tabs all/pending/confirmed/delivered w/ counts; b2b/b2c type badge; `slice(0,20)`.
+- **Payments** (`/admin/payments`): `mockPlatformTransactions`; search (fromName); tabs all/order_payment/consultation_fee/commission w/ counts; shows amount + platformFee; `slice(0,20)`.
+- **Consultations** (`/admin/consultations`): `mockConsultationLogs`; stats Total / Completed / **Platform Revenue = `Σ platformFee`**; search (doctor/patient); `slice(0,20)`.
+
+### 8.5 Per-role pages (each uses its OWN page-local 5-row array — NOT `mockAdminUsers`)
+- **Stockists** (`/admin/stockists`): local `mockStockists`(5, STK-001…005). Search + tabs all/active/pending/suspended. Card: GST/Drug License check/clock icons, pharmacies/orders badges (active only). Dropdown View→`/admin/users/STK-00x` (→ not-found), Approve/Suspend toast.
+- **Pharmacies** (`/admin/pharmacies`): local(5, PH-001…005) + LIVE badge; same pattern; View→`/admin/users/PH-00x` (not-found).
+- **Doctors** (`/admin/doctors`): local(5, DOC-001…005) + rating/consults/fee; Registration verified icon; View→`/admin/users/DOC-00x` (not-found).
+- **Patients** (`/admin/patients`): local(5, PAT-001…005); vocab **active/inactive** (no approve/suspend actions, only View→not-found); orders/consults badges, joinedDate.
+
+### 8.6 Reports / Settings
+- **Reports** (`/admin/reports`): summary (**Growth +15% hardcoded**, activeUsers, totalOrders, totalRevenue from `platformStats`); 4 export cards (Users/Orders/Revenue/Consultations) all toast (no file).
+- **Settings** (`/admin/settings`): uncontrolled `defaultValue` inputs — Platform Name, Support Email, Support Phone; Order Commission % (2), Consultation Commission % (10); feature-flag Switches (Teleconsultations✓, Patient App✓, Maintenance Mode✗). Save = toast (values not even collected — uncontrolled).
+
+---
+
+## 9. MONEY, GST & STATUS VOCABULARIES (as coded)
+
+- **GST inconsistency:** Stockist `OrderDetail` & `CreateOrder` & `QuickOrderDialog` hardcode **18%** (`subtotal*0.18`) ignoring per-product `gstRate` (5/12 in data). Stockist `CreateBill`/`QuickBillDialog`/`BillPreviewDialog` use the pre-computed per-order `gstAmount` (which itself was per-product in the mock data). Pharmacy `Checkout` applies **18%** + ₹0 delivery. `AcceptOrderDialog` recomputes item GST at **12%**. Patient/sale order objects carry `subtotal/deliveryFee/discount/total` with **no GST line**. Net effect: on stockist OrderDetail the shown Subtotal + GST(18%) generally does NOT equal the shown Total.
+- **Delivery fee:** stockist Stockist.deliveryFee (0 → "Free Delivery" badge); pharmacy order `deliveryFee` field ("Free" when 0); pharmacy Checkout hardcodes 0; patient generator `subtotal>=500?0:40`; sale `liveSettings.deliveryFee` editable.
+- **Order status vocabularies differ by module:**
+  - Stockist `Order`: `pending|confirmed|processing|out-for-delivery|delivered|cancelled`; payment `unpaid|partial|paid`; source `platform|direct|whatsapp|phone|walk-in`; payment-approval `pending|approved|rejected|on-hold`; incoming `new|accepted|declined|modified`.
+  - Pharmacy purchase `PharmacyOrder`: `placed|confirmed|processing|shipped|out_for_delivery|delivered|cancelled|returned`.
+  - Sale `SaleOrder`: `pending|confirmed|preparing|out_for_delivery|delivered|cancelled`.
+  - Patient `PatientOrder`: `placed|confirmed|processing|out_for_delivery|delivered|cancelled`.
+  - Consultations: `scheduled|in_progress|completed|cancelled` (doctor adds `no_show`; type `video|voice`, doctor interface also declares `in_person` never produced).
+- **No money ever moves, no order/record is ever written.** Every settle/approve/collect/checkout/book/withdraw/upload/download is a toast and/or local component state (reset on reload).
+
+---
+
+## 10. CONSOLIDATED STUB / HARDCODE INVENTORY
+
+- **Simulated AI:** stockist CreateOrder & QuickOrderDialog (regex + "AI Parsing" badge), pharmacy SmartOrder & SmartOrderDialog (`setTimeout` + regex + ×1.05/×1.1 multipliers), Products "AI Enhance" (double toast), OCRScanDialog/ScanProductDialog/BulkUploadDialog (setTimeout mock extraction), UploadPrescriptionDialog ("AI will extract" — not implemented).
+- **Simulated voice:** StartConsultation page, StartConsultationDialog, RecordPatientDialog — all `setTimeout(3000)` → hardcoded transcript.
+- **Hardcoded KPIs/deltas:** stockist Home todaysCollection 45000; pharmacy Home all 4 KPIs; patient Dashboard 4 KPIs + refill reminders; doctor Patients "50" + "+12%"; doctor Earnings This-Month block; doctor Bank balances (12,500/3,200); admin all KPIs (platformStats) + growth "+15%"; admin sidebar badges 3/5/4 + bell 12; various More badges (stockist 3/5, pharmacy 4/2/3, patient 2/3, doctor 5); TopNav 2/3, PatientTopNav 3, DoctorTopNav 2/5; analytics chart series; AppSettings storage 12.5/50.
+- **Page-local arrays bypassing shared mock modules:** pharmacy Stockists/Cart/Orders; patient OrderDetail/ConsultationDetail/Consultations/Wishlist; all four admin per-role pages; admin UserDetail (3 synthetic keys); stockist PharmacyDetail ledger; stockist operational pages (Credit Notes/Routes/Purchase Orders/Staff/Reports/Documents/Messages/Notifications).
+- **Detail pages ignoring `useParams().id`:** patient OrderDetail (ORD-P-001), patient ConsultationDetail (CONS-001).
+- **Genuinely functional bits:** Install page (`beforeinstallprompt`, iOS/standalone detection); `wa.me` shares (CreateBill, QuickBillDialog, SharePaymentLinkDialog); `tel:`/`maps.google.com`/clipboard actions; GuidedTour + `localStorage` tour flag (only persistence); several list pages' local mark-read/delete/add-remove operations (reset on reload); real filter/sort/search on many lists.
+
+*End of review. Sources read in full: `src/App.tsx`, `src/main.tsx`-level providers, `src/contexts/PharmacyViewContext.tsx`, all `src/components/layout/*`, all `src/data/*`, every page under `src/pages/**`, and every dialog/component under `src/components/{stockist,pharmacy,patient,doctor}/**`, plus `vite.config.ts`, `tailwind.config.ts`, `GuidedTour.tsx`.*
+
+---
+
+---
+
+## Appendix G — digiswasthyamvp (DMVP)
+
+> Source: `_reviews/review-digiswasthyamvp.md` · Repo folder: `digiswasthyamvp/`
+
+# Digi Swasthya (B2B MVP) — EXHAUSTIVE Functional Review
+
+> App path: `/Users/kshipradewat/Desktop/stockpharma/digiswasthyamvp`
+> In-product name: **Digi Swasthya** ("B2B Pharma Supply Chain Platform"; "A brand of Chameleon - The Agency (OPC) Pvt Ltd."). Interactive demo.
+> Stack: Vite + React 18 + TS, shadcn/Radix/Tailwind, React Router v6, TanStack Query v5, a **hand-rolled mock `supabase` client** over static seed data, Recharts, jsPDF + html2canvas, xlsx, qrcode.react, date-fns, sonner. Deno edge functions exist but are unreachable at runtime.
+
+This review is derived by reading every source file. It supersedes `FEATURES.md` in depth and corrects several of its claims against the actual seed data and code. Where a behaviour is a **no-op / stub / dead / bug**, it is flagged inline.
+
+---
+
+## PART A — GLOBAL ARCHITECTURE
+
+### A1. The mock Supabase client (`src/integrations/supabase/client.ts`) — governs everything
+The exported `supabase` is NOT `createClient`; it is a hand-written object. Behaviour, verified line by line:
+
+- **`from(table)` → `MockQueryBuilder`.** Backed by `TABLE_DATA` (a `Record<string, any[]>`) mapping 21 table names to in-memory arrays.
+- **Reads** apply chained filters via `applyFilters`: supports `eq, neq, in, gte, gt, lte, lt, like, ilike, is(null), not("col","is",null), order, limit, range`.
+  - `like/ilike` strips `%` and does case-insensitive `includes`.
+  - `order` sorts with `<`/`>` comparison (works for ISO date strings & numbers).
+  - `range(from,to)` = `slice(from, to+1)`.
+- **No-op / partial query methods (CRITICAL):** `or()`, `contains()`, `containedBy()`, `textSearch()`, **`filter()`** all `return this` and apply **nothing**. `match(obj)` is the only one that works (maps to `eq`).
+  - Consequence 1 — **`.or(...)` returns the entire table unfiltered.** Visible in `PeerChatPage.loadMessages` → shows all 3 peer messages regardless of the two participants.
+  - Consequence 2 — **`.filter(col,op,val)` is ignored.** `usePaginatedQuery` builds its query with `.filter(...)`, so **`StockistOrders` never actually filters by `stockist_id`** — its paginated list returns ALL orders across every stockist (then client-side search/tab narrow only the current page).
+- **Joins:** `resolveJoins` handles nested `select("*, table(cols)")` via a small `JOIN_MAP` covering only: `orders → pharmacy_profiles/stockist_profiles`, `order_items → products`, `bills → pharmacy_profiles/stockist_profiles`, `stockist_pharmacy_circle → pharmacy_profiles/stockist_profiles`, `product_batches → products`. Any other join (e.g. `orders → delivery_staff(name)` in `StockistPayments`, `order_items → orders(...)` in `SharedProductDetail` sales chart, `order_returns → products/orders`, `conversations → chat_messages`) resolves to `undefined`/absent → those features render empty.
+- **Mutations DO NOT PERSIST.**
+  - `insert`/`upsert` → echo payload back with generated `id = demo-{Date.now()}-{rand}` and `created_at`. Returns single object if input was single, array otherwise.
+  - `update` → returns `{...row, ...updateData}` for filtered rows but never writes to the backing array.
+  - `delete` → returns `{data:null, count:0}`, deletes nothing.
+  - Net effect: actions "succeed" and toast, but state persists only where the component also mutates local React state / React-Query cache.
+- **RPC (`MockRpcBuilder`):** hardcodes `check_login_rate_limit → true`, `record_login_attempt → null`, `has_role → true`; **everything else → `{data:null}`** (i.e. `decrement_stock`, `deduct_product_stock`, `restore_product_stock`, `update_circle_outstanding`, `admin_override_order_status`, etc. are all no-ops).
+- **Edge functions:** `functions.invoke(...) → {data:null, error:null}` ALWAYS. So every AI feature returns null.
+- **Storage (`MockStorage`):** `upload → {path:"demo/{ts}"}`; `createSignedUrl → "https://placeholder.com/demo-file.pdf"`; `getPublicUrl → "https://placeholder.com/{path}"`; `remove → null`.
+- **Auth (`MockAuth`):** `getSession → {session:null}`; `getUser` reads `localStorage["demo_role"]` → `DEMO_USERS[role]`; `signInWithPassword/signUp/signOut/resetPasswordForEmail/updateUser` all resolve success with canned data (so "wrong current password" can NEVER fail); `onAuthStateChange` returns a dummy unsubscribe.
+- **Realtime (`MockChannel`):** `channel().on().subscribe().unsubscribe()` all no-ops. `removeChannel` no-op.
+
+### A2. Seed data (`src/lib/dummy-data.ts`) + synthesized tables (`client.ts`)
+- `DEMO_USERS`: 3 (stockist `s-user-001`/Rajesh Kumar, pharmacy `p-user-001`/Anita Sharma, admin `a-user-001`/Platform Admin).
+- `DEMO_STOCKIST_PROFILE` = `sp-001` (MedSupply India Pvt Ltd, Jaipur, PAN ABCDE1234F, HDFC bank, upi rajesh@upi, approved). Plus `sp-002` PharmaCorp (approved), `sp-003` LifeCare (approved), `sp-004` MedWholesale (**pending**). Total 4 stockists.
+- `DEMO_PHARMACY_PROFILE` = `pp-001` (HealthPlus Pharmacy, Jaipur 302001, ICICI, approved; carries `min_order_amount:500`, `minimum_order_amount:500`, `delivery_fee:50`, `free_delivery_above:2000`, `operating_hours:{}`). Plus `pp-002` City Care (approved), `pp-003` MedLife (approved), `pp-004` Apollo Medical (approved), `pp-005` Wellness (**pending**). Total 5 pharmacies.
+- `DEMO_PRODUCTS`: 12 products. `prod-001..008` belong to `sp-001`; `prod-009,010` to `sp-002`; `prod-011,012` to `sp-003`. Each has mrp/sale_price/price/purchase_rate, stock_quantity, min_stock_level, gst_rate ("5%"/"12%"), hsn_code, drug_type "Allopathy", drug_schedule ("OTC"/"H"), batch_number, expiry_date, `moq`, `min_order_quantity`, `reserved_quantity:0`, `requires_prescription`, `is_narcotic:false`, `image_url:null`. Notable: `prod-004` Metformin stock 15 (< min 50 → low), `prod-007` Azithromycin stock 8, expiry **2025-04-30** (already past "today" 2026-07 → expired), `prod-012` Montelukast expiry 2026-04-10.
+- `DEMO_ORDERS`: 8 orders. **Statuses actually present: `delivered`(ord-001,005), `processing`(ord-002), `pending`(ord-003,008), `confirmed`(ord-004), `cancelled`(ord-006), `dispatched`(ord-007).** `order_source` values present: `platform`, `whatsapp_parse`. `payment_status`: paid/unpaid. Some carry `delivery_payment_status:"collected"`, `delivery_payment_method:"upi"/"cash"`.
+  - ⚠️ `"confirmed"` and `"processing"` and `"whatsapp_parse"` are NOT in the app's canonical vocab (`statusFlow`, ORDER_STATUS_LABELS, or the `order_source` enum), producing edge-case rendering (see §3.5, §3.4).
+- `DEMO_ORDER_ITEMS`: 8 items, only for ord-001, ord-002, ord-003. Other orders have no items → detail pages show "No items."
+- `DEMO_BILLS`: 5 bills. **Statuses present: `paid`(bill-001,002), `draft`(bill-003,005), `sent`(bill-004).** Carry `subtotal`, `gst_amount`, `discount_type`/`discount_value`, `total_amount`, `due_date`.
+  - ⚠️ No bill has status `confirmed`/`final`/`finalized`, so the badge highlight logic across the app never matches seed bills (see §Bill vocabulary).
+- `DEMO_PAYMENTS`: 4 payments. Methods present: `upi`, `cash`, **`neft`**, `cheque`. Statuses confirmed/pending. (`neft` is not in any payment-method picker.)
+- `DEMO_CIRCLE`: 4 rows, ALL for `sp-001` (cir-001 pp-001 limit 50000/out 4839/credit_balance 45161; cir-002 pp-002 30000/9990; cir-003 pp-003 25000/3250; cir-004 pp-004 40000/0). `payment_terms_days`, `is_blocked:false`, `notes`, `last_payment_date`.
+- `DEMO_NOTIFICATIONS`: 8 (types order/payment/**stock**/bill/approval — note `stock` type has no icon mapping in StockistNotifications so falls back to Bell). `DEMO_MESSAGES`: 3. `DEMO_SERVICEABLE_AREAS`: 5 PINs, all `sp-001` (302001,302005,302017,342001,313001).
+- Synthesized in client.ts: `DEMO_PROFILES` (6), `DEMO_USER_ROLES` (7), `DEMO_LOGIN_ACTIVITY` (3, all success), `DEMO_PEER_MESSAGES` (3), `DEMO_PRODUCT_BATCHES` (3 — pb for prod-001×2, prod-002×1), `DEMO_PRODUCT_MEDIA` (empty), `DEMO_CONVERSATIONS` (1, for s-user-001), `DEMO_CHAT_MESSAGES` (2), `DEMO_BILL_ORDERS` (2: bill-001↔ord-001, bill-002↔ord-005), `DEMO_ORDER_STATUS_HISTORY` (3), `DEMO_LOGIN_ATTEMPTS` (**empty**).
+- Charts: `DEMO_MONTHLY_TREND` (6 months orders/revenue), `DEMO_ADMIN_GROWTH` (6 months users).
+
+### A3. Auth / identity (all fake)
+- `useDemoAuth` (`DemoAuthProvider`): stores `role` in `localStorage["demo_role"]` (default `"pharmacy"`), exposes `{role, user (=DEMO_USERS[role]), setRole, signOut}`. `signOut` clears the key and hard-navigates to `/`.
+- `useAuth`: parallel hook returning `{user, roles:[role], loading:false, profile, signOut}` from the same key. `AppRole = admin|stockist|pharmacy`. Demo users/profiles hardcoded inline.
+- `useStockistProfile` → always `DEMO_STOCKIST_PROFILE` (`sp-001`), `isLoading:false`. `usePharmacyProfile` → always `DEMO_PHARMACY_PROFILE` (`pp-001`). So the "current" stockist is permanently sp-001 and pharmacy permanently pp-001, regardless of which demo user "logged in."
+- **No route guards.** Any panel/URL is reachable directly. No session timeout.
+
+### A4. Routing (`src/App.tsx`)
+- `BrowserRouter`; lazy pages wrapped in `SuspenseWrap` (ErrorBoundary + Suspense spinner). Global QueryClient: `staleTime 60000`, `gcTime 300000`, `refetchOnWindowFocus:false`.
+- Theme init on module load from `localStorage["theme"]` (dark / system→matchMedia / else light).
+- Three layout wrappers inject nav + hardcoded names into `AppLayout`:
+  - `StockistLayout` — businessName = `DEMO_STOCKIST_PROFILE.business_name`, userName **"Rajesh Kumar"**.
+  - `PharmacyLayout` — pharmacy_name, userName **"Anita Sharma"**.
+  - `AdminLayout` — businessName **"Digi Swasthya"**, userName **"Platform Admin"**.
+- **Route table (exhaustive):**
+  - Public: `/` (DemoHome), `/verify-bill/:billId` (VerifyBill), `/login`→Navigate `/`, `/register`→Navigate `/`, `*`→NotFound.
+  - `/stockist` (index=Home) + `products`, `products/add`, `products/:id`, `products/:id/edit`, `orders`, `orders/create`, `orders/:id`, `pharmacies`, `pharmacies/find`, `pharmacies/:id`, `pharmacies/:id/ledger`, `more`, `payments`, `profile`, `business`, `settings`, `help`, `notifications`, `privacy-security`, `serviceable-areas`, `export-catalogue`, `bill-history`, `bulk-bill`, `chats`, `chat/:peerId`, `messages`. (27 routes)
+  - `/pharmacy` (index=Dashboard) + `orders`, `orders/quick`, `orders/:id`, `stockists`, `stockists/find`, `stockists/:id`, `browse`, `more`, `profile`, `business`, `notifications`, `payments`, `help`, `privacy-security`, `settings`, `quick-order-history`, `ledger/:stockistId`, `chats`, `chat/:peerId`, `messages`. (21 routes)
+  - `/admin` (index=Dashboard) + `pharmacies`, `pharmacies/:id`, `stockists`, `stockists/:id`, `orders`, `orders/:id`, `more`, `bills`, `payments`, `users`, `notifications`, `settings`, `messages`, `messages/:userId` (=ChatPage), `profile`, `help`, `login-history`. (18 routes)
+- **DEAD / unreachable pages** (exist but no route, since `/login`&`/register` redirect to `/`): `Login.tsx`, `Register.tsx` + `StockistRegistration`/`PharmacyRegistration`, `ForgotPassword.tsx`, `ResetPassword.tsx`, `PendingApproval.tsx`, `Index.tsx` (a leftover "Welcome to Your Blank App" placeholder). Also many `More`-menu targets are unrouted (see §3.15).
+
+### A5. Shared chrome
+- **`AppLayout`**: OfflineBanner + TopNav + `<Outlet>` (main, `pb-20`) + BottomNav. Calls `useRealtimeNotifications()` (a literal no-op `() => {}`). Unused `Button`/`RefreshCw` imports (dead).
+- **`TopNav`**: logo (Pill) → navigates `/`; business/owner name; chat button (bell → `notifications`), chat icon → `/admin/messages` for admin else `{base}/chats`. **Hardcoded badges: chat "1", bell "2"** (always). Avatar → `profile`.
+- **`BottomNav`**: role tabs. Stockist: Home/Products/Pharmacies/Orders/More. Pharmacy: Dashboard/Orders/Stockists/More. Admin: Dashboard/Pharmacies/Stockists/Orders/More. Active state by path prefix.
+- **`OfflineBanner`** + `useOfflineDetector` (navigator.onLine + online/offline events): fixed destructive banner when offline. No offline mutation queue.
+- **`MenuPage`** (More hub): avatar header, optional search filter over item title/description, sections of items, red Logout button (`signOut()` then `navigate("/login")` — which redirects to `/`), footer **"Digi Swasthya v1.0.0"** (note constants say `APP_VERSION="2.0.0"` — mismatch).
+- **`KpiCard`**, **`QuickActions`**, **`EmptyState`**, **`PaginationControls`** (hidden when totalPages≤1), **`BackButton`**, **`Spinner`** — presentational helpers.
+- **`SharedProductCard`**: computes `stockQty = stock_quantity ?? quantity ?? 0`, `salePrice = sale_price ?? price ?? 0`, `isExpiringSoon = expiry < now+90d`, `isExpired = expiry < now`, `margin = round((sale−purchase)/sale×100)`. Badges: Out of Stock, Rx (requires_prescription), Hidden (pharmacy + `is_visible_to_customers===false`), Narcotic. Shows purchase rate+margin (stockist/pharmacy/admin), stock qty, up to 3 active batches +"+N more", admin sourceLabel, customer add-to-cart controls (role "customer" only — never used).
+- **`SharedProductDetail`** (used by StockistProductDetail via 7-line wrapper `role="stockist"`, and AdminStockistDetail cards use `SharedProductCard role="admin"`): loads product, `product_media` gallery, batches (stockist only), and a **6-month sales chart** from `order_items` join `orders` (the join resolves via JOIN_MAP for order_items→products but NOT order_items→orders, so `item.orders` is undefined → chart always "No sales data yet"). Clone → inserts `{...product} name+" (Copy)"`; Delete → `confirm()` + delete (no-op) + navigate. Batch pricing table, InfoRows, total stock value = Σ activeBatch.stock×purchase_rate.
+
+### A6. Money / status vocabulary (constants.ts + code)
+- `ORDER_STATUS_COLORS`, `PAYMENT_STATUS_COLORS`, `ORDER_STATUS_LABELS` maps (Tailwind semantic tokens bg-primary/accent/warning/destructive). `getGreeting()` by local hour. `PRICE_FIELD_GUIDE`. `APP_VERSION="2.0.0"`.
+- Price fallback convention: display = `sale_price || price || mrp`; on write `price` mirrors `sale_price`; `in_stock = stock_quantity > 0`.
+- **No GST/SGST/CGST math anywhere** despite "TAX INVOICE" headers, product `gst_rate`, bill `gst_amount`. **No delivery-fee math anywhere** despite pharmacy delivery-config.
+- Expiry windows are inconsistent: cards/detail use **90d**, StockistHome dashboard uses **60d**.
+
+---
+
+## PART B — ROLES & NAVIGATION SUMMARY
+
+| Role | Base | Bottom nav | Identity (hardcoded) |
+|---|---|---|---|
+| Pharmacy | `/pharmacy` | Dashboard · Orders · Stockists · More | pp-001 / Anita Sharma / p-user-001 |
+| Stockist | `/stockist` | Home · Products · Pharmacies · Orders · More | sp-001 / Rajesh Kumar / s-user-001 |
+| Admin | `/admin` | Dashboard · Pharmacies · Stockists · Orders · More | Platform Admin / a-user-001 |
+
+**DemoHome (`/`)**: title "Digi Swasthya", "Interactive Demo" pill, three role cards (Pharmacy→HealthPlus, Stockist→MedSupply India, Admin→Platform Operations) each with gradient icon + description. Tap writes `demo_role` and navigates `/${role}`. Footer © + Chameleon.
+
+---
+
+## PART C — STOCKIST MODULE
+
+### 3.1 Home (`/stockist`, `StockistHome`) — 100% dummy, filtered to literal `sp-001`
+- **KPI grid (8 cards):**
+  1. Pending Orders = count `status==="pending"` among sp-001 orders (ord-003? no—ord-003 is sp-001 pending; ord-008 is sp-003). Among sp-001 orders {001 delivered,002 processing,003 pending,005 delivered,006 cancelled} → **1**.
+  2. Total Products = sp-001 products count = **8**.
+  3. Pharmacies = `DEMO_CIRCLE.length` = **4**.
+  4. Revenue = Σ total_amount where status∈{delivered,completed} = 4560+12450 = **₹17,010**. → not clickable.
+  5. Outstanding = Σ `DEMO_CIRCLE.outstanding` = 4839+9990+3250+0 = **₹18,079** → /payments.
+  6. Today's Orders = count where created_at startsWith `2025-03-22` OR `2025-03-20` (hardcoded) among sp-001 = ord-003 (03-20) = **1**.
+  7. Stock Value = Σ stock_quantity×price over sp-001 products.
+  8. Pending Bills = literal **"1"** → /bill-history.
+- **Expiring Soon card** (window 60d from real now 2026-07): among sp-001, only products with expiry < now+60d. Given all remaining sp-001 expiries are 2026-08+ except prod-007 (2025-04, already past). prod-007 IS < now+60d (it's in the past) so it lists as "expiring soon". Clickable → product detail.
+- **Low Stock card**: sp-001 products where stock ≤ min → prod-004 (15/50), prod-007 (8/20).
+- **Charts:** Monthly Order Trend (DEMO_MONTHLY_TREND bars).
+- **Hardcoded lists:** Top Pharmacies by Revenue (Apollo 12450, City Care 8920, HealthPlus 4560, MedLife 3250 — sorted), Top Products by Sales (Paracetamol 250…Amoxicillin 95). Both static, not computed.
+- Quick Actions (Create Order, Collect Payment→/pharmacies, Add Product, View Bills). Recent Orders = first 5 sp-001 orders with status badge (uses `ORDER_STATUS_COLORS`; `processing`/`confirmed` map to primary; ✓ covered).
+- Note: `bg-${color}/10` dynamic Tailwind classes in Quick Actions won't be generated by JIT (styling bug — icons render without tint).
+
+### 3.2 Products (`/stockist/products`, `StockistProducts`)
+- Grid of `SharedProductCard` from `products` (eq stockist_id sp-001) + grouped `product_batches` (`batchesByProduct`). Loading spinner.
+- Search box (name/brand/composition, client-side). `ProductFilters`: Brand select (first 30 PHARMA_BRANDS), Category select (16 categories), merged **Expiry** popover (mode "Expiring Before" = sets expiryTo only / "Date Range" = from+to, date inputs; chip label + clear), Sort select (Name/Price/Expiry/Newest), grid toggle 2/3 cols.
+- Client filter+sort logic in `filtered` memo: name/brand/composition search, brand/category eq, expiry `>=from`/`<=to` string compare, sort by name.localeCompare / (sale_price||price) / expiry.
+- Three top buttons: **Bulk Catalogue** (opens `BulkUploadCatalogue`), **Purchase Bill** (opens `BulkUploadPurchaseBill`), **Bulk Price** (opens Bulk Price dialog).
+- **Bulk Price Update dialog fields:** Price Field (sale_price/mrp), Direction (increase/decrease), Type (percentage/flat), Value (number). Submit: `confirm()`, iterate all `filtered` in batches of 10, per product `current = product[field]||price||0`; percentage `delta=current×(val/100)`, new = current±delta; flat = current±val; `newPrice = max(0, round(×100)/100)`; if field=sale_price also mirror to `price`; `update` (no-op) then invalidate + toast `Updated N products`. Button label shows count.
+- EmptyState with "Add Product" action when 0 filtered.
+
+### 3.3 Add Product (`/stockist/products/add`, `StockistAddProduct`)
+- Full page form. Sections: Product Images (`ProductGalleryUploader`, multi-upload to `product-images` bucket → placeholder public URLs, primary/reorder/remove), Basic Info (Name* + **Auto Fetch** button, Brand w/ searchable PHARMA_BRANDS dropdown + "add custom", Manufacturer, Category select), Pricing & Inventory (MRP, Sale Price, Purchase Rate, Stock Qty, Min Stock Level — all number), Batch & Compliance (Batch Number, Expiry Date [date], HSN Code, GST Rate select GST_RATES), Regulatory (Drug Schedule select, Drug Type select, Composition, Pack Type select, Pack Size, FSSAI License), Additional (Requires Prescription checkbox, Narcotic checkbox).
+- **Auto Fetch** (`useAutoFillProduct` → `autofill-product-details`): enabled when name.trim().length≥3; fills ONLY empty fields (brand, manufacturer, composition, drug_type, pack_type, category, drug_schedule, pack_size, hsn_code, requires_prescription). Mock returns null → hook toasts "No details found for this product".
+- Save: builds payload (`price = sale_price || price`, `in_stock = stock>0`), `insert products` (no-op), then insert `product_media` rows from gallery, toast, navigate to /products. Only validation: name required.
+- **Dead code:** `counterfeitWarning` state declared, warning UI rendered conditionally, but never set → never shown.
+
+### 3.4 Edit Product (`/stockist/products/:id/edit`, `StockistEditProduct`)
+- Loads product + `product_media` (fallback to legacy `image_url`) into gallery. Same fields as Add (no min_order_quantity field here). Captures `originalPrice` for change detection.
+- Auto Fetch identical.
+- Save: update products (no-op) → delete+reinsert product_media → **price-change notification**: if `originalPrice !== newPrice`, query circle pharmacies `eq("status","active")` (NB: circle rows have no `status` column → filter compares undefined; with mock eq it filters to none, so 0 notifications) and insert `price_change` notifications per pharmacy user. Toast + navigate to detail.
+
+### 3.5 Order Detail (`/stockist/orders/:id`, `StockistOrderDetail`) — LIFECYCLE ENGINE (~659 lines)
+Queries: order (+pharmacy join), items (+products join), circle (sp-001 × order.pharmacy_id), existingBill (via bill_orders→bills).
+- **`statusFlow = [pending, packed, dispatched, out_for_delivery, delivered]`.** `currentIdx = indexOf(status)`; `nextStatus` = next in flow or null. ⚠️ For seed orders with status `processing`/`confirmed`, `indexOf = -1` → **no "Mark as next" button** and no timeline progress.
+- **Gating flags:** `canModify = pending|packed`; `canCancel = canModify`; `canReturn = delivered`; `canAssignStaff = packed|dispatched|out_for_delivery` (**computed but NO UI uses it — dead**); `canPartialDeliver = dispatched|out_for_delivery`; `canSplit = pending`.
+- **Header:** back, #order_number + datetime, **Duplicate** button (clones order `SO{last8 of Date.now()}`, source platform, pending, + items; navigates to new). Status/payment/source/"Split Order" badges.
+- **Cards:** Pharmacy info (name/owner/phone/email/address), Partial-delivery history (from `partial_delivery_items` JSON, hidden in seed), Items list (editable), Total Amount, Notes, Credit Note Applied (hidden), Delivery Proof img (hidden).
+- **Actions & their coded effects (all writes no-op):**
+  - `updateStatus(next)`: update status; on `packed` → RPC `deduct_product_stock` per item; on `delivered` → set `delivered_at`; always insert order notification to pharmacy user. Toast "marked as {label}". Invalidate.
+  - Item editing: `startEditing` seeds qtys; `saveEdits` validates non-negative integers & not-all-zero, deletes zero-qty items, updates changed qtys, recomputes `total_amount`/`items_count`, adjusts circle via RPC by `newTotal−oldTotal`.
+  - `cancelOrder`: `confirm()`; set cancelled; RPC circle `−total`; if was packed/dispatched → RPC `restore_product_stock` per item. Toast.
+  - Record Partial Delivery (dialog: per-item qty input, max = item.qty): appends `{date, items[]}` to `partial_delivery_items` array via update.
+  - Split Order (dialog, only if pending & >1 item; per-item qty max = qty−1): creates child order `{num}-S{base36(-3)}`, `order_source:"split"`, `parent_order_id`, moves qty (reduces/deletes originals), recomputes both totals.
+  - Return Items (dialog, delivered only; per-item qty max=qty + reason): `refund = Σ (price||products.sale_price)×qty`; if order paid → circle `credit_balance += refund` (direct update), else RPC circle `−refund`. **Does NOT insert an `order_returns` row** (yet `order_returns` is read by the pharmacy-detail ledger).
+  - View Bill (if existingBill) recomputes discount (percentage `subtotal×value/100` else flat) and opens BillPreviewDialog readOnly; else **Create Bill** → BillPreviewDialog.
+  - **Print Packing Slip** (packed/dispatched/out_for_delivery): `window.open` + writes inline HTML table + `.print()`. Not saved.
+  - Record Payment (if not paid & not cancelled) → `CollectPaymentDialog` (outstanding = circle.outstanding || order.total).
+
+### 3.6 Create Order (`/stockist/orders/create`, `StockistCreateOrder`)
+- Query params: `?pharmacy=` preselects. Fetches circle pharmacies (dropdown) + products (for matching).
+- **Paste-order parsing:** Textarea + "Parse Order" → `parse-order-text` `{text, products:[{id,name}]}`. Maps `data.items` matching by `productId` or lowercase name equality; sets price = `sale_price||price||0`. Mock null → `items:[]` → toast "No items could be parsed."
+- Manual add item (name blank, qty 1). Per item: parsed label, product match `Select`, qty stepper (min 1) + line total.
+- `totalAmount = Σ price×qty`.
+- **Credit check (warn, allow):** on submit, if selected circle `creditLimit>0 && outstanding+total>creditLimit` → open "Credit Limit Exceeded" dialog showing excess = `max(0, out+total−limit)`; "Proceed Anyway" continues.
+- Create: needs pharmacy + ≥1 matched item. Insert `orders` (`ORD-{base36(Date.now())}`, status pending, `order_source = whatsapp` if text else `manual`, items_count = matched count) + order_items; RPC `decrement_stock` per item; RPC circle `+total`; notify pharmacy user. Navigate /orders.
+
+### 3.7 Orders list (`/stockist/orders`, `StockistOrders`)
+- `usePaginatedQuery` (pageSize 20, table orders, select `*, pharmacy_profiles(pharmacy_name)`). ⚠️ Filters passed via `.filter()` are ignored by the mock → **returns ALL orders across every stockist**, not just sp-001. On-page `filters` array (lines 30-33) is **dead/unused** (the query call passes its own filters).
+- Client: search (order#/pharmacy name), tab groups via `getStatusGroup`: pending→{pending}; active→{packed,dispatched,out_for_delivery,processing}; done→{delivered,completed}; default→pending. ⚠️ `confirmed` & `cancelled` fall to default "pending" bucket → ord-004 (confirmed) & ord-006 (cancelled) appear under **Pending** tab; cancelled has no dedicated tab.
+- Tab counts, per-card: #, pharmacy, date, status label+color, source pill (if ≠platform), payment pill (Pending/Partial/Paid) if ≠paid, total, items_count. PaginationControls.
+
+### 3.8 Payments (`/stockist/payments`, `StockistPayments`)
+- Header: Remind + **Record** button → `navigate("/stockist/record-payment")` — ⚠️ **unrouted → 404 (dead link)**.
+- Summary tiles: Collected (Month) = Σ this-month payments (`created_at ≥ monthStart` of real now → seed payments are 2025 → **₹0**), Outstanding = Σ circle.outstanding (₹18,079), Approvals = approvals.length.
+- Bank Details card (from stockist profile) + pencil → /business.
+- Tabs: **Payments** (all sp-001 payments limit 50, +receipt Download for confirmed via `generateReceiptPdf`), **Bills** (all sp-001 bills; badge highlights only `status==="confirmed"` → none of seed's paid/draft/sent highlight), **Approvals** (orders where `delivery_payment_status==="pending_approval"` + join `delivery_staff(name)` — no such seed rows & no such table join → **always empty**). Approve → insert payment (collected_by delivery_staff) + set order approved/paid + RPC circle −amt. Reject → set rejected + zero collected.
+- **Send Reminder dialog:** pharmacies with outstanding>0 in a Select; on send inserts `payment_reminder` notification + opens `wa.me/{91phone}?text=...` prefilled UPI/bank message. Toast.
+
+### 3.9 Pharmacies / Circle (`/stockist/pharmacies`, `StockistPharmacies`)
+- Circle list (sp-001, join pharmacy_profiles*) + orders summary for pending counts. Search (name/owner/pin). Filter chips: all / outstanding (out>0) / credit (credit_balance>0 & out=0) / nodues (out=0), each with live count.
+- Per card: avatar, name/owner (→ detail), 3-stat row **Outstanding / Credit(=credit_limit, mislabeled) / Net Due** where `netDue = outstanding − credit_balance` shown "₹X CR" if negative. Pending-order line. "Collect Payment" bar if outstanding>0.
+- Kebab menu: View Details, Edit (`EditPharmacyDialog`), Record Order (→create?pharmacy=), Generate Bill (`QuickBillDialog`), Remove from Circle (`confirm()` + delete row).
+
+### 3.10 Pharmacy Detail (`/stockist/pharmacies/:id`, `StockistPharmacyDetail`, ~528 lines)
+- Header actions: Order (→create?pharmacy=), Bill (QuickBillDialog). Unified card: name/owner, phone (tel/copy/wa.me), address, and **credit block**: `creditUsage = out/limit×100` (Progress capped 100), 3 stats Outstanding/Credit Limit/Available (= limit−out, red if negative).
+- **Collect Payment** button (disabled when outstanding≤0) → CollectPaymentDialog.
+- Tabs: Orders (expandable → loads items on expand, "View Full Details"), Payments, Bills (click → BillPreviewDialog readOnly), **Ledger**.
+- **Ledger** = the only place with a real running balance: merges orders (debit=total_amount), payments (credit=amount), and `order_returns` (credit=refund_amount) ascending; `runningBalance += debit − credit`; table Date/Description/Debit/Credit/Balance; footer "Final Balance (Outstanding)". (`order_returns` query returns nothing → returns never appear.)
+- Details dialog: business info, contact, address, Documents (Drug License / GST / Pharmacy Certificate — status derived purely from URL presence: uploaded/pending), Danger Zone → Remove from Circle.
+
+### 3.11 Simpler ledger (`/stockist/pharmacies/:id/ledger`, `StockistPharmacyLedger`)
+- Descending list of orders (−amount) + payments (+amount), no running balance, no returns. Summary tiles: Orders total, Paid total, Outstanding (from circle). Empty state.
+
+### 3.12 Find Pharmacy (`/stockist/pharmacies/find`, `StockistFindPharmacy`)
+- Approved `pharmacy_profiles` minus existing circle ids. When no search → default-filtered to stockist serviceable-area PINs; search matches name/owner/pin/city. `addToCircle` inserts circle row; duplicate error `23505` → toast "Already in your circle".
+
+### 3.13 Bills
+- **Bulk Bill (`/stockist/bulk-bill`)**: lists **delivered** sp-001 orders not in `bill_orders`; checkbox select / select-all. Generate: group by pharmacy → per pharmacy `subtotal=Σ total`, insert bill (`BILL-{ts}-{idx}`, **status `"final"`**, no discount/gst), link bill_orders, notify pharmacy. Toast "N bills for M orders."
+- **Purchase Bill History (`/stockist/bill-history`)**: lists all sp-001 bills (join pharmacy). Badge highlights **`status==="finalized"`** (never matches seed). Header oddly titled "Purchase Bill History" though these are sales invoices.
+- **`BillPreviewDialog`** (shared): fetches stockist+pharmacy; if orders present, derives paymentStatus (all paid / any paid / else). `billNumber = BILL-{base36(Date.now())}`. Renders "TAX INVOICE" (stockist header/PAN labelled "GSTIN/PAN"/bank block, Bill To, orders table S.No/Order#/Amount, Subtotal/Discount/Grand Total, Payment Details, **QR** to hardcoded `https://digi-swasthya-hub.lovable.app/verify-bill/{savedBillId|preview}`). Actions: Print (`window.print`), PDF (html2canvas→jsPDF download), WhatsApp (Web Share API w/ `wa.me` text fallback). Confirm & Generate → insert bill **status `"confirmed"`** (stores discount_type/value/subtotal/total, **no gst_amount**), link bill_orders, and **direct** circle `outstanding += total` (non-atomic; no RPC).
+- **`QuickBillDialog`**: lists a pharmacy's orders (all, not just unpaid, despite subtitle), checkbox multi-select + select-all, discount (percentage/flat) → `subtotal=Σ selected total`, discount = pct `total×value/100` else flat, `total = max(0, subtotal−discount)`, hands to BillPreviewDialog.
+- **Bill status vocabulary is inconsistent across 4 creators/readers:** BillPreviewDialog writes `"confirmed"`; BulkBill writes `"final"`; PurchaseBillHistory badge checks `"finalized"`; StockistPayments/PharmacyDetail badges check `"confirmed"`; AdminBills filter offers `draft`/`finalized`. Seed bills are `paid`/`draft`/`sent`. Practically nothing lines up.
+
+### 3.14 Other stockist pages
+- **Serviceable Areas (`/stockist/serviceable-areas`)**: list PINs; add (6-digit validation + dedupe) inserts; remove (`confirm()`) deletes.
+- **Export Catalogue (`/stockist/export-catalogue`)**: CSV or XLSX export of sp-001 products via `xlsx` (real client-side).
+- **Notifications (`/stockist/notifications`)**: notifications for s-user-001 (limit 50), tabs all/order/payment/system (note seed has a `stock`-type notif not covered by a tab → only in "all"), unread count, mark-read on click, mark-all-read. `typeIcons` map (offer/feedback icons exist).
+- **More (`/stockist/more`)** MenuPage. Fetches business info. Sections ACCOUNT / FINANCE / OPERATIONS / REPORTS / PREFERENCES / COMMUNICATION. ⚠️ Many links point to **unrouted paths** → NotFound: `/stockist/record-payment`, `/stockist/analytics`, `/stockist/credit-notes`, `/stockist/returns`, `/stockist/manufacturer-returns`, `/stockist/expiry-management`, `/stockist/expiry-calendar`, `/stockist/stock-transfer`, `/stockist/batch-management`, `/stockist/staff`, `/stockist/delivery-routes`, `/stockist/holidays`, `/stockist/export`, `/stockist/reports`, `/onboarding/stockist`. "Price History" cynically points to `/stockist/products`.
+- **Profile Settings (`/stockist/profile`)**: business/owner name, contact (email read-only w/ Verified/Unverified from `email_confirmed_at` — undefined in demo → **Unverified** + "Verify Now" via `auth.resend({type:"signup"})`; phone labelled "Coming Soon" but editable), address; save updates stockist_profiles + profiles.full_name. Change Password: re-auth via signInWithPassword then updateUser (min 8) — always succeeds in demo. Show/hide password toggles.
+- **Business Details (`/stockist/business`)**: business name, business type select (3 options), PAN (uppercased); Regulatory Documents (Drug License/GST/Wholesale/FSSAI — upload→documents bucket→1yr signed URL→placeholder; status hardcoded "pending"); Address (state/city dependent selects from `indian-states-cities`, PIN); Bank (name/IFSC/account/holder/UPI). Save forces `approval_status:"pending"` + notifies all admins (type `profile_update`).
+- **Settings (`/stockist/settings`)**: theme (light/dark/system → localStorage + class), Language list (only English enabled; Hindi "Coming Soon — April 1", others "Coming Soon"), Currency hardcoded "₹ INR (Indian Rupee)" disabled. Notifications: push/email/sms toggles with per-category checkboxes (Orders/Payments/Offers/Compliance), Sound, Vibration — all persist ONLY to `localStorage["app_preferences"]`.
+- **Privacy & Security (`/stockist/privacy-security`)**: Change Password (min 6, updateUser mock-succeeds); Phone card **"Verified"** hardcoded; Active Sessions "**1 device**" hardcoded + live device parse from `navigator.userAgent` (Current/Now); Logout All (`signOut({scope:"global"})` → navigate /login → redirect /); Recent Login Activity (login_activity limit 10; seed has 3 for s-user-001... actually 2); **Delete Account is toast-only** (dialog → toast + signOut).
+- **Help Center (`/stockist/help`)**: Custom `VideoPlayer` (full controls: play/seek/volume/mute/speed 0.5–2x/fullscreen) with **w3schools sample MP4s** as 4 "tutorials"; 6 hardcoded FAQs (Accordion); Feedback form (name/email/phone read-only, Feedback*, Category* select, Team select) → inserts `feedback` notifications to all admins; Contact tiles email `help@digiswasthya.in` / call `9672123711` / chat → /messages.
+- **Product Detail (`/stockist/products/:id`)**: 7-line wrapper around `SharedProductDetail role="stockist" backTo="/stockist/products"`.
+
+### 3.15 Stockist components
+- **`ProductForm`** (dialog-based add/edit with single image_url upload + `min_order_quantity`): a complete parallel implementation but **not imported by any shipped page** (products page uses the full-page Add/Edit). Effectively dead.
+- **`ProductCard`** (stockist-specific card w/ mousedown prefetch, 90d expiry flags): **also not used** — products grid uses `SharedProductCard`. Dead/parallel.
+- **`CollectPaymentDialog`** — FIFO/manual allocation engine (see §8).
+- **`BulkUploadCatalogue`** — client-side XLSX (no AI). Steps upload→processing (artificial setTimeouts)→preview (editable table)→uploading→done. Flexible header aliasing (sale_price accepts PTR/Rate/Selling Price/etc; stock accepts qty/Opening Stock/etc). Validation (name required, numeric mrp/sale/stock). Flexible expiry parsing: `YYYY-MM-DD` passthrough; `MM/YY→20YY-MM-28`; `MM/YYYY→YYYY-MM-28`; `DD/MM/YYYY→YYYY-MM-DD`; else raw. Bulk `insert` (no-op). Downloadable template.
+- **`BulkUploadPurchaseBill`** — uploads to `documents` bucket, base64 → **`parse-purchase-bill`** (AI, returns null in demo → toast "Failed to extract"). Preview editable; confirm upserts by name (existing eq name → update, else insert), reports "N created, M updated".
+- **`EditPharmacyDialog`** — circle credit_limit (number), notes, is_blocked toggle. Save updates circle; on block-state change inserts `circle_status` notification to pharmacy user (Account Blocked/Unblocked).
+- **`QuickBillDialog`**, **`BillPreviewDialog`** — see §3.13.
+
+---
+
+## PART D — PHARMACY MODULE
+
+Carts are ephemeral React state (no localStorage cart). No GST/delivery-fee applied anywhere.
+
+### 4.1 Dashboard (`/pharmacy`, `PharmacyDashboard`) — reads DEMO_ORDERS directly, literal `pp-001`
+- Greeting card. KPIs: Active Orders = count status∉{delivered,cancelled} among pp-001 (ord-001 delivered, ord-004 confirmed→active, ord-006 cancelled, ord-008 pending → 2); Total Purchase = Σ total; Pending Payments = count payment_status≠paid; **Connected Stockists = hardcoded `3`** (KpiCard).
+- Quick Actions (Quick Order, Browse, Find Stockist, Payments). Recent Orders slice(0,5) w/ status color.
+
+### 4.2 Quick Order (`/pharmacy/orders/quick`, `PharmacyQuickOrder`) — broken past step 1 in demo
+- Textarea + "Find Best Stockists" → `parse-order-text` (`{text}` only, no products list). Mock null → `items:[]` → toast **"Could not parse items"**, stops.
+- If items parsed (won't in demo): `findBestStockists` requires `profile.pin_code` (302001); serviceable_areas eq pin → stockist ids → approved stockists + their in-stock products; per stockist match each item via `product.name.includes(item.name)`; skip if 0 matches; `total = Σ (sale_price||price)×qty`; sort cheapest first; index 0 tagged "Best Price".
+- **`getNextDeliveryDay` defined but never called; `nextDelivery` hardcoded "Available".** `WEEKDAYS` array unused otherwise.
+- `placeOrder(stockist)`: re-match, insert order (`PH{last8}`, source `quick_order`, pending) + items, RPC circle +total, notify stockist, navigate to order.
+
+### 4.3 Stockist storefront + cart (`/pharmacy/stockists/:id`, `PharmacyStockistDetail`)
+- Header: name, ledger button (if circle) → /ledger/:id, chat. Blocked banner if `circle.is_blocked`.
+- Info card: type, phone (tel/copy/wa.me), address; if circle: Outstanding + Credit Limit + usage% (destructive text when out/limit>0.8).
+- Tabs Products / Orders. Products (in_stock only): add-to-cart (dedupe, ±1, drop 0), "Unavailable" when blocked. Orders history → detail.
+- Cart = `useState`; `cartTotal = Σ price×qty` (price = sale_price||price||0); floating bottom bar (hidden when blocked): count/total, "⚠️ Nearing credit limit" when `out+cartTotal > creditLimit×0.8`.
+- **`placeOrder` (A12 hard enforcement):** if `creditLimit>0 && out+cartTotal>creditLimit` → **abort with error toast** (blocks, unlike stockist side which warns). Else insert order (`PH{last8}`, source platform, pending, total=cartTotal) + items, RPC circle +cartTotal, notify stockist, clear cart, navigate.
+
+### 4.4 Circle / discovery / ledger
+- **Stockists (`/pharmacy/stockists`)**: pp-001 circle (join stockist). Cards show `Due: ₹{outstanding}` / `Limit: ₹{credit_limit}` (raw unformatted), chat button, → storefront. Empty state → Find.
+- **Find Stockist (`/pharmacy/stockists/find`)**: approved stockists serving pp-001 PIN (via serviceable_areas). "In Circle" tag or Add. Insert zeroed circle row.
+- **Browse (`/pharmacy/browse`)**: approved stockists (limit 50) + product search (`ilike name`, limit 20, only when search non-empty). Add stockist to circle. Product card → its stockist storefront.
+- **Ledger (`/pharmacy/ledger/:stockistId`)**: orders (−amount) + payments (+amount) desc, no running balance; tiles Orders/Paid/Outstanding (outstanding read from circle, not computed). Empty state.
+
+### 4.5 Orders / detail
+- **Orders (`/pharmacy/orders`)**: pp-001 orders (join stockist) desc, staleTime 15s. Search (order#/stockist). Status tabs all/pending/packed/dispatched/delivered/cancelled with live counts (exact `status===tab`). Sort button cycles date→amount→status. Cards: status color, payment Badge, total.
+- **Order Detail (`/pharmacy/orders/:id`)**: order (+stockist join), items (+products). Header Duplicate (clone `PH{last8}` + items). Status badge + **timeline** over statusFlow (hidden if cancelled). ⚠️ For `confirmed`/`processing` orders currentIdx=−1 so no steps lit. Stockist card. Delivery Proof img (hidden). Partial deliveries (hidden). Items + Total. **Download Invoice** (delivered only) → dynamic import `generate-receipt-pdf` (real client-side A5 PDF; passes payment_status as "paymentMethod"). **Verify Received Quantities** (delivered|out_for_delivery): dialog per-item qty; on mismatch inserts discrepancy notification to stockist (type order), else toast "no discrepancies".
+
+### 4.6 Payments / settings
+- **Payments (`/pharmacy/payments`)**: payments (join stockist), circle stockists. Outstanding summary (Σ circle.outstanding) + Pay Now. Tab Payments only. **Record Payment dialog:** Stockist select (shows outstanding), auto payment-details card (UPI/bank from stockist), Amount (>0), Method (upi/bank_transfer/cash/cheque), Reference ID, **UPI Proof upload** (method=upi only → documents bucket → 30-day signed URL → placeholder, appended to notes), Notes. Insert payment (**status `pending`**, collected_by `pharmacy`), RPC circle −amount, notify stockist. Toast.
+- **Business Details (`/pharmacy/business`)**: pharmacy name/type/license; Documents (Drug License/GST/Pharmacy Certificate — upload → 1-day signed URL, status hardcoded pending); Address (state/city selects, PIN); **Operating Hours** (per-day open/close time inputs, defaults 09:00/21:00); **Delivery Configuration** (min_order_amount, delivery_fee, free_delivery_above — number inputs). Save updates profile (incl. operating_hours/delivery fields) + forces `approval_status:"pending"` + notifies admins. ⚠️ Operating hours & delivery config are **stored but never applied** to any cart/total.
+- **Profile Settings (`/pharmacy/profile`)**: pharmacy name/type select (5)/license, owner name/designation, email read-only "**Verified**" hardcoded, phone/whatsapp, address (state/city/PIN). Save profile + profiles.full_name. Change Password (re-auth + updateUser, min 8, mock-succeeds).
+- **Settings (`/pharmacy/settings`)**: identical structure to stockist settings (theme, languages, currency, notification prefs to localStorage).
+- **More (`/pharmacy/more`)** MenuPage: ACCOUNT / OPERATIONS (Quick Order, Browse, Quick Order History) / FINANCE (Payments) / PREFERENCES / COMMUNICATION. All targets routed (subtitle fallback "Retail Pharmacy").
+- **Notifications (`/pharmacy/notifications`)**: p-user-001 notifications desc (no limit), mark-read on click / mark-all. `typeIcons` order/payment/alert/feedback.
+- **Help Center (`/pharmacy/help`)**: 5 hardcoded FAQs + contact tiles (same email/phone/chat). No videos, no feedback form (simpler than stockist).
+- **Privacy & Security (`/pharmacy/privacy-security`)**: Change Password (min 6), Active Sessions (current device from userAgent slice), Logout All, Recent Login Activity (limit 5), **Delete Account toast-only** (uses `confirm()`).
+- **Quick Order History (`/pharmacy/quick-order-history`)**: orders where `order_source==="quick_order"` (none in seed → empty). Inline status color (delivered→accent else warning).
+
+---
+
+## PART E — ADMIN MODULE (no guards; all writes are stubs)
+
+### 5.1 Dashboard (`/admin`, `AdminDashboard`) — pure dummy
+- KPIs: Pharmacies (5), Stockists (4), B2B Orders (8), Pending Approvals = pending stockists+pharmacies (sp-004 + pp-005 = 2), Total Revenue = Σ order.total_amount, **Active Today = 12** (hardcoded). Second row: **New Registrations Today = 3**, **Today ₹5,590 / Yesterday ₹4,200** (hardcoded). Pending Stockists/Pharmacies counts. Revenue chart (DEMO_MONTHLY_TREND.revenue) + Platform Growth chart (DEMO_ADMIN_GROWTH). **System Health: Operational** (static, pulsing dot). Builds KPI cards inline (does NOT use KpiCard).
+
+### 5.2 Approval queues (`AdminPharmacies` / `AdminStockists`)
+- All profiles desc, staleTime 15s. Search. Checkbox multi-select (pending only), "Select All Pending", **bulk Approve/Reject** + inline per-card Approve/Reject (only shown for pending). `updateStatus` sets approval_status (no reason required here; no notification here). Pending-count badge. Ring highlight on selected.
+
+### 5.3 Detail (`AdminPharmacyDetail` / `AdminStockistDetail`)
+- Full profile review. Approve/Reject buttons (shown for pending|rejected); **Reject requires a rejection reason** (input); on either → update status (+rejection_reason) + insert `approval` notification. `updateDocStatus(field,status)` per document (approved/rejected/pending) with inline image/iframe **Preview**, Open link.
+- Docs — pharmacy: Drug License / GST / Pharmacy Certificate; stockist: Drug License / GST / Wholesale / FSSAI.
+- Tabs: Details / (Products — stockist only, `SharedProductCard role="admin"` sourceLabel) / Orders (last 10). InfoRows for business/owner/contact/address/bank; Circle list. "View Chat History" → `/admin/messages/:userId`.
+
+### 5.4 Users (`/admin/users`, `AdminUsers`)
+- Merges stockist_profiles + pharmacy_profiles into one list with role tags. Tabs all/stockist/pharmacy/**doctor/customer** (latter two have **no data source → always 0**). Search name/email. `suspendUser` toggles approval_status suspended↔approved + `system` notification (guards `customer_profiles` table which never occurs). "View" → role detail (doctor/customer paths unrouted).
+
+### 5.5 Orders (`AdminOrders` / `AdminOrderDetail`)
+- List: all orders (join both profiles) desc, search order#/pharmacy/stockist, status tabs all/pending/packed/dispatched/delivered/cancelled (exact match). Card: "pharmacy → stockist", status color, total.
+- Detail: order (+both joins) + items (+products). Status/payment badges, pharmacy/stockist card. **Admin Status Override** (hidden for delivered/cancelled): Select (excludes current) + Apply → RPC `admin_override_order_status` (no-op) + toast + invalidate. Items + Total.
+
+### 5.6 Bills (`/admin/bills`) — read-only
+- All bills (join both). Tiles: Total Billed = Σ total_amount, **Total GST = Σ gst_amount** (seed bills have gst_amount so this shows a real sum). Search + status filter (all/draft/finalized — seed statuses paid/sent/draft, so only draft matches). Cards show GST if >0; badge highlights `finalized` only.
+
+### 5.7 Payments (`/admin/payments`) — read-only
+- All payments (join both). Tile Total Collected = Σ amount. Search (stockist/pharmacy/reference), status filter all/confirmed/pending. Cards: method, reference, badge.
+
+### 5.8 Notifications (`/admin/notifications`)
+- a-user-001 notifications + **Broadcast** (target all/stockist/pharmacy → gather user_ids, dedupe, insert in chunks of 100, type `broadcast`) + **Targeted** (lookup profile by email → insert type `targeted`; note: `profiles` are synthesized so email match works for the 6 seed profiles). Mark-all-read, mark-read on click.
+
+### 5.9 Login History (`/admin/login-history`)
+- Reads **`login_attempts`** ordered by `attempted_at` limit 200 — but `TABLE_DATA.login_attempts` is **empty** (populated data is in the separate `login_activity` array) → page always shows **0 successful / 0 failed / "No login attempts found"**. Tiles + email filter present but moot.
+
+### 5.10 Messages (`/admin/messages`, `AdminMessages`)
+- Loads `conversations` (1 seed row for s-user-001) → per conv fetch profile + last chat_message → list. Click → `/admin/messages/:userId` (= ChatPage in admin view). Search name/email/role.
+
+### 5.11 More / Help / Profile / Settings
+- **More (`/admin/more`)** MenuPage: ACCOUNT / USERS / ORDERS & FINANCE / PLATFORM (Pharmacies, Stockists, Settings, Login History) / COMMUNICATION / PREFERENCES. All routed.
+- **Help (`/admin/help`)**: 8 hardcoded FAQs — several reference features **not present** in this folder (Platform Analytics, Counterfeit Management, System Architecture, Export Data). "View Support Conversations" → /admin/messages.
+- **Profile (`/admin/profile`)**: full_name (editable → update profiles), email disabled, Role disabled "Administrator", Change Password → `/forgot-password` (unrouted → 404).
+- **Settings (`/admin/settings`)**: Logo upload (→ `platform` bucket → placeholder URL); **Commission** (%), **GST Rates** (category select medicines/equipment/consumables/otc + %), **Payment Methods** (checkboxes cash/upi/bank_transfer/cheque). ⚠️ `saveCommission`/`saveGstRate`/`savePaymentMethods` make **NO backend call** — toast + local state only.
+
+---
+
+## PART F — SHARED: CHAT & BILL VERIFICATION
+
+- **ChatPage (`{role}/messages`, admin `/admin/messages/:userId`)**: support chat. Loads/creates `conversations` row for the current/target user, loads chat_messages, subscribes to no-op realtime. `loadQuickQuestions` = **3 hardcoded** ("Quick questions table removed in MVP"). Non-admin send: matches quick-question (prefix/inclusion) → insert canned bot answer; else `chat-bot` invoke (null) → catch → insert canned "forwarded to support" message. Bubble alignment by sender_type/sender_id/isAdmin. In demo, `getUser` returns the demo user, `user_roles` join returns rows (has_role via table not RPC) → admin detection works for a-user-001.
+- **ChatListPage (`{role}/chats`)**: pinned **"Digi Swasthya Support"** conversation (from conversations+chat_messages) + **peer** chats built from `peer_messages` (sent eq sender, received eq receiver) with unread counts; names enriched from stockist/pharmacy/profiles + role from user_roles. `basePath` from URL. Support pinned first.
+- **PeerChatPage (`{role}/chat/:peerId`)**: 1:1. peerInfo name lookup. `loadMessages` uses `.or(and(...),and(...))` which the mock **ignores** → returns the **whole `peer_messages` table** (visible quirk). Realtime subscribe no-op. Send inserts peer_messages (no-op → message won't appear). Bubble side by `sender_id === user.id`.
+- **VerifyBill (`/verify-bill/:billId`, public, no layout)**: if `billId==="preview"` → "Bill Preview / QR active once generated." Else query bills by id → then stockist/pharmacy profiles → "Bill Verified" card (bill no, date, status, total, From/To city/state) or "Bill Not Found". Read-only. (Reachable at current origin, but the QR that BillPreviewDialog embeds points at the *lineage* domain `digi-swasthya-hub.lovable.app`, not the current origin — so scanning the QR won't hit this page.)
+
+---
+
+## PART G — AI & EDGE FUNCTIONS (`supabase/functions/*`) — unreachable at runtime (invoke → null)
+
+All AI functions POST to the Lovable AI Gateway `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`.
+
+| Function | Model / logic | Auth |
+|---|---|---|
+| `parse-order-text` | `google/gemini-3-flash-preview` tool-calling `extract_order_items` → `{items:[{name,quantity,productId?}]}` against supplied catalog. Handles 429/402. | Requires `Bearer` header (presence). |
+| `autofill-product-details` | Same model, tool `return_product_details` → brand/manufacturer/composition/drug_type(enum)/pack_type(enum)/category(enum)/drug_schedule(enum)/requires_prescription/pack_size/hsn_code + confidence + fields_filled. Rejects <3 chars. | Bearer presence. |
+| `parse-purchase-bill` | Same model, vision (image_url) or base64 text; extract product array with a fixed category enum; regex-extracts JSON array; soft-fails HTTP 200 on parse error. | **None** (no auth check). |
+| `chat-bot` | Same model; first fuzzy-matches a `quick_questions` table (≥2 keyword overlap or 25-char prefix) via service-role client; else model with platform system prompt (≤100 words); flags `is_forwarded` if reply mentions "forward"/"admin team"; graceful 429 + catch-all fallback. | Bearer; uses `SUPABASE_SERVICE_ROLE_KEY`. |
+| `architecture-ai` | `google/gemini-2.5-flash`, max_tokens 4096; answers architecture questions about the **"Digi Swasthya Hub"** lineage app (5 roles incl. Customer/Doctor, B2B+B2C) via injected `architectureContext`. Docs helper, not a product feature. | **None.** |
+| `seed-admin` | Service-role; creates/reuses auth user from body `{email,password}`, ensures `admin` user_roles row. No hardcoded creds. | Service-role; body-driven. |
+| `seed-production-data` | Seeds a real project with Jaipur-area demo data (PINs 303328/302021/…, ~25 areas, 10 banks/IFSC, ~20 stockist names, ~50 pharmacy names, products/orders). Dev/ops utility. | Service-role. |
+| `flowboard-data` | Read-only architecture/blueprint API (`?type=sections|nodes|screens|routes|business-logic|infrastructure|database`, META v5.0.0). Emits a large hand-authored map of the **lineage** app (auth/stockist/pharmacy/doctor/customer/b2b/b2c/admin sections, per-node inputs/outputs/validations/failureCases/status). `database` tries `get_flowboard_schema` RPC with a static `KNOWN_TABLES` fallback. Powers an architecture explorer. | **None.** |
+
+---
+
+## PART H — PAYMENT, CREDIT & FIFO LOGIC (exact)
+
+### `CollectPaymentDialog` — FIFO / manual allocation
+- Fetches unpaid/partial orders (eq stockist+pharmacy, `in payment_status [unpaid,partial]`) ascending by created_at.
+- **FIFO (auto):** `remaining = amount`; walk orders oldest-first: if `remaining ≥ orderAmt` → status `full`, remaining−=amt; else one `partial` (allocated=remaining, remaining=0); rest `none`.
+- **Manual:** click orders to select → amount auto = Σ selected; each selected treated as `full`.
+- "Full (₹{totalPending})" quick button. Payment method buttons cash/upi/bank_transfer/cheque + optional Reference.
+- Record: insert `payments` (status `confirmed`, no method note for delivery), set each order payment_status (full→paid, partial→partial), and circle `outstanding = max(0, outstanding − amt)` **directly (non-atomic; no RPC; never touches credit_balance)**. Toast, close, onDone.
+
+### Credit-limit enforcement (asymmetric)
+- Pharmacy `placeOrder` (storefront) & quick-order: **hard block** when `out + cart > limit`.
+- Stockist `StockistCreateOrder`: **warn but allow** (dialog "Proceed Anyway"). Storefront warning threshold `limit × 0.8`.
+
+### Outstanding balance handling — inconsistent
+- Generally read from `stockist_pharmacy_circle.outstanding`, adjusted by deltas via RPC `update_circle_outstanding` in "atomic" paths (create order, cancel, edits, returns-unpaid, pharmacy payment, quick order).
+- **Direct writes** (non-atomic) in `CollectPaymentDialog` (outstanding only) and `BillPreviewDialog` (outstanding += total) and returns-paid (credit_balance +=).
+- Ledgers: only `StockistPharmacyDetail` computes a running balance (with order_returns); all others just list signed rows or read circle.outstanding.
+
+### Returns
+- `handleReturnItems`: refund = Σ (price||sale_price)×qty; paid → credit_balance +=; unpaid → RPC outstanding −=. **Never inserts an `order_returns` row** (though that table is read by the pharmacy-detail ledger — so returns never surface there).
+
+### PDFs / QR / WhatsApp
+- Bills: html2canvas→jsPDF (A4); receipts: `generateReceiptPdf` (jsPDF A5, header/rows/total/"computer-generated"). QR via qrcode.react → hardcoded lineage domain. `wa.me` deep links for reminders, dispatch text, bill share.
+
+---
+
+## PART I — REALTIME / OFFLINE / PWA / STORAGE
+
+- Realtime: none. `useRealtimeNotifications` = `() => {}`. Mock channel no-ops. TopNav badges hardcoded (chat 1, bell 2).
+- Offline: `useOfflineDetector` (navigator.onLine + events) → `OfflineBanner` (#214). No mutation queue.
+- PWA: `public/manifest.json` (per README/lineage) + hand-written `public/sw.js`. `vite.config.ts` uses react-swc + lovable-tagger only (no VitePWA), host `::`, port 8080, HMR overlay off.
+- Storage buckets referenced: `product-images` (public URL), `documents` (signed URL), `platform` (logo) — all → `https://placeholder.com/...`.
+
+---
+
+## PART J — DATA MODEL (`types.ts`, PostgrestVersion 14.4)
+
+- **22 tables:** bill_orders, bills, chat_messages, conversations, login_activity, login_attempts, messages, notifications, order_items, order_status_history, orders, payments, peer_messages, pharmacy_profiles, product_batches, product_media, products, profiles, serviceable_areas, stockist_pharmacy_circle, stockist_profiles, user_roles. (`order_returns` and `quick_questions` are **referenced in code but absent** from the types & mock.)
+- **15 RPCs:** admin_override_customer_order_status, admin_override_order_status, admin_send_targeted_notification, check_login_rate_limit, decrement_stock, deduct_pharmacy_inventory, deduct_product_stock, get_flowboard_schema, has_role, hash_password, record_login_attempt, restore_pharmacy_inventory, restore_product_stock, update_circle_outstanding, verify_staff_credentials. (Mock stubs 3 → truthy; rest → null.)
+- **Enums:** `app_role = admin|stockist|pharmacy|customer|doctor` (customer/doctor unused in this frontend); `approval_status = pending|approved|rejected` (`suspended` used as a string by AdminUsers though not in the enum).
+- Constants: `PHARMA_BRANDS` (~100), `PRODUCT_CATEGORIES` (16), `GST_RATES` (0/5/12/18/28%), `DRUG_SCHEDULES` (None/H/H1/X/G/J), `DRUG_TYPES` (Allopathy/Ayurvedic/Homeopathy/Unani), `PACK_TYPES` (13). `INDIAN_STATES` (36) + `getCitiesForState`.
+- Notification `type` values used across app: order, payment, stock, bill, approval, system, broadcast, targeted, payment_reminder, price_change, feedback, registration, circle_status, profile_update.
+- 55 SQL migration files under `supabase/migrations/` (not applied by the mock; historical schema).
+
+---
+
+## PART K — EDGE CASES, BUGS & STUBS (consolidated)
+
+**Data-layer no-ops:** every insert/update/delete/upsert, every `functions.invoke`, all non-trivial RPCs, realtime, and storage are no-ops returning success; writes "stick" only where a component also mutates React state / query cache.
+
+**Mock-filter quirks:**
+- `.filter()` ignored → `StockistOrders` (via usePaginatedQuery) shows orders from ALL stockists, unpaginated by stockist.
+- `.or()` ignored → `PeerChatPage` shows the entire peer_messages table for any peer.
+- Non-mapped joins resolve empty → StockistPayments approvals (delivery_staff join), SharedProductDetail sales chart (order_items→orders), all `order_returns` reads.
+
+**Status/vocabulary mismatches:**
+- Seed order statuses `confirmed`/`processing` aren't in `statusFlow` → no "Mark as next"/timeline for those; `confirmed`&`cancelled` land in the "pending" tab bucket on StockistOrders.
+- Seed `order_source:"whatsapp_parse"` shown raw as a pill.
+- Bill status chaos: writers use `confirmed`/`final`; readers check `confirmed`/`finalized`; seed uses `paid`/`draft`/`sent` → highlights rarely match.
+- Seed payment method `neft` not in any picker.
+
+**Dead / unreachable:**
+- Pages with no route: Login, Register (+StockistRegistration/PharmacyRegistration 5-step wizards), ForgotPassword, ResetPassword, PendingApproval, Index. `/login`&`/register` redirect to `/`.
+- Components not wired into shipped pages: `ProductForm`, `ProductCard` (parallel implementations; products page uses SharedProductCard + full-page Add/Edit).
+- Dead links from menus/buttons: StockistPayments "Record" → `/stockist/record-payment`; StockistMore → ~15 unrouted routes; AdminProfileSettings "Change Password" → `/forgot-password`; AdminUsers "View" for doctor/customer.
+- Dead variables/imports: `StockistOrderDetail.canAssignStaff` (no UI); `StockistOrders` on-page `filters` array; `StockistAddProduct.counterfeitWarning`; `AppLayout` Button/RefreshCw imports; `PharmacyQuickOrder.getNextDeliveryDay`/WEEKDAYS.
+- Styling bug: StockistHome quick-action uses dynamic `bg-${color}/10` classes (not JIT-generated).
+
+**Hardcoded figures:** TopNav badges 1/2; StockistHome "Pending Bills":1; PharmacyDashboard "Connected Stockists":3; AdminDashboard Active Today 12 / New Registrations 3 / Today ₹5,590 / Yesterday ₹4,200 / System Health Operational; StockistHome top-pharmacy & top-product lists; "Verified" phone & "1 device" in Privacy.
+
+**Account/settings stubs:** delete-account (both roles) toast-only; password/email always mock-succeed; AdminSettings commission/GST/payment saves make no backend call; settings/theme persist only to localStorage; only English enabled (Hindi "Coming Soon — April 1"); currency read-only ₹ INR.
+
+**Financial gaps:** no GST math despite gst_rate/gst_amount and "TAX INVOICE"; no delivery-fee math despite pharmacy delivery-config; returns never write order_returns; outstanding writes non-atomic in 2 paths.
+
+**AI dead in demo:** parse-order-text (create-order, quick-order), autofill-product-details (Auto Fetch), parse-purchase-bill (bulk bill), chat-bot — all receive null → visible failures ("No items could be parsed", "No details found", canned support reply).
+
+**Misc:** AdminLoginHistory reads the empty `login_attempts` (data is in `login_activity`) → always empty; MenuPage footer "v1.0.0" vs APP_VERSION "2.0.0"; BillPreviewDialog QR points at lineage domain (won't reach local VerifyBill); StockistBusinessDetails price-change notification filters circle by non-existent `status="active"` → 0 recipients; SharedProductDetail sales chart always empty (join unsupported).
+
+---
+
+*Read directly from source: App.tsx, integrations/supabase/{client,types}.ts, lib/{dummy-data,constants,pharma-brands,indian-states-cities,format-date,generate-receipt-pdf}.ts, all hooks, every page under src/pages/**, every component under src/components/{layout,shared,stockist,registration}, and all 8 supabase/functions/*.*
+
+---
+
+---
+
+## Appendix H — STOCKIST-PHARMACY (SP)
+
+> Source: `_reviews/review-STOCKIST-PHARMACY.md` · Repo folder: `STOCKIST-PHARMACY/`
+
+# STOCKIST‑PHARMACY — Exhaustive Functional Review
+
+> Code-derived, screen-by-screen and flow-by-flow. Covers both tenant panels (Stockist + Pharmacy), all staff roles, every page/modal/slide-over with fields + validation, all cross-tenant flows, every server service rule and error path, and every API route ↔ service mapping. Read directly from `client/src/**`, `server/src/**`, `shared/*`, plus `FEATURES.md` / `additions.md`.
+
+---
+
+## 0. Platform Shape, Stack & Tenancy
+
+- **Monorepo (npm workspaces):** `client` (React 19 · Vite · Tailwind · TanStack Query 5 · Zustand 5 · React Router 7 · axios · Recharts · jsPDF/html2canvas · react-hot-toast), `server` (Express 4 · Drizzle ORM over **PGlite** embedded Postgres · jose JWT · bcryptjs · multer · helmet · zod · `@google/genai`), `shared` (DTOs + enums + constants imported by both).
+- **Two tenant types**, one codebase, one DB, **never cross-read**: `tenants.tenantType ∈ {stockist, pharmacy}`. All cross-tenant state flows through a **connection record** + an append-only **event queue** (`cross_tenant_events`).
+- **Roles (`users.role`)**: `admin | biller | pharmacist | cashier` — per-tenant staff roles, **no platform super-admin** (`additions.md §D`). Stockist uses admin/biller; Pharmacy uses admin/pharmacist/cashier.
+- **Server boot** (`server/src/index.ts`): helmet (CSP off), CORS with credentials, JSON limit 10 MB, connect DB, run inline migration, listen on `PORT` (default 4000). `DATABASE_URL` defaults to `pglite:memory`.
+- **Client entry** (`App.tsx`): `QueryProvider` → `Toaster` (top-right) → `BrowserRouter` → `SessionExpiredRedirect` + `AppRoutes`. All pages `React.lazy` under `<Suspense>`.
+- **Two shells:** `MainLayout` (Sidebar/Header/BottomNav, **blue** accent, brand word "Stockist") for `/*`; `PharmacyMainLayout` (**teal** accent, "Pharmacy") for `/pharmacy/*`. Both mount `useEvents(50,{poll:true})` — polls `POST /events/process` every 10 s (§16).
+- **Axios** (`api/client.ts`): `baseURL:/api`, `withCredentials`. On any non-`/auth/login` 401 → `triggerAuthRedirect` to `/login` or `/login?panel=pharmacy` (chosen by whether the current path starts with `/pharmacy`).
+
+---
+
+## 1. Authentication, Sessions, Registration, Panels
+
+### 1.1 Routes (`client/src/routes/index.tsx`)
+Public (no shell): `/login`, `/register`, `/forgot-password`, `/reset-password`. Legacy `/pharmacy/login` and `/pharmacy/register` **redirect** to unified `/login`/`/register`; `/pharmacy/forgot-password` and `/pharmacy/reset-password` render the same page components.
+Per-route role wrappers: `admin(el, deniedRedirect?)` = `requiredRole="admin"`; `billerReports` = admin+biller; `pharmPlus` = admin+pharmacist; `cashierPlus` = admin+pharmacist+cashier.
+
+### 1.2 ProtectedRoute (`components/auth/ProtectedRoute.tsx`)
+- On mount (if `!initialized`) calls `GET /auth/me`; success → `setUser`; failure → `logout()`. Renders "Loading…" until initialized.
+- No user → `<Navigate to="/login" state={{from}}>`.
+- Wrong `requiredTenantType` → redirect to the user's own `defaultDashboard` (`/dashboard` or `/pharmacy/dashboard`).
+- `requiredRole==='admin'` and not admin → either `deniedRedirect` (with error toast) or a full "Access Denied" panel. `allowedRoles` mismatch → "Access Denied" panel.
+
+### 1.3 Login page (`auth/LoginPage.tsx`)
+- Panel detected from path/`?panel=` (`lib/panel.detectPanelFromPath`). Brand accent + wordmark switch blue/teal.
+- **Fields:** Email (text, `inputMode=email`, required, autofocus), Password (with show/hide eye toggle). "Forgot password?" link → `forgotPasswordPath(panel)`.
+- **Submit:** `POST /auth/login` with `{email,password, tenantType:'pharmacy' only if pharmacy panel}`. On success → `setUser`, navigate to `location.state.from` (unless it contains `/login`) else `defaultDashboard(tenantType)`.
+- **Error handling:** no response → "Cannot reach server…"; 429 → "Too many attempts…"; 401 → server error msg or "Invalid credentials"; ≥502 → server-down message; else generic.
+
+### 1.4 Register page (`auth/RegisterPage.tsx`) — SINGLE FORM (multi-step wizard is missing, `additions.md §B/§C`)
+- Stockist/Pharmacy **toggle** (initial from `?panel`). Labels adapt ("Pharmacy Name" vs "Business Name").
+- **Fields:** Business/Pharmacy Name, Your Name, Email, Phone (`type=tel`), State Code (`maxLength 2`), **Drug License (DL) — pharmacy only, required**, Password (with live strength meter via `passwordStrength`), Confirm Password. All eye-toggles.
+- **Client validation (`lib/validation`):** all-required check; pharmacy DL required; `validateEmail`, `validatePhone` (last-10 digits `^[6-9]\d{9}$`), `validateStateCode` (`^\d{2}$`), `validatePassword` (≥8, upper+lower+digit), password==confirm. Errors toasted sequentially (120 ms stagger).
+- **Submit:** `POST /auth/register` with `phone: normalizePhone(phone)` (last 10 digits), then `GET /auth/me`, then navigate to default dashboard. NOT collected (gaps): business type, PAN, WhatsApp, city, own PIN, serviceable pincodes, document uploads, bank details.
+
+### 1.5 Auth server (`routes/auth.ts`, `services/userService.ts`, `lib/cookies.ts`, `middleware/auth.ts`)
+- **JWT** via jose HS256, secret `env.JWT_SECRET` (**boot fails if < 32 chars**, `env.ts`). Payload `{sub,tenantId,email,name,role,tenantType}`, `setIssuedAt`, `setExpirationTime(JWT_ACCESS_TTL default 24h)`. Delivered as **httpOnly cookie** `accessToken` (`sameSite lax`, `secure` in prod only, maxAge 24 h). `getAuthTokenFromRequest` also accepts `Authorization: Bearer`.
+- **`register`** — Zod `RegisterSchema`: businessName≥2, name≥2, email, password(min8 +upper+lower+digit), stateCode `^\d{2}$`, phone `^[6-9]\d{9}$`, optional gstin (full GSTIN regex) or `''`, optional dlNumber, tenantType default `stockist`; **`superRefine`: pharmacy requires dlNumber ≥3 chars**. `registerTenant`: rejects duplicate email (409 "already exists"); bcrypt hash (rounds 10); creates tenant, one `users` row `role:'admin'`, seeds 16 ledger accounts, generates `inviteCode` (`randomBytes(4).hex().toUpperCase()`) **for stockists only**; on user-insert failure **rolls back the tenant** (delete). Rate-limited + `auditMiddleware('auth')`.
+- **`login`** — `loginUser` looks up **all** active users with that email across tenants, bcrypt-compares each; if `tenantType` supplied filters to that panel, else throws `This account is registered on the {Pharmacy|Stockist} panel` (→ 403). Updates `lastLoginAt`. Returns onboarding fields.
+- **`me`** — identity + tenantType + `onboardingCompleted/onboardingStep` from live tenant row.
+- **`logout`** — clears cookie.
+- **`forgot-password`** — `forgotPassword` creates a `password_reset_tokens` row (jti, 15-min expiry) + a jose reset JWT; returns generic message always; `emailConfigured` from SMTP/Resend env; dev returns `devToken`. Only exact single-user match proceeds.
+- **`reset-password`** — verifies reset JWT purpose+jti+sub, checks token row unused/unexpired, bcrypt-sets new hash, marks `usedAt`, **revokes refresh tokens**. Rate-limited + audited.
+- **Session validity (`authenticate`)** — re-queries user+tenant on **every** request: 401 if user missing/`!isActive`; 401 `Session expired` if `floor(user.updatedAt/1000) > token.iat` (password change / profile update invalidates tokens); `tenantType` from live tenant.
+- **Refresh tokens** — table + `revokeUserTokens()` exist (used on password change/deactivation) but **no `/auth/refresh` endpoint** (`additions.md`).
+
+### 1.6 SessionExpiredRedirect
+`authStore.triggerAuthRedirect` sets `pendingAuthRedirect`; the redirect component (mounted in `App`) reacts and routes to login. `authStore` also holds `user/initialized/logout` (best-effort `POST /auth/logout` then clears local).
+
+### 1.7 Middleware posture (`server/src/middleware/*`)
+- `authenticate` (§1.5). `requireRole(...roles)` → 403. `requireRoleForTenant({stockist:[],pharmacy:[]})` → tenant-scoped role gate; exports `sharedProductWrite`/`sharedProductAdjust` (`stockist:['admin']`, `pharmacy:['admin','pharmacist']`).
+- `requireTenantType('stockist'|'pharmacy')` → 403 if wrong panel; 400 if tenantType missing.
+- `auditMiddleware(entityType)` — on POST/PUT/PATCH/DELETE captures before-state (PATCH/PUT by id, or tenant PATCH), writes `audit_logs` on 2xx `finish`, **redacts** password/passwordHash/token/etc. Non-fatal on error.
+- `rateLimit({windowMs,max,keyFn})` — in-memory fixed window per IP; sets `Retry-After`; 429. `authRateLimit` = 5/min prod, 200/min dev; `/api/public/*` = 60/min.
+- `errorHandler` — ZodError→400; `InsufficientStockError`→409; `Error.statusCode===409`→409; `DUPLICATE_REFERENCE:`→409 (strips prefix); `Invalid credentials`→401; `…registered on the…`→403; else 500.
+- **Router tenant pinning:** stockist-only = orders, bills, payments, supplier-payments, purchases, returns, suppliers, pharmacies; pharmacy-only = purchase-orders, grn, payable-bills, payable-payments, retail-sales, customers, stockist-returns; shared = products, settings, stockist-connections, reports, events, communication; `audit-logs`+`system` require admin; `public` unauthenticated.
+
+---
+
+## 2. STOCKIST PANEL
+
+Shell `MainLayout`. Sidebar groups (Sidebar.tsx): **[Dashboard]**; **Operations**: Pharmacies, Incoming Orders (badge = live incoming count, path `/orders?source=pharmacy&status=pending`), Orders, Bills, Payments, Returns; **Inventory**: Products, Purchases (`/purchase-bills`), Suppliers, Required Stock, Reports; **Admin (adminOnly)**: Audit Logs, Settings. Footer = user chip + logout. Mobile `BottomNav`: Home / (Incoming when count>0) / Orders / Pharmacies / Bills + "More" sheet (all modules, admin-gated). Header: product search (Enter→`/products?search=`), notification bell (alerts: incoming orders, pending connection requests, low-stock, overdue bills + event history + "Sync now"), profile menu (Settings admin-only, Sign out).
+
+### 2.1 Dashboard (`/dashboard` → `reportService.getDashboardKpis`)
+- **Controls:** KPI period date-from/date-to (default month-to-date). On first load, if `user && !onboardingCompleted && role==='admin'` → opens `OnboardingFlow`.
+- **KPIs (StatCards):** Today's Sales (Σ `orders.total` where orderDate=today); Period Sales (Σ total in range); **Total Outstanding (admin only)** (Σ `pharmacies.outstanding`); Awaiting Pack = `packBacklogOrders` (pending AND (source≠pharmacy_submitted OR approvedAt not null)) → `/orders?status=pending`; Incoming Portal = `incomingPortalOrders` (pharmacy_submitted + pending + approvedAt IS NULL) → incoming filter; Active Connections (status='active') → `/settings?tab=connections`; Low Stock Items = count of products with Σ non-expired on-hand `< minStockLevel` → `/required-stock`; Overdue Bills = `buildOverdueBillFilter` count → `/bills?status=overdue`.
+- **Widgets:** `IncomingOrdersWidget` (5 latest pharmacy_submitted+pending, click→order); Recent Orders (5 latest, badge); Low Stock (5, click→product).
+- **Quick actions:** New Order (admin), Review Incoming, Record Payment (`/payments?record=1`), Add Purchase, View Reports.
+
+### 2.2 Onboarding (`dashboard/OnboardingFlow.tsx`, SlideOver, 4 steps)
+Steps: **Business Profile** (fields: DL required, GST optional [validated if entered], Registered Address textarea → saved as `addressJson.line1`; persists via `PATCH /settings/tenant` + `PATCH /settings/onboarding`), **First Pharmacy** (gate: `hasPharmacy` else blocks Next), **Import Products** (gate: `hasProducts`), **Add Staff** (`hasStaff` = >1 user; complete). Dismiss/X/backdrop = best-effort save + persist step **without** completing. Server `PATCH /settings/onboarding` enforces min-setup gates (see §2.11).
+
+### 2.3 Pharmacies (`/pharmacies`, `/pharmacies/:id`) — `routes/pharmacies.ts`
+**List:** search (name/phone/gstin/dl), Portal filter (All/Connected/Manual → `portalConnected`), Status filter (active/inactive/blocked), Add Pharmacy. Columns: Pharmacy(name+address) · Contact(person+phone) · Outstanding (red if >0) · Portal badge · Status badge. Mobile cards.
+**AddPharmacyModal (SlideOver):** Pharmacy Name*, Owner/Contact Person, GSTIN, State Code (default 08), **Drug License (DL)\***, Credit Limit, Opening Balance, Payment Terms (COD/7/15/30), Phone*, Email, Address textarea. Client-validates phone/state/gstin/email; `normalizePhone`. `POST /pharmacies` (admin). **EditPharmacyModal** mirrors (PATCH).
+**Server (`PharmacySchema`):** name≥2, contactPerson default 'Contact', phone≥7, email optional, address default, stateCode, gstin/dlNumber optional, creditLimit default `DEFAULT_CREDIT_LIMIT=50000`, paymentTermsDays 30, status active, openingBalance 0. Create/edit require admin.
+**Detail page:** header actions Edit / Deactivate↔Activate (Deactivate uses ConfirmDialog) / Record Payment. StatCards: Outstanding, Total Orders, Credit Limit, Payment Terms. Sidebar: Business Profile (contact/phone/email/address) + Compliance & Billing (DL/GSTIN/state/opening balance). **Tabs:** Orders (list→order), Bills (unpaid), **Ledger** (opening balance row + Sundry Debtors partner lines with running balance; shows discrepancy banner between computed vs stored `outstanding`; admin "Reconcile Outstanding" → `POST /:id/reconcile-outstanding` recomputes from ledger), Returns, Connection (portal-connected only; shows pharmacyTenantId).
+**Endpoints:** list; `:id`; `:id/orders`; `:id/bills` (`?unpaidOnly`); `:id/outstanding-bills`; `:id/credit-info` (uses `getPharmacyExposure`); `:id/returns`; `:id/ledger`; `POST /` (admin); `PATCH /:id` (admin); `POST /:id/reconcile-outstanding` (admin).
+
+### 2.4 Products & batches (`/products`, `/products/:id`) — shared `routes/products.ts`
+**List (`ProductListPage`, panel-aware):** search (name/generic/hsn), category filter (from `/products/categories`), Add Purchase (stockist admin/biller → `UploadBillModal`), Bulk Update, Add Product, Export (admin → `/products/export` CSV). Columns: Product(name + hsn/manufacturer, low-stock ⚠) · Category · Stock (red if ≤min) · MRP · GST. Cashier (pharmacy) hides MRP/GST columns.
+**Server list:** `currentStock` = correlated subquery **summing only non-expired batches** (`expiry_date > CURRENT_DATE`); filters `isActive` unless `includeInactive`; category; search. `export=1` admin-only up to 50 000 rows; `truncated` flag when >pageSize.
+**AddProductModal (SlideOver):** Product Info — Name*, Generic Name, Manufacturer (datalist of existing), Category (select from categories or free text)*, HSN, Schedule (NONE/H/H1/X/NDPS), Pack Size, Conv. Factor, Base Unit (Tab), Sale Unit (Strip), Scheme Base, Scheme Bonus, GST Rate (0/5/12/18/28), Status; Pricing — MRP*, Purchase Rate*, Sale Rate*; Inventory — Min Stock Level. Client `validateHsn` (4–8 digits) + `validateProductPrices` (purchase≤MRP, sale≤MRP, sale≥purchase). **EditProductModal** = same minus scheme/units/status.
+**Server `ProductSchema`:** name≥2, category, scheduleType, packSize coerce>0 default 1, baseUnit/saleUnit defaults, convFactor default 10, gstRate 0–28 default 12, mrp/purchaseRate/saleRate positive, minStockLevel default 10, isActive default true. On create/update by a **stockist** → `pushCatalogToActiveConnections(tenantId,[id])` background (re-syncs all active connection catalogs + public catalog). Pharmacy create/update do not push.
+**AdjustStockModal (SlideOver):** Batch select (shows on-hand + expiry + EXPIRED/xd-left), signed Quantity Change (+/−, non-zero), Reason (damaged/expired/cycle_count/lost/other) — **must be actively chosen**, Notes. Projects `currentOnHand → projected`. Server `adjust-stock` (`sharedProductAdjust`): existing batch only; **stockist requires `sourcePurchaseId`**; newOnHand≥0; **newOnHand ≤ qtyReceived (C25)** — cannot inflate stock beyond historical receipt; writes `stock_movements` reason `adjustment`, never mutates `qtyReceived`.
+**BulkPriceEditModal (SlideOver):** downloads `/products/export` as CSV template (id/name/mrp/purchaseRate/saleRate), re-upload; client parses (`parseCsvLine`), requires `id` column, PATCHes each row; shows per-row failures.
+**Detail page:** KPI cards (Current Stock+baseUnit, Min Level, MRP [hidden for cashier], HSN). Tabs: **Product Info** (Details/Categorisation + Rates & Taxes [MRP/PTR/Purchase/GST]) and **Batches (n)** (Batch #, Expiry with tier badge, Qty On Hand, MRP, Purchase Source→purchase bill link or "Direct Entry"). Actions: Adjust Stock (admin, or pharmacist on pharmacy), Edit (canWriteProducts).
+Other endpoints: `/:id/batches` (order by expiry asc); `POST /from-catalog/:catalogItemId` (pharmacy-only — resale saleRate defaults to MRP not cost).
+
+### 2.5 Orders (`/orders`, `/orders/create`, `/orders/:id`) — `routes/orders.ts` + `orderService.ts`
+**State machine:** `pending → packed → shipped → delivered`, plus `cancelled`. Source `stockist_created | pharmacy_submitted`. Synthetic list filter **`approved`** = pending AND approvedAt not null; `pending` for pharmacy_submitted **excludes** approved-but-unpacked (`isNull(approvedAt)`).
+**List:** filters search, Pharmacy, dateFrom/dateTo, Source (All/Pharmacy Portal/Manual), Status (pending/approved/packed/shipped/delivered/cancelled). Inline **Approve** button (admin only) for pharmacy_submitted+pending+!approvedAt → `ApprovePharmacyOrderModal`. New Order (admin) → create page. Columns: Order# · Pharmacy · Source badge · Date · Status · Total · Actions.
+**CreateOrderPage (admin only route):** sessionStorage draft (`stockist:createOrderDraft`) auto-restore/save. Left: line table (product select showing stock, Qty [capped to stock with toast], Rate editable, GST% display, Amount, delete). "Paste Order" WhatsApp parser (regex `^(name)[sep](x?)(qty)(unit)?$`, fuzzy match exact→contains→token). Right: Select Pharmacy (active only), **live credit widget** for credit mode (exposure/limit/headroom, red if exceeds), Order Date, Payment Mode (credit/cash), Notes, GST summary (client `computeGst` seller=tenant.stateCode vs buyer=pharmacy.stateCode → CGST/SGST or IGST), Grand Total. Actions: Draft Print, **Save as Pending**, **Create & Pack** (create then finalize). Blocks submit if exceeds credit or credit still loading.
+**`createOrder` (server, admin):** prices each line at product `saleRate`, `computeGst` per line, `placeOfSupply=pharmacy.stateCode`, `isInterstate` from tenant vs pharmacy state; order number `ORD-YYYY-####` with **3-attempt collision retry**; for **credit** mode: pharmacy must be `active` (`PHARMACY_INACTIVE`), and `creditLimit>0` → refuse if `exposure+total > limit` (`CREDIT_LIMIT_EXCEEDED`). Batch auto-picked for display only.
+**`finalizeOrder`/`finalizeOrderCore` (POST /:id/finalize, admin):** transaction — must be `pending`; pharmacy_submitted requires `approvedAt`; re-check credit (exclude self); **reserve stock FEFO** per line (`reserveStock`) rolling back all reservations on `InsufficientStockError`; sets first consumed batchId onto order item; status→`packed`; portal → emit `order.packed`; credit → `pharmacies.outstanding += total`; **post sales ledger** (credit: Debtors Dr / Sales Cr + CGST/SGST or IGST Cr; cash: Cash Dr / Sales Cr + taxes); then **generateBill** if `pharmacy_submitted || credit`.
+**Ship (POST /:id/ship, admin):** requires `packed`; conditional UPDATE to `shipped` with carrier/awb/shippedAt; **generates bill (idempotent)** for portal/credit; emits `order.shipped` with carrier/awb/shippedAt. `ShipOrderModal`: Carrier (optional), AWB (optional).
+**Deliver (POST /:id/deliver, admin):** requires `packed`/`shipped`; **portal orders require an existing bill** else `BILL_REQUIRED`; status→`delivered`; emits `order.delivered`. `RecordDeliveryModal` (SlideOver): read-only item table (product/qty/batch), "stock released from FIFO batches" note (note: stock already reserved at pack).
+**Approve (POST /:id/approve, admin):** `approvePharmacyOrder`: must be pharmacy_submitted+pending+!approvedAt; pharmacy active; credit check uses **connection.creditLimit** first, else pharmacy limit; sets approvedAt/approvedBy, emits `order.accepted`; `finalizeNow` → finalize in same tx. `ApprovePharmacyOrderModal`: shows order/pharmacy/total, **credit utilisation bars** (used/after), item stock table (short lines red), blocks approve if `afterOrder<0` or any short line or detail error. Buttons **Approve** / **Approve & Pack**.
+**Reject (POST /:id/reject, admin):** reason≥3; status→cancelled + rejectionReason; emits `order.rejected`. `RejectPharmacyOrderModal` textarea.
+**Cancel-approved (POST /:id/cancel-approved, admin):** only when pending+approvedAt; clears approval, status→cancelled; emits `order.cancelled`. Reason modal (≥3).
+**Cancel (POST /:id/cancel, admin):** allowed `pending`/`packed`; **blocked if bill exists** (`OrderHasBillError`→400 code ORDER_HAS_BILL); packed cancel: release stock, `outstanding -= total` (GREATEST 0), reversing ledger; emits `order.cancelled` for portal.
+**Generate bill (POST /:id/bill, admin/biller):** `GenerateBillModal` (SlideOver) shows order/pharmacy/items/amount; navigates to bill. **Initiate return (POST /:id/return, admin):** only `delivered` orders; `InitiateReturnModal`.
+**Order detail page:** stepper (Pending→Packed→Shipped→Delivered or Pending→Cancelled). Banners: portal-submitted, bill generated, bill-required-before-delivery, rejection reason. Tabs: **Items & Stock** (product/batch/exp, qty, rate, GST%, total) and **Manage Actions** (Generate Bill card, Initiate Return card for delivered). Header actions by role/state: Print; admin Cancel (pending/packed, no bill); portal Approve/Reject; non-portal Pack; approved-portal Cancel Approved + Pack; Ship (packed); Record Delivery (packed/shipped, blocks if bill required); Generate Bill (admin/biller when no bill & packed/shipped). Non-admin portal-pending sees "Admin approval required".
+**Detail server (`GET /:id`):** items with `stockOnHand` (all batches) + per-item `returnedQty` (sum of return items) + batch info; linked bill; `creditInfo{limit,used,available}` (connection limit preferred); `hasBill`.
+**`getPharmacyExposure` (credit engine):** = unpaid bill balances Σmax(0,total−paid) + in-flight approved-but-unbilled orders (pending/packed/shipped with approvedAt and no linked bill). Enforced at create, finalize, approve.
+**AI order parse (POST /orders/parse-text, admin/biller):** gated `FEATURE_AI_PARSE`; `aiOrderParseService` (Gemini `gemini-2.0-flash`) → catalogue-matched line items (exact/high/low/none confidence). No dedicated UI (Create page uses its own client-side parser).
+
+### 2.6 Bills (`/bills`, `/bills/:id`) — `routes/bills.ts` + `billService.ts`
+**`generateBill`** — idempotent (unique index on `bills.order_id` + `23505` short-circuit); computes GST per line, `subtotal+tax=total`, billNumber `INV-YYYY-####`, `dueDate = billDate + pharmacy.paymentTermsDays (default 30)`. For **portal** orders emits **`bill.generated`** carrying full line items (externalProductId, batch, rates, cgst/sgst/igst, lineTotal) so pharmacy mirrors a payable bill.
+**Overdue is derived, not stored** — `markOverdueBills` is a deliberate no-op (never clobbers `partial`); `isBillOverdue`/`buildOverdueBillFilter` = unpaid/partial + dueDate<today + total>paid. List injects `displayStatus`.
+**List:** search (billNumber/pharmacy), status (All/Paid/Partial/Unpaid/Overdue). Columns: Invoice# · Pharmacy · Date · Due (color-coded: red overdue/≤0d, amber ≤7d) · Status · Total · Paid · Outstanding. Footer page-total.
+**Detail page (`#invoice-content` printable):** seller header (tenant name/address/GSTIN/DL/state), "IGST INVOICE" vs "GST INVOICE", invoice/date/due; Billed-To; item table (Product+batch/exp · HSN · Qty · Rate · Taxable · GST% · Total); **Payments Allocated** table (payment#/date/method/status/allocated, voided rows struck-through); totals (Taxable, CGST/SGST or IGST, Invoice Total, Paid, Outstanding); footer "computer generated invoice" (**no QR — `additions.md §A`**). Actions: status badge; Initiate Return (if orderId + delivered + status in partial/paid/unpaid); Record Payment (if not paid); **Send WhatsApp** (client rasterizes `#invoice-content` to PDF via `invoicePdf.ts`, `POST /communication/send-bill`; gated `features.whatsapp`+configured); Print; **Override Status** (admin/biller): Mark unpaid (only if paid=0) or Mark paid (requires Notes; non-cash requires reference) — Mark paid routes through `recordPayment` for the outstanding amount + writes `BILL_MARKED_PAID` audit; partial is not manually settable.
+**`PATCH /:id/status`** — status ∈ unpaid/partial/paid; paid requires notes; paid+outstanding→synthetic payment via `recordPayment`; unpaid only if currentPaid=0; partial→400 "Use Record Payment".
+
+### 2.7 Payments received (`/payments`, `/payments/:id`) — `routes/payments.ts` + `paymentService.ts`
+**RecordPaymentModal (SlideOver):** Pharmacy account, Outstanding banner, Amount Received*, Payment Mode (upi/cash/bank/cheque), Reference (label per method: UTR/Reference/Cheque #; **onBlur dedup** via `GET /payments/check-reference` → warns "Already used on payment X"), Date, **Bill Allocation** table (checkbox + editable amount per outstanding bill; **Auto FIFO** button fills oldest-first). Validates pharmacy/amount/refWarning/non-cash-reference/alloc≤amount.
+**`recordPayment` (admin/biller):** non-cash requires reference (`REFERENCE_REQUIRED`) + **unique non-voided reference** (`DUPLICATE_REFERENCE`); transaction: allocate FIFO across oldest bills (or explicit allocations, alloc-sum≤amount); conditional bill UPDATE recomputes status and **refuses over-allocation** (`paid+alloc ≤ total`); `outstanding -= totalAllocated` (GREATEST 0); posts ledger (method account Dr / Debtors Cr). Payment number `PAY-#####`.
+**List:** search, Record Payment; opens via `?record=1` or router state. Columns: Date · Pharmacy · Mode badge · Reference · Status badge · Amount.
+**Detail:** Payment Info (amount/mode/reference/status/date) + Pharmacy Details + Bill Allocations. **Void (POST /:id/void, admin):** `voidPayment` — reverses allocations (restore bill paid/status), `outstanding += totalAllocated`, status→voided, reversing ledger (Debtors Dr / method Cr). ConfirmDialog.
+
+### 2.8 Purchases / GRN (stockist) (`/purchase-bills`, `/purchase-bills/:id`) — `routes/purchases.ts` + `purchaseService.ts`
+**List:** search (grn/invoice/supplier), supplier filter, status (pending/received), date range + "Last 30 Days" toggle, Export (up to 50k), Add Purchase. Columns: GRN/Invoice(+supplier inv) · Supplier · Date · Status · Amount. Supports `?procureProductId&procureQty` deep-link (from Required Stock) auto-opening the modal.
+**UploadBillModal (SlideOver):** modes **Upload PDF** (AI) / **Manual Entry** (auto-selects manual if AI disabled). Header: Supplier (search + select)*, Invoice # (supplier), Invoice Date. Upload: drag/drop PDF/PNG/JPG ≤10MB → **"Parse with AI (Gemini)"** → `POST /purchases/parse` fills lines. Manual line items (add/remove): product (search existing OR type new name), Batch #*, Expiry (date), Qty*, Free, MRP*, Rate*, GST select. Per-line missing-field toast. On save invoice file is read to a base64 data-URL and sent as `invoiceFileUrl`. If server returns `productsNeedingSaleRate` → opens **SetSaleRatesModal**.
+**`createPurchase` (admin/biller):** `findOrCreateProductFromLine` — by productId, else name (ilike) match, else **creates General-category product with saleRate 0**; computes line subtotal/tax; inserts `pending` purchase `GRN-YYYY-####`; returns `productsNeedingSaleRate` (products with saleRate≤0). Expiry normalized via `validateExpiryDate`.
+**SetSaleRatesModal (SlideOver):** per product MRP/Purchase/Sale-rate (PTR) input (required >0); `POST /sale-rates`; "Skip for now" allowed but receiving is blocked until set.
+**Detail:** header status; Edit (pending only → `EditPurchaseModal`: supplier/invoiceNo/date/notes); View Invoice (if file); Print GRN; **Receive Stock** (if not received). KPI cards (Total/Supplier/Invoice Date). Tabs: **Items** (product/batch-expiry/qty/free/MRP/rate/GST/lineTotal + totals with intra/interstate split) and **Ledger** (posted after receive).
+**`receivePurchase` (POST /:id/receive):** refuses if any product saleRate≤0 (names listed); transaction: `receiveStock` per line (upsert batch on tenant+product+batch+expiry, sets saleRate from product), status→received + receivedDate; posts **Inventory Dr / GST-input(CGST+SGST or IGST) Dr / Sundry Creditors Cr** (interstate from supplier state vs '08' buyer). ConfirmDialog.
+
+### 2.9 Suppliers & supplier payments (`/suppliers`, `/suppliers/:id`) — `routes/suppliers.ts`, `routes/supplierPayments.ts`
+**List:** search (name), status; Add Supplier; inline Edit. Columns: Supplier(name+gstin) · Contact · State · Status · Balance Due (= Σpurchases − Σpayments, floor 0) · edit. **AddSupplierModal:** Company Name*, Contact Person*, GST, DL, Phone*, Email, State Code*, Payment Terms (COD/7/15/30/45/60), Address*. Server `SupplierSchema`: name/contact≥2, phone≥7, address≥5, stateCode, optional gstin/dl, terms 30, status active. Create/edit admin/biller.
+**Detail:** StatCards To-Pay (outstanding) + Total YTD Purchases; tabs Info / Purchases (→purchase) / **Ledger** (purchases as debit, payments as credit, running balance). Record Payment (admin). **RecordSupplierPaymentModal:** Amount*, Mode (bank/upi/cash/cheque), Date*, Reference, Notes. `recordSupplierPayment` (admin) → `SPAY-#####` + ledger (Creditors Dr / method Cr).
+
+### 2.10 Returns (sales returns) (`/returns`, `/returns/:id`) — `routes/returns.ts` + `returnService.ts`
+**List:** search, source (manual/portal), Initiate Return (admin → pick delivered order modal → `InitiateReturnModal`). Columns: Return# · Pharmacy · Source badge · Date · Status · Refund.
+**InitiateReturnModal (SlideOver):** per returnable line (qty − prior returns): Batch select (per-product batches), Rate, remaining/of-ordered, Return Qty. Reason (expired/damaged/wrong_item/cancelled/other), Notes. Client blocks qty>remaining and requires batch for wrong_item/cancelled. `createReturn`: validates returnable vs orderItem.qty − prior returns; `RET-####`; status `requested`.
+**Detail:** Summary (Total/Reason/Date/Bill#/Order link); Pharmacy; Returned Items; printable **Credit Note** (`#credit-note-content`). Actions (requested + admin): **Reject** (reason≥3 modal → `rejectReturn`) / **Process** (ConfirmDialog).
+**`processReturn` (POST /:id/process, admin):** transaction with conditional flip `requested→processed`; **restock only for wrong_item/cancelled** (requires batchId); GST-inclusive credit; must be linked to order (or portal return); refuses credit>orderTotal+0.01; reduces linked bill paidAmount then total, keeps `payment_allocations` in sync (reduce/delete largest first); `outstanding -= (grossCredit − billCredit)`; posts Sales-Returns Dr / GST-output Dr / Debtors Cr; portal → emits `return.processed` with creditAmount/allocationToBill/billTotalReduction/outstandingReduction. `rejectReturn` emits `return.rejected` with reason; DB adds `rejected` status.
+
+### 2.11 Required stock, Audit logs, Settings
+- **Required Stock (`/required-stock`, `getRequiredStockReport`):** products with Σ on-hand `< minStockLevel`; deficit banner; per row In Stock/Min/Shortage + **Procure** → `/purchase-bills?procureProductId&procureQty`; Copy List (clipboard), Export.
+- **Audit Logs (`/audit-logs`, admin):** filters entity type (stockist set: orders/payments/bills/returns/purchases/users), user, date range; columns Timestamp(tz) · User · Action · Entity(link) · Details · view(→AuditDetailModal). Export paginates all. `routes/audit.ts` admin-only.
+- **Settings (`/settings`, admin):** left-nav tabs. **Business info** (`PATCH /settings/tenant`, strict Zod GSTIN/phone/state regex, empty gstin→null, slug-collision→409, stockist marketing fields stripped for pharmacy; stockist save triggers `syncPublicCatalog`): Business Name*, Email*, Phone*, DL, GSTIN, State Code, Address. **Connections** (`ConnectionsTab`): invite-code card (copy), Pending Requests table (pharmacy/gstin/phone + Approve/Reject) and Active Connections (credit limit + Sync Catalog + Disconnect). `ApproveConnectionModal`: Credit Limit (defaults from `defaultCreditLimit` or 50000) + Payment Terms. `RejectConnectionModal`: canned reasons + Other. Disconnect via ConfirmDialog. **Public Profile** (`PublicProfileTab`): List publicly, Accept new connections, Public URL slug (preview), About, Categories (CSV), Coverage state codes (CSV), Save + **Sync Public Catalogue**, per-product visibility checkboxes. **Staff/Users:** table + Add User (`AddUserModal`: Name/Email/Password/Role[admin,biller]); deactivate/reactivate/remove (self-row shows "You"; server last-admin + self-guards). **Order Defaults** (`OrderDefaultsTab`): Auto-approve portal orders toggle + Default credit limit → `notificationsJson`. **Catalog Sync** (`CatalogSyncTab`): frequency (manual only) + Sync All Active Connections. **Security:** change password. **Notifications:** lowStockAlerts / overduePayments toggles. **System:** download Users CSV.
+- **Onboarding server (`PATCH /settings/onboarding`, admin):** step 0–4; can't move backwards after completion; completing requires DL≥3 chars AND (stockist: ≥1 pharmacy + ≥1 active product; pharmacy: ≥1 active connection) else 400 with `missing[]`.
+- **`GET /settings/features`** → `{whatsapp, aiParse, whatsappConfigured}`. Public-catalog endpoints stockist-admin only.
+
+### 2.12 Reports (`/reports` + subpages) — `routes/reports.ts` (shared, branches on tenantType) + `reportService.ts`
+Hub cards (role-gated): Sales (admin/biller), Outstanding (admin), GST (admin), Profit (admin), Stock Ageing (admin/biller), Compliance (admin), Portal Orders (admin), Purchase Analysis (admin). Master CSV digest export (admin). Report logic:
+- **Sales** (`from/to`, paginated orders): daily totals, top products (by lineTotal), top pharmacies, by-category, summary (total/orders/avgOrderValue).
+- **Outstanding** (`asOfDate`): per unpaid non-voided bill outstanding + ageDays from dueDate; **aging buckets** current/≤30/≤60/≤90/90+; top defaulters (≤10); totalOutstanding, overdueAmount (age>0), avgCollectionDays.
+- **GST** (`month`): sales CGST/SGST/IGST + taxable/total from bills; **purchase ITC** split intra/inter by supplier vs tenant state; per-rate breakdown from billItems.
+- **Stock aging** (`asOfDate`): per batch age from receivedAt, value=qty×purchaseRate; buckets 0-30/31-60/61-90/90+.
+- **Compliance** (`type` H1 default or `all`, `month`): scheduled-drug dispensing register (order date, pharmacy+DL, product, schedule, batch, qty, bill#). Invalid type→error.
+- **Profit** (`from/to`): COGS from batch `purchaseRate` (fallback product), gross profit, margin%, by-category, daily profit.
+- **Portal orders** (`from/to`): approval rate = approved/(approved+rejected), status counts, top pharmacies. `approved`=has approvedAt; `rejected`=!approvedAt+cancelled+rejectionReason.
+- **Purchase analysis** (`from/to`): total spend, supplier count, top suppliers.
+Report roles server-side: sales/stock-aging/required-stock = admin+biller+pharmacist; outstanding/gst/compliance/profit/portal-orders/purchase-analysis = admin. Charts via Recharts.
+
+---
+
+## 3. PHARMACY PANEL
+
+Shell `PharmacyMainLayout` (teal). Sidebar groups: [Dashboard, Discover Stockists]; **Sales**: POS/New Sale, Sales History, Customers; **Procurement**: Connected Stockists, Purchase Orders, Inbound GRN; **Inventory**: Products, Expiry Alerts; **Finance**: Payable Bills, Payments Made, Returns; **More**: Reports; **Admin (adminOnly)**: Settings, Audit Logs. Role gating: cashier sees only Dashboard/POS/Sales/Customers/Products; cashier hidden from anything with "stockists". Mobile BottomNav differs for cashier (Home/POS/Sales/Customers) vs pharmacist/admin (Home/POS/POs/GRN + More).
+
+### 3.1 Dashboard (`/pharmacy/dashboard` → `pharmacyReportService.getPharmacyDashboardKpis`)
+Onboarding banner (admin "Continue Setup" → `PharmacyOnboardingFlow`; non-admin shows progress). KPIs: Today's Retail Sales, Month Retail Sales, Pending POs (submitted/accepted), Payables Outstanding, Low Stock Items, Awaiting GRN (delivered/partially_received). Quick actions: New Sale, Place Order, Receive GRN, Record Payment. Widgets: Recent Purchase Orders (5) and **Expiring Soon** (batches ≤90d from stock-aging; hidden for cashier).
+**PharmacyOnboardingFlow (5 steps):** Business Profile (DL*/GST/Address), Connect Stockist (gate: pending/active connection; shows 3 discover stockists), Import Products (gate: hasProducts), Opening Stock (skippable), Add Staff. Server gate requires ≥1 active connection to complete.
+
+### 3.2 Discover & connect — `routes/public.ts` (unauth) + `stockist-connections` + `connectionService`
+- **Discover (`/pharmacy/discover`):** search (name/gstin) + state filter; cards (name, gstin, product count, "Not accepting requests", categories); paginated. Data via `GET /api/public/stockists` (dedupes listings, IP rate-limited 60/min).
+- **Public profile (`/pharmacy/discover/:slug`):** header (name, gstin, state, about, partner/product counts, categories); public catalogue table (Product/Category/MRP/Availability — **no PTR**, `C12`); Request Connection (admin/pharmacist, if accepting + not connected) → SlideOver (Note, Expected monthly volume) → `POST /stockist-connections/request {stockistTenantId, requestSource:'discovery'}`; Place Order if active. `GET /api/public/stockists/:slug` + `/:slug/catalog` (page size ≤20).
+- **Connected Stockists (`/pharmacy/stockists`):** search + status filter (active/pending/rejected/withdrawn/disconnected); Connect Stockist + Discover. Rows: name/gstin/status/creditLimit/Withdraw (pending). **ConnectStockistModal (SlideOver):** Invite Code mode OR GSTIN/Name search (`GET /stockist-connections/search`) → connect. `requestConnection` guards: no self-connect, stockist must be `acceptingNewConnections`, pharmacy tenants only, **7-day cooldown after rejection** (`REQUEST_COOLDOWN`); emits `connection.requested`.
+- **Stockist detail (`/pharmacy/stockists/:connectionId`):** tabs Overview (status/gstin/phone/credit limit/terms/connected), **Catalog** (last synced + Resync; rows Product/MRP/Rate/GST/Synced + **Map Local Product** select + "Create from catalog" for admin/pharmacist), Orders, Bills, Ledger (from payable bills). `pullCatalogForPharmacy`/`syncCatalogToConnection` share DB so writes propagate immediately.
+
+### 3.3 Purchase Orders (`/pharmacy/purchase-orders`) — `routes/purchaseOrders.ts` + `pharmacyPurchaseOrderService.ts`
+**11-state enum:** `draft → submitted → accepted/rejected → packed → shipped → delivered → partially_received → received`, plus `cancel_requested`/`cancelled`.
+**List:** search (PO#), status filter (all 11), New PO. Columns PO#/Date/Stockist/Status/Total.
+**CreatePurchaseOrderPage** (`?connectionId`, `?duplicateFrom`, `?editFrom`): 2-step (Select Stockist → Add Items). Step 2: change stockist, Notes, **Add from catalog** (search, click to add; auto-syncs empty catalog), line table (qty editable, rate/total, remove), **credit utilisation bar** (outstanding+order vs connection limit, blocks Submit if exceeds). Save Draft / **Submit Order** (create/update then submit).
+**`createPurchaseOrder`/`updatePurchaseOrder` (admin/pharmacist):** draft only; prices lines; `PO-YYYY-####` with 3-attempt retry.
+**`submitPurchaseOrder`:** must be draft; active connection with `linkedPharmacyId`; **every stockistProductId must still be in catalog** else `CATALOG_DRIFT`; connection credit check (`getPayablesOutstanding` + total) → `CREDIT_LIMIT_EXCEEDED`; transaction **creates the mirror `orders` row on the stockist tenant** (`source:'pharmacy_submitted'`, `externalPharmacyOrderId=PO.id`, order# with retry), copies items, conditional flip draft→submitted (`PO_NOT_SUBMITTABLE`), sets `externalOrderId`; emits `order.submitted`; if stockist `autoApprovePortalOrders` → `approvePharmacyOrder` (auto-reject on credit/stock failure). Error codes mapped to 400/409 with `code`.
+**Detail page:** stepper (draft→…→received; partial/rejected/cancel_requested/cancelled terminals). Banners for shipped (Confirm Receipt then GRN), delivered (Receive GRN), rejected reason, cancel pending, cancelled. Item table (Qty/Received/Rate/GST/Total). Actions by state: Duplicate to Draft (**rejected only** — `additions.md §E`), Edit Draft, Submit, **Confirm Receipt** (shipped→delivered), **Receive GRN** (delivered/partially_received → `ReceiveGrnModal`), Initiate Return (received/partially_received, admin/pharmacist → `InitiateStockistReturnModal`), Cancel, Delete (draft), Sync now.
+**Cancel semantics (`cancelPurchaseOrder`):** draft→local cancel; submitted & stockist pending→cancel both sides in one tx + emit `order.cancelled`; accepted/packed→`cancel_requested` + `order.cancel_requested` (finalized on stockist ack); shipped/delivered/cancelled→`PO_NOT_CANCELLABLE`.
+**`confirmPurchaseOrderReceipt`:** shipped→delivered (conditional) + emit `order.delivered`. `deletePurchaseOrder`: draft only.
+
+### 3.4 GRN — goods receipt (`/pharmacy/grn`) — `routes/grn.ts` + `pharmacyGrnService.ts`
+**List:** search (grn#), stockist filter; columns GRN#/Received/Status(received|partial)/PO#/Stockist. **Detail:** header + PO link + item table (product/batch·exp/qty(+free)); Receive GRN button if PO delivered/partially_received.
+**ReceiveGrnModal (SlideOver):** auto-builds lines from PO pending qty (paid+free breakdown), pre-fills batch/expiry from linked payable bill if present, auto-maps local product (catalog `localProductId` → name match) and **auto-creates missing products from catalog** (+ "Create all from catalog"). Per line: Local Product select (+ create from catalog), Batch #*, Expiry (must be ≥ today client-side)*, Qty (capped to pending), **Split batch**. Notes. Sends with **Idempotency-Key** header.
+**`createGrn` (admin/pharmacist):** receivable only against delivered/partially_received; pre-aggregates by PO item; **cumulative received ≤ pending** guard (client) and **conditional over-receive guard `OVER_RECEIVE`** (server); `validateExpiryDate` and **expiry > receivedDate** (`EXPIRED_BATCH`); transaction: `PGRN-YYYY-####`, upsert batch on (tenant,product,batch,expiry), `stock_movements` reason `grn_receive`, increment PO-line receivedQty, flip PO to received/partially_received, GRN status partial if short, post **Inventory Dr / GRN_CLEARING Cr** at gross cost, auto-map catalog→local product; notify stockist `order.received`/`order.partially_received`. Route has **in-process idempotency cache (10 min)** keyed by tenant+Idempotency-Key.
+
+### 3.5 Retail POS & sales (`/pharmacy/pos`, `/pharmacy/sales`) — `routes/retailSales.ts` + `retailSaleService.ts`
+**PosPage:** product search (Enter = exact name/hsn or single match → add; barcode-friendly); left product list (Rx badge for scheduled, stock, disabled if out of stock); **addToCart** fetches batches, picks FEFO non-expired batch, caps to batch stock. Cart: per-item ± qty (44px targets), Disc %, remove; Customer search+select (walk-in default); Subtotal + Discount; **Split payment** toggle (cash amount + remainder via upi/card) OR method buttons (cash/upi/card) + Amount Received (+change); **Rx block** (appears when any scheduled item): Rx number*, Doctor name*, Doctor reg#, Patient name*, Patient age. Complete Sale → navigate to receipt with `?print=1`; Clear (ConfirmDialog).
+**`createRetailSale` (admin/pharmacist/cashier):** empty-cart guard; customer validation; **prescription capture (C26)** — Rx#/doctor/patient required when any line schedule H/H1/X/NDPS (`RX_REQUIRED`); prices at product saleRate or override; **GST-inclusive** lines (`lineTax = lineSubtotal * gst/(100+gst)`); consumes stock by explicit `batchId` (expiry/availability checks: `BATCH_NOT_AVAILABLE`/`EXPIRED_BATCH`/InsufficientStock) or **FEFO** `reserveStock`, rolling back reservations on failure; split payments must equal total within 0.02 (`SPLIT_MISMATCH`); computes amountReceived/change; `SALE-YYYY-####`; posts cash-sale ledger (method account(s) Dr / Sales Cr + CGST/SGST Cr). Errors mapped to 400/409 with codes.
+**SalesHistoryPage:** search + date range; columns Sale#/Date/Payment/Status/Total. **SaleDetailPage:** auto-print on `?print=1`; header (sale#, date, status, payment [split legs], cashier, customer); Rx panel if present; item table (batch·exp, qty, rate, GST%, total) + footer (subtotal/GST/discount/total/received/change). **Void (admin, same-day only):** modal reason (≥3) → `voidRetailSale` (conditional flip, restock, reversing ledger; `todayIST` guard "Only same-day sales can be voided").
+**Customers (`/pharmacy/customers`):** search; Add Customer (Name*/Phone modal); delete (admin, ConfirmDialog). `customerService` CRUD; create allowed for cashier too. Server customer schema also supports email/age/gender/allergies/notes.
+
+### 3.6 Payables & payments (`/pharmacy/payable-bills`, `/pharmacy/payments`) — `payableBillService` + `payablePaymentService`
+**`createPayableBillFromEvent`** — materializes `payable_bills` (+ items) from `bill.generated` event, **idempotent on externalBillId**, links purchaseOrderId (via externalPharmacyOrderId or externalOrderId), maps externalProductId→local product via catalog; posts **GRN_CLEARING Dr / GST-input Dr / Sundry Creditors Cr** (M21 nets against the GRN's Inventory/GRN_CLEARING entry).
+**Payable bill list:** filters search/status(+overdue derived)/stockist/date range; server ships `outstanding`. **Detail (read-only, no print/QR — `additions.md §A`):** stockist/status/dates/total/outstanding, linked PO link, Payment History (voided struck-through), item table; **Record Payment** SlideOver (Amount [default outstanding, ≤outstanding], Method, Reference [required non-cash]); **Initiate Return** (admin/pharmacist → `InitiateStockistReturnModal`).
+**`recordPayablePayment` (admin/pharmacist):** non-cash reference required + dedup (`DUPLICATE_REFERENCE`); FIFO across oldest payable bills (or explicit allocations); conditional bill UPDATE (no over-allocate); ledger (Creditors Dr / method Cr); emits **`payment.recorded`** to stockist (which records the reciprocal `recordPayment`). `PPAY-#####`.
+**Payments Made page:** table (payment#/date/method/status/amount + Void for admin); Record Payment SlideOver (Bill select showing outstanding, Amount, Method, Reference). **Void (admin, `voidPayablePayment`):** reverse allocations, status→voided, reversing ledger, emit `payment.voided`.
+
+### 3.7 Returns to stockist (`/pharmacy/returns`) — `routes/stockistReturns.ts` + `stockistReturnService.ts`
+**InitiateStockistReturnModal (Modal):** invoked from PO detail (received lines) or payable-bill detail (bill lines). Resolves each line to a local product (explicit localProductId → catalog map → name match); per line Batch select + Qty (capped to max), "Return all eligible", Reason (expired/damaged/wrong_item/cancelled/other) [batch required for wrong_item/cancelled], Notes.
+**`createStockistReturn` (admin/pharmacist):** active connection; **other-mode (no PO/bill) requires reason `other`** and per-item batchId; validates returnable = received/bill qty − prior non-rejected/cancelled returns; reduces local batch stock (explicit batch conditional decrement or FEFO reserve), `stock_movements` reason `transfer_out`; **maps local→stockist catalog** (`mapReturnItemsForStockist`, throws if unmappable); emits `return.requested`. `SRET-####`. Statuses `requested→approved/processed/rejected/cancelled`.
+**List/Detail:** stepper requested→processed (+ rejected terminal with reason); items table. Stockist's `return.processed`/`return.rejected` events flip local status (rejection restocks).
+
+### 3.8 Products, Expiry, Reports, Settings (pharmacy)
+- **Products** — shared `/api/products`; "from-catalog" create (resale saleRate defaults to MRP). Cashier hides rates.
+- **Expiry Alerts** (`PharmacyExpiryAlertsPage`): batches ≤90d from stock-aging, tier-colored days-left.
+- **Reports hub** (role-gated cards): Retail Sales (admin/pharmacist), Stock Aging, Expiry, GST (admin), Payables Aging (admin), Profit Margin (admin), Compliance (admin). `pharmacyReportService`: retail sales report (daily, top products, **payment mix**, paginated txns), payables-aging buckets, **pharmacy GST** (output from GST-inclusive retail lines + input from payable bill items **and** local purchases, netPayable), profit (revenue−COGS from batch purchaseRate), compliance (retail Rx register), dashboard KPIs.
+- **Settings** (admin): Business, Staff (Add via `PharmacyAddUserModal` roles admin/pharmacist/cashier), Notifications, **POS Config** (default payment method + print-receipt prompt, stored in notificationsJson), Security. `PATCH /settings/tenant` strips stockist marketing fields for pharmacy.
+- **Audit Logs** (admin): pharmacy entity set (POs/GRN/payable bills/payable payments/retail sales/connections/returns/customers/products/users).
+
+---
+
+## 4. Cross-Tenant Connections, Catalog Sync, Event Bus
+
+### 4.1 Connections (`stockist_connections`)
+Statuses `pending|active|rejected|withdrawn|disconnected`. Request via invite code / GSTIN search / discovery. `approveConnection` (stockist admin): credit limit (default from `notificationsJson.defaultCreditLimit` or 50000), **creates/links a `pharmacies` row** on the stockist side (matched by GSTIN if present, else new; `portalConnected:true`, `pharmacyTenantId` set, DL left null not 'PENDING'), syncs catalog, emits `connection.approved`. `reject/withdraw/disconnect` emit matching events; disconnect flips linked pharmacy `portalConnected:false`.
+
+### 4.2 Two catalogs (`publicCatalogService`, `connectionService`)
+- **Connection catalog** (`stockist_catalog_items`, per active connection): includes PTR (`saleRate`) + scheme; `syncCatalogToConnection` upserts active products, deletes removed, availability hint from stock vs minStockLevel; `mapCatalogLocalProduct` links to pharmacy-local product.
+- **Public catalog** (`stockist_public_catalog_items`): **never stores saleRate/PTR (C12)**, MRP+availability only; `syncPublicCatalog` maintains, removes orphans, respects `publishNewProductsByDefault`; `ensurePublicSlug` slugifies businessName (collision-suffixed); `dedupePublicStockistListings` hides duplicate listings.
+- `pushCatalogToActiveConnections` (on product create/edit) re-syncs every active connection **and** the public catalog (full re-sync; `changedProductIds` is a forward-looking hint, `me89`).
+
+### 4.3 Event bus (`cross_tenant_events`, `processed_cross_tenant_events`, `eventService`)
+`emitCrossTenantEvent(source,target,type,payload)` appends a row. `applyEvent` **claims atomically** (insert into `processed_cross_tenant_events` onConflictDoNothing), runs `handleEvent`, acks (`deliveredAt`); on handler error deletes the claim and rethrows (retry). `processPendingEvents` drains queue. Client polls `POST /events/process` every 10 s (`useEvents`), invalidates caches, surfaces errors via `eventSyncStore` + toast; header bells show pending events + "Sync now"/"Process all"; event notifications deep-link (`eventNavigation`).
+**Handled types** (`handleEvent`, all with `allowedFrom` FSM guards where relevant, C22): `order.accepted/rejected/packed/shipped/delivered/received/partially_received/cancelled/cancel_requested`, `bill.generated`, `connection.requested/approved/rejected/disconnected/withdrawn`, `order.submitted`, `payment.recorded/voided`, `catalog.changed`, `return.requested/processed/rejected`. Notable handlers: `payment.recorded` resolves external→local bills and calls stockist `recordPayment`; `payment.voided` finds the mirrored payment by note and voids it; `return.requested` reconstructs return items (matching orderItem by product/batch) and calls stockist `createReturn` with portal metadata in notes; `return.processed` applies credit to the pharmacy's payable bill first (Creditors Dr / Purchases Cr) then marks the stockist_return processed; `order.cancel_requested` cancels the stockist order (approved→cancelApproved, pending/packed→cancelOrder); unknown type → `UNKNOWN_EVENT_TYPE`. Events routes: list, history, process, `:id/apply` (no public ack).
+
+---
+
+## 5. Money Logic
+
+- **GST (`lib/gst.ts` + client `gstClient`):** `isInterstate = sellerState !== buyerState`. Per line `tax=round2(sub*rate/100)`. Intra: `cgst=round2(tax/2)`, `sgst=round2(tax−cgst)` (symmetric, no paisa drift). Inter: all to igst. Rates 0/5/12/18/28. Order/bill lines GST-**exclusive**; retail POS GST-**inclusive**.
+- **FEFO (`lib/inventory.ts`):** `reserveStock` selects non-expired batches (`qtyOnHand>0`, `expiryDate>asOfDate`) ordered by expiry asc then receivedAt asc, atomic conditional decrement per batch, **recurses** on concurrent consumption, throws `InsufficientStockError` (→409). `receiveStock` upserts batch on (tenant,product,batch,expiry). `releaseStock` restocks (fails loudly if batch missing). `getProductStock` sums non-expired only. Every mutation writes `stock_movements` (C24).
+- **Double-entry ledger (`lib/ledger.ts`):** `postEntry` throws on imbalance (>0.01) and threads the caller's tx. 16 seeded accounts incl. **GRN_CLEARING** suspense bucket reconciling GRN (Inventory Dr / GRN_CLEARING Cr) vs later payable bill (GRN_CLEARING+GST-input Dr / Creditors Cr).
+- **Credit exposure (`getPharmacyExposure`):** unpaid bill balances + approved-unbilled in-flight orders; enforced at create/finalize/approve; connection creditLimit precedence; `pharmacies.outstanding` denormalized + reconcilable.
+- **Numbering (`lib/ids.ts`):** `ORD-YYYY-####`, `INV-YYYY-####`, `PAY-#####`, `RET-####`, `GRN-YYYY-####`, `SPAY-#####`, `PO-YYYY-####`, `PGRN-YYYY-####`, `SALE-YYYY-####`, `PPAY-#####`, `SRET-####`. Order/PO use count/max-scan with collision retry.
+- **Dates:** business dates as `YYYY-MM-DD` text; `todayIST()` (Asia/Kolkata) governs same-day void; `validateExpiryDate` accepts YYYY-MM-DD / YYYY-MM / MM/YY → last day of month.
+
+---
+
+## 6. AI, WhatsApp, Public API, DB
+
+- **AI bill parse** (`aiParseService`, `POST /purchases/parse`, multer ≤10MB): Gemini `gemini-2.0-flash`, strict-JSON prompt, strips fences, sanitizes numerics, fuzzy product match (exact→substring). Gated `FEATURE_AI_PARSE`+`GEMINI_API_KEY`. Also `aiOrderParseService` (`/orders/parse-text`) and `aiProductService` (`/products/autofill`, infers metadata) — server endpoints, product autofill has no dedicated UI wire beyond the gated route.
+- **WhatsApp** (`whatsappService`, `POST /communication/send-bill`): client PDF (base64) → Meta Graph v20.0 media upload + document message; normalizes phone (+91); 502 on Graph failure. Gated `FEATURE_WHATSAPP`+token+phone id.
+- **Bill verification** (`billVerificationService`, `GET /api/public/verify-bill/:id`): returns non-sensitive fields (billNumber/date/total/status/stockist/pharmacy). **Backend exists but NO QR on invoices / no scan UI** (`additions.md §A` still open for the front end).
+- **Public API** (`routes/public.ts`, IP 60/min): `/stockists`, `/stockists/:slug`, `/stockists/:slug/catalog` (page ≤20, no PTR), `/verify-bill/:id`.
+- **DB**: PGlite (`pglite:memory` default, `pglite:<path>` disk, else `pg` Pool). Schema in `db/schema.ts` — money `numeric(14,2)` as strings, `(tenantId,id)` unique indexes for scoping, `bills.order_id` unique (idempotent bills), stock_movements canonical log.
+
+---
+
+## 7. Error Codes / Edge Cases (consolidated)
+
+`InsufficientStockError`→409; `CREDIT_LIMIT_EXCEEDED`; `PHARMACY_INACTIVE`; `CONNECTION_INACTIVE`; `PO_NOT_SUBMITTABLE`/`PO_NOT_CANCELLABLE`; `CATALOG_DRIFT`; `OVER_RECEIVE`; `EXPIRED_BATCH`; `BATCH_NOT_AVAILABLE`; `RX_REQUIRED`; `SPLIT_MISMATCH`; `DUPLICATE_REFERENCE`; `REFERENCE_REQUIRED`; `BILL_REQUIRED` (portal delivery); `ORDER_HAS_BILL` (cancel); `REQUEST_COOLDOWN` (7-day); `PAYMENT_EVENT_NO_CONNECTION/NO_BILLS`, `PAYMENT_VOID_*`, `RETURN_REQUEST_*`, `RETURN_PAYABLE_NOT_FOUND`, `CANCEL_REQUEST_*`, `UNKNOWN_EVENT_TYPE` (event handlers). Concurrency handled via conditional UPDATEs + transactions + atomic event claims + GRN idempotency key. Same-day-only voids (retail); last-admin & self-guards on users; adjust-stock cannot exceed qtyReceived; overdue derived not stored.
+
+---
+
+## 8. Known Stubs / Gaps (`additions.md`)
+
+- **Bill QR verification — client half Missing** (no QR image/copy on invoice, no scan UI; backend verify endpoint exists).
+- **Multi-step registration — Missing** (single form; PAN, WhatsApp, city, own PIN, serviceable pincodes, document uploads, bank details not collected).
+- **Platform admin panel — Missing** (only tenant-scoped `admin` role; no super-admin/KYC/moderation/global listing).
+- **Copy/duplicate order — Partial** (pharmacy PO "Duplicate to Draft" **rejected-only**, no confirm dialog; stockist OrderDetail has no duplicate action/endpoint).
+- **AI** single model `gemini-2.0-flash`, no fallback, name-only fuzzy match; no-op without key.
+- **WhatsApp** requires client to rasterize invoice; disabled without Meta creds.
+- **Overdue** intentionally derived; `markOverdueBills`/`markOverduePayableBills` are no-ops.
+- **Refresh tokens** in schema + revoked on password change/deactivation, but no `/auth/refresh`; sessions rely on 24h cookie + `updatedAt>iat` check.
+- **Catalog push** always full re-syncs; `changedProductIds` unused.
+
+---
+
+---
+
+# PART III — API SURFACE (STOCKIST-PHARMACY)
+
+`/auth` (userService) · `/public` (publicCatalogService, billVerificationService) · `/pharmacies` [stockist] · `/suppliers` [stockist] · `/supplier-payments` [stockist] · `/products` [shared] · `/orders` [stockist] (orderService/billService/returnService/aiOrderParse) · `/bills` [stockist] · `/payments` [stockist] · `/purchases` [stockist] (purchaseService/aiParse) · `/returns` [stockist] · `/reports` [shared] · `/audit-logs` [shared admin] · `/users` [shared admin] · `/system` [shared admin] · `/settings` [shared] (+ publicCatalogService) · `/stockist-connections` [shared] · `/communication` [shared] (whatsapp) · `/purchase-orders` [pharmacy] · `/grn` [pharmacy] · `/payable-bills` [pharmacy] · `/payable-payments` [pharmacy] · `/retail-sales` [pharmacy] · `/customers` [pharmacy] · `/stockist-returns` [pharmacy] · `/events` [shared].

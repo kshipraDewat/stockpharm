@@ -1,0 +1,1 @@
+export const DEFAULT_CREDIT_LIMIT = 50_000;

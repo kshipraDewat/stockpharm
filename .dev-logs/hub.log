@@ -1,0 +1,18 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8081 --host 0.0.0.0 --strictPort
+
+
+  VITE v5.4.19  ready in 127 ms
+
+  ➜  Local:   http://localhost:8081/
+  ➜  Network: http://10.76.140.20:8081/
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8081 --host 0.0.0.0 --strictPort
+
+
+  VITE v5.4.19  ready in 93 ms
+
+  ➜  Local:   http://localhost:8081/
+  ➜  Network: http://10.76.140.20:8081/

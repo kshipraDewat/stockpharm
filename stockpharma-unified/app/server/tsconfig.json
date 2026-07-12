@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "rootDir": "..",
+    "paths": {
+      "@stockist/shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["src/**/*", "../shared/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

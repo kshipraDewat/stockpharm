@@ -1,0 +1,20 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8083 --host 0.0.0.0 --strictPort
+
+
+  VITE v5.4.19  ready in 176 ms
+
+  ➜  Local:   http://localhost:8083/
+  ➜  Network: http://10.76.140.20:8083/
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8083 --host 0.0.0.0 --strictPort
+
+
+  VITE v5.4.19  ready in 148 ms
+
+  ➜  Local:   http://localhost:8083/
+  ➜  Network: http://10.76.140.20:8083/
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`

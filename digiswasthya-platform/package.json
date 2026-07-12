@@ -1,0 +1,12 @@
+{
+  "name": "digiswasthya-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Digital Swasthya — unified pharma platform built from MERGED_REVIEWS.md spec",
+  "scripts": {
+    "dev": "npm run dev --prefix app",
+    "build": "npm run build --prefix app",
+    "install:app": "npm install --prefix app",
+    "postinstall": "npm run install:app"
+  }
+}

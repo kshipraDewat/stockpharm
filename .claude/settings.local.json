@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"No .\\\\{3,50\\\\}</\\\\|No .\\\\{3,50\\\\}yet\\\\|caught up\\\\|Start by\\\\|Add your\\\\|will appear\" src/pages src/components --include=\"*.tsx\")",
+      "Bash(grep -rhoE 'toast\\\\.\\(error|warning\\)\\\\\\(`[^`]+`' pages/stockist pages/pharmacy pages/admin components/stockist components/pharmacy components/shared)"
+    ]
+  }
+}
