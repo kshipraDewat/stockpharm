@@ -15,3 +15,4 @@ cd digiswasthya-platform && npm install && npm run dev
 | Merged reviews (Part I + verbatim Part II) | [MERGED_REVIEWS.md](./MERGED_REVIEWS.md) |
 | Implementation status | [digiswasthya-platform/docs/IMPLEMENTATION_STATUS.md](./digiswasthya-platform/docs/IMPLEMENTATION_STATUS.md) |
 | Original 8 sibling apps | Preserved at repo root (`stockpharmaerp/`, `digi-swasthya-hub/`, …) |
+# stockpharm
